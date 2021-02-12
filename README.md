@@ -1,1 +1,1 @@
-# ergezing-group-cmput404-project
+# Social Distribution Project
