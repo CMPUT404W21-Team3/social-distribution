@@ -8,10 +8,27 @@ from .forms import UserForm, ProfileForm, SignUpForm
 
 @login_required(login_url='/login/')
 def home(request):
+	"""
+	Redirect to homepage. Login required
+	Parameters
+	----------
+	Returns
+	-------
+	Render to the home.html
+	"""
     return render(request, 'profile/home.html')
 
 @login_required(login_url='/login/')
 def update_profile(request):
+	"""
+	Update a user's profile. Login required
+	Parameters
+	----------
+	Handle the POST/GET request
+	Returns
+	-------
+	Either submit the form if POST or view the form.
+	"""
     if request.method == 'POST':
         user_form = UserForm(request.POST, instance=request.user)
         profile_form = ProfileForm(request.POST, instance=request.user.profile)
@@ -31,6 +48,15 @@ def update_profile(request):
     })
 
 def signup(request):
+	"""
+	Sign up.
+	Parameters
+	----------
+	Handle the POST request, adding new user.
+	Else just render the page
+	Returns
+	-------
+	"""
     if request.method == 'POST':
         form = SignUpForm(request.POST)
         if form.is_valid():
