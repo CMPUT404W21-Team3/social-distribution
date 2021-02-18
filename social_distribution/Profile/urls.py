@@ -7,10 +7,9 @@ from . import views as Profile_views
 app_name = 'Profile'
 
 urlpatterns = [
-    url(r'^$', Profile_views.home, name='home'),
-    #url('/login/', auth_views.LoginView.as_view(template_name='profile/login.html'), name='login'),
-    url(r'^login/$', auth_views.LoginView.as_view(template_name='profile/login.html'), name='login'),
-    url(r'^logout/$', auth_views.LogoutView.as_view(next_page='Profile:login'), name='logout'),
-    url(r'^signup/$', Profile_views.signup, name='signup'),
-    url(r'^profile/$', Profile_views.update_profile, name='profile')
+    url(r'^$', Profile_views.home, name='home'), #homepage
+    url(r'^login/$', auth_views.LoginView.as_view(template_name='profile/login.html'), name='login'), #login page, use the default view from django
+    url(r'^logout/$', auth_views.LogoutView.as_view(next_page='Profile:login'), name='logout'), #logout will direct to the login page
+    url(r'^signup/$', Profile_views.signup, name='signup'), #signup
+    url(r'^profile/$', Profile_views.update_profile, name='profile') #view/edit your profile
 ]
