@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'Profile.apps.ProfileConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -55,7 +56,9 @@ ROOT_URLCONF = 'social_distribution.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'management/templates')],
+        'DIRS': [os.path.join(BASE_DIR, 'management/templates'),
+                os.path.join(BASE_DIR, 'Profile/templates'),
+                os.path.join(BASE_DIR, 'Profile/templates/profile')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -120,5 +123,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-# Feb 15 - Tri
-LOGIN_REDIRECT_URL = '/admin'
+# Feb 17 - Tri
+LOGIN_URL = 'login'
+LOGOUT_URL = 'logout'
+LOGIN_REDIRECT_URL = '/'

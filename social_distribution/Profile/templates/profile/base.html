@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>{% block title %}CMPUT404 - Team 3{% endblock %}</title>
+  </head>
+  <body>
+    <header>
+      <h1>Social Distribution</h1>
+      {% if user.is_authenticated %}
+        <a href="{% url 'Profile:logout' %}">logout</a> / <a href="{% url 'Profile:profile' %}">profile</a>
+      {% else %}
+        <a href="{% url 'Profile:login' %}">login</a> / <a href="{% url 'Profile:signup' %}">signup</a>
+      {% endif %}
+      <hr>
+    </header>
+    <main>
+      {% block content %}
+      {% endblock %}
+    </main>
+  </body>
+</html>
