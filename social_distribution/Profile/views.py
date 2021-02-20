@@ -44,13 +44,12 @@ def update_profile(request):
 			return redirect('Profile:home')
 		else:
 			messages.error(request, 'Please correct the error below.')
-
 	else:
 		user_form = UserForm(instance=request.user)
 		profile_form = ProfileForm(instance=request.user.profile)
 	return render(request, 'profile/profile.html', {
-	'user_form': user_form,
-	'profile_form': profile_form
+		'user_form': user_form,
+		'profile_form': profile_form
 	})
 
 def signup(request):
