@@ -17,5 +17,5 @@ def create_user_profile(sender, instance, created, **kwargs):
 	-------
 	Create a Profile model (refer it to the User model as well)
 	"""
-    if created:
-        Profile.objects.create(user=instance)
+	if created:
+		Profile.objects.create(user=instance)
