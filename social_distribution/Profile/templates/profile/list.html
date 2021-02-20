@@ -1,0 +1,22 @@
+<h2>{{user.username }} Friends</h2>
+<!-- List friends -->
+{% for f in friends %}
+  <li>{{ f.user }}</li>
+{% endfor %}
+
+<h2>Pending Requests</h2>
+<!-- List pending friend requests -->
+{% for r in friend_requests %}
+  <li>Request from {{ r.sender }}</li>
+  <form action="/accept" method="POST">
+    {% csrf_token %}
+    <input type="hidden" name="sender" id="sender" value="{{ r.sender }}" />
+    <button type="submit">Accept</button>
+  </form>
+  <form action="/decline" method="POST">
+    {% csrf_token %}
+    <input type="hidden" name="sender" id="sender" value="{{ r.sender }}" />
+    <button type="submit">Decline</button>
+  </form>
+{% endfor %}
+<a href="/">Return</a>

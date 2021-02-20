@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'Profile.apps.ProfileConfig',
+    'Search.apps.SearchConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -58,7 +59,9 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [os.path.join(BASE_DIR, 'management/templates'),
                 os.path.join(BASE_DIR, 'Profile/templates'),
-                os.path.join(BASE_DIR, 'Profile/templates/profile')],
+                os.path.join(BASE_DIR, 'Profile/templates/profile'),
+                os.path.join(BASE_DIR, 'Search/templates'),
+                os.path.join(BASE_DIR, 'Search/templates/search'),],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

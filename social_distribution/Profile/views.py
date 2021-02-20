@@ -2,9 +2,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.contrib.auth.models import User
 # Create your views here.
 
 from .forms import UserForm, ProfileForm, SignUpForm
+# Potentially problematic
+from .models import Profile
+from Search.models import FriendRequest
+
 
 @login_required(login_url='/login/')
 def home(request):
@@ -71,3 +76,28 @@ def signup(request):
 	else:
 		form = SignUpForm()
 	return render(request, 'profile/signup.html', {'form': form})
+
+
+def list(request):
+	# Fetch friend requests and friends
+	friend_requests = FriendRequest.objects.filter(receiver=request.user.username)
+	user = Profile.objects.get(user__username=request.user.username)
+	friends = user.friends.all()
+
+	return render(request, 'profile/list.html', {'friend_requests': friend_requests, 'friends': friends})
+
+def accept(request):
+	# Delete that request
+	FriendRequest.objects.filter(receiver=request.user.username).filter(sender=request.POST.get('sender', '')).delete()
+
+	# Add to friends list
+	r_user = Profile.objects.get(user__username=request.user.username)
+	s_user = Profile.objects.get(user__username=request.POST.get('sender', ''))
+	r_user.friends.add(s_user)
+
+	return redirect('/friends')
+
+def decline(request):
+	# Delete that request
+	FriendRequest.objects.filter(receiver=request.user.username).filter(sender=request.POST.get('sender', '')).delete()
+	return redirect('/friends')
