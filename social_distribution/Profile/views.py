@@ -3,6 +3,12 @@ from django.contrib.auth import login, authenticate
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.models import User
+
+# from rest_framework import viewsets
+
+# from .serializers import ProfileSerializer
+from .models import Profile
+
 # Create your views here.
 
 from .forms import UserForm, ProfileForm, SignUpForm
@@ -101,3 +107,7 @@ def decline(request):
 	# Delete that request
 	FriendRequest.objects.filter(receiver=request.user.username).filter(sender=request.POST.get('sender', '')).delete()
 	return redirect('/friends')
+
+# class ProfileViewSet(viewsets.ModelViewSet):
+#     queryset = Profile.objects.all().order_by('user')
+#     serializer_class = ProfileSerializer

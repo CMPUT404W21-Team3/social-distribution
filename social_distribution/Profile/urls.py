@@ -5,7 +5,12 @@ from django.contrib.auth import views as auth_views
 
 from . import views as Profile_views
 
+from rest_framework import routers
+
 app_name = 'Profile'
+
+# router = routers.DefaultRouter()
+# router.register(r'profiles', Profile_views.ProfileViewSet)
 
 urlpatterns = [
     url(r'^$', Profile_views.home, name='home'), #homepage
@@ -15,5 +20,7 @@ urlpatterns = [
     url(r'^profile/$', Profile_views.update_profile, name='profile'), # view/edit your profile
     url(r'^friends/$', Profile_views.list, name='friends'), # view friends list
     path('accept', Profile_views.accept, name='accept'),
-    path('decline', Profile_views.decline, name='decline')
+    path('decline', Profile_views.decline, name='decline'),
+    # path('', include(router.urls)),
+    # path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]
