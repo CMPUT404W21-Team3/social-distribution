@@ -17,3 +17,9 @@ class Profile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+class Friend(models.Model):
+    friend = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='friend')
+    follower = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='follower')
+    # pending status: 0 for pending friend request; 1 for following
+    status = models.IntegerField(default=0)
