@@ -1,0 +1,9 @@
+{% if posts %}
+    {% for post in posts %}
+        <li><a href="/author/{{author.id}}/posts/{{post.id}}">{{post.title}}</a>: </li>
+    {% endfor %}
+{% else %}
+    <p>{{author.user.first_name}} {{author.user.last_name}} has no posts<p>
+{% endif %}
+
+<a href="/author/new_post">New Post</a>
