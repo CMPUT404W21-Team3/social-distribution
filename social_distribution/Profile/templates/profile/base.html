@@ -3,17 +3,43 @@
   <head>
     <meta charset="utf-8">
     <title>{% block title %}CMPUT404 - Team 3{% endblock %}</title>
+    {% load static %}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="{% static 'profile/base.css' %}">
   </head>
   <body>
-    <header>
-      <h1>Social Distribution</h1>
+    
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <div class="container-fluid">
+        <span class="navbar-brand" href="#">Social Distribution</span>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav">
+            {% if user.is_authenticated %}
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'Profile:profile' %}">Profile</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'Profile:logout' %}">Logout</a>
+              </li>
+            {% else %}
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'Profile:login' %}">Login</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'Profile:signup' %}">Signup</a>
+              </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+      <!-- <h1>Social Distribution</h1>
       {% if user.is_authenticated %}
         <a href="{% url 'Profile:logout' %}">logout</a> / <a href="{% url 'Profile:profile' %}">profile</a>
       {% else %}
         <a href="{% url 'Profile:login' %}">login</a> / <a href="{% url 'Profile:signup' %}">signup</a>
-      {% endif %}
+      {% endif %} -->
       <hr>
-    </header>
     <main>
       {% block content %}
       {% endblock %}
