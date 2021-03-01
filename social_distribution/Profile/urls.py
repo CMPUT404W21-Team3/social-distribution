@@ -18,5 +18,6 @@ urlpatterns = [
     path('decline', Profile_views.decline, name='decline'),
     path('author/<int:author_id>/posts', Profile_views.posts, name='posts'), # recent posts by author
     path('author/new_post', Profile_views.CreatePostView.as_view(), name='new_post'), # post creation
-    path('author/<int:author_id>/posts/<int:post_id>', Profile_views.post, name='post')
+    path('author/<int:author_id>/posts/<int:post_id>', Profile_views.post, name='post'),
+    path('view_profile/<int:author_id>', Profile_views.view_profile, name='view_profile'),
 ]

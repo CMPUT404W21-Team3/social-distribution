@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+	<form action="{% url 'Search:results' %}" method="POST">
+		{% csrf_token %}
+		<input type="text" name="query" id="query" required>
+		<input type="submit" value="Search">
+	</form>
+	<h2>{{ author.user.get_full_name }} <small>@{{ author.user.username }}</small>!</h2>
+		<form action="/sendrequest" method="POST">
+			{% csrf_token %}
+			<input type="hidden" name="query" id="query" value="{{ query }}" />
+			<input type="hidden" name="receiver" id="receiver" value="{{ user.username }}" />
+			<!-- Very buggy -->
+			<input type="hidden" name="users" id="users" value="{{ users }}" />
+			<button type="submit">Send Friend Request</button>
+		</form>
+		<p>Birth date: {{ author.birth_date }}</p>
+		<h3>Public Posts:</h3>
+		{% if posts %}
+			{% for post in posts %}
+				<li><a href="/author/{{author.id}}/posts/{{post.id}}">{{post.title}}</a>: </li>
+			{% endfor %}
+		{% else %}
+			<p>{{author.user.get_full_name}} has no posts<p>
+		{% endif %}
+{% endblock %}

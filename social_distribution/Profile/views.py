@@ -1,6 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.views import generic
@@ -122,3 +122,9 @@ class CreatePostView(generic.CreateView):
 		self.success_url = '/author/' + str(author.id) + '/posts'
 		form.instance.author = author
 		return super().form_valid(form)
+
+def view_profile(request, author_id):
+	author = Profile.objects.get(user_id=author_id)
+	posts = author.posts.all()
+	if request.method == "GET":
+		return render(request, 'profile/view_profile.html', {'author': author, 'posts':posts})
