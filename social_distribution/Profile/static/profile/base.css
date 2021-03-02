@@ -1,5 +1,93 @@
 body {
     display: block;
-    margin: 8px;
+    /* margin: 8px; */
     font-family: "Georgia";
+    background-color: whitesmoke;
+}
+
+/* main {
+    margin: 10% 8px;
+} */
+
+nav {
+    background-color: mediumseagreen;
+}
+
+.navbar-brand {
+    margin-left: 8px;
+}
+
+nav div span {
+    margin: 0 43%;
+}
+
+nav div span a {
+    text-decoration: none;
+    color: mintcream;
+    font-weight: 500;
+}
+
+nav div span a:hover{
+    color: white;
+}
+
+form {
+    margin: 0 auto;
+    width: fit-content;
+}
+
+.row {
+    margin: 0 auto;
+}
+
+.home {
+    margin: 10% auto;
+    width: fit-content;
+    text-align: center;
+}
+
+.home .btn {
+    margin: 0 0.5em;
+}
+
+.d-flex {
+    margin-right: 0;
+}
+
+nav div div ul {
+    margin: 0 auto;
+}
+
+#navbarNav {
+    width: fit-content;
+}
+
+.navbar-collapse {
+    flex-grow: 0;
+}
+
+.navbar-brand {
+    font-size: 1.5em;
+}
+
+.card-body h5 a {
+    text-decoration: none;
+    color: #198754;
+}
+
+.container-fluid {
+    background-color: mediumseagreen;
+}
+
+.nav-link {
+    color: rgba(240, 255, 255, 0.856) !important;
+}
+
+.post-button {
+    margin: 16px 16px 0 16px;
+}
+
+.post-button a {
+    text-decoration: none;
+    color: #198754;
 }

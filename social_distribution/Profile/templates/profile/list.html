@@ -1,4 +1,4 @@
-<h2>{{user.username }} Friends</h2>
+<h2>@{{user.username }} Friends</h2>
 <!-- List friends -->
 {% for f in friends %}
   <li>{{ f.user }} </li><a href="{% url 'Profile:view_profile' author_id=f.user.id %}">View Profile</a>
