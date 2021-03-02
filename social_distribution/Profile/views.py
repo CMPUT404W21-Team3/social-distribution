@@ -115,7 +115,7 @@ def post(request, author_id, post_id):
 class CreatePostView(generic.CreateView):
 	model = Post
 	template_name = 'profile/create_post.html'
-	fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility']	
+	fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility']
 
 	def form_valid(self, form):
 		author = self.request.user.profile
@@ -123,8 +123,20 @@ class CreatePostView(generic.CreateView):
 		form.instance.author = author
 		return super().form_valid(form)
 
+def view_profile(request):
+	pass
+
 def view_profile(request, author_id):
+	user = Profile.objects.get(user__username=request.user.username)
 	author = Profile.objects.get(user_id=author_id)
-	posts = author.posts.all()
+	friend_status = user.friends.filter(user_id=author_id).exists()
+
 	if request.method == "GET":
-		return render(request, 'profile/view_profile.html', {'author': author, 'posts':posts})
+		return render(request, 'profile/view_profile.html', {'author': author, 'posts': posts, 'friend_status': friend_status})
+
+def remove_friend(request, author_id):
+	user = Profile.objects.get(user__username=request.user.username)
+	to_delete = Profile.objects.get(user__id=author_id)
+	user.friends.remove(to_delete)
+
+	return redirect('Profile:view_profile', author_id)

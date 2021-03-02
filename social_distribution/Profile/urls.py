@@ -20,4 +20,5 @@ urlpatterns = [
     path('author/new_post', Profile_views.CreatePostView.as_view(), name='new_post'), # post creation
     path('author/<int:author_id>/posts/<int:post_id>', Profile_views.post, name='post'),
     path('view_profile/<int:author_id>', Profile_views.view_profile, name='view_profile'),
+    path('view_profile/<int:author_id>/remove_friend', Profile_views.remove_friend, name='remove_friend'), # remove a friend
 ]
