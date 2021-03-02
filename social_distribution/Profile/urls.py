@@ -19,6 +19,7 @@ urlpatterns = [
     path('author/<int:author_id>/posts', Profile_views.posts, name='posts'), # recent posts by author
     path('author/new_post', Profile_views.CreatePostView.as_view(), name='new_post'), # post creation
     path('author/edit_post/<int:post_id>', Profile_views.edit_post, name='edit_post'),
+    path('author/delete_post/<int:post_id>', Profile_views.delete_post, name='delete_post'),    
     path('author/share_post/<int:post_id>/', Profile_views.share_post, name='share_post'),
     path('author/<int:author_id>/posts/<int:post_id>', Profile_views.post, name='post'),
     path('view_profile/<int:author_id>', Profile_views.view_profile, name='view_profile'),

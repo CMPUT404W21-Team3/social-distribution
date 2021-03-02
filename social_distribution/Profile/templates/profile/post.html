@@ -9,6 +9,7 @@
 
 {% if post.author.id == current_user.profile.id %}
     <div>
-        <a href="{% url 'Profile:edit_post' post_id=post.id %}">Edit this post</a>
+        <a href="{% url 'Profile:edit_post' post_id=post.id %}">Edit this post</a></br>
+        <a href="{% url 'Profile:delete_post' post_id=post.id %}">Delete this post</a>
     <div>
 {% endif %}

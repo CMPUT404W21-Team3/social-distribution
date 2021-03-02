@@ -113,7 +113,7 @@ def posts(request, author_id):
 
 def post(request, author_id, post_id):
 	current_user = request.user
-	post = Post.objects.get(id=post_id)
+	post = get_object_or_404(Post, id=post_id, author__id=author_id)
 	return render(request, 'profile/post.html', {'post':post, 'current_user':current_user})
 
 class CreatePostView(generic.CreateView):
@@ -149,6 +149,14 @@ def edit_post(request, post_id):
 		post_form = PostForm(instance=post)
 	return render(request, 'profile/edit_post.html', {'post_form':post_form})
 
+@login_required(login_url='/login/')
+def delete_post(request, post_id):
+	post = Post.objects.get(id=post_id)
+	if post.author.id != request.user.profile.id:
+		return HttpResponseForbidden
+	else:
+		post.delete()
+		return redirect('Profile:posts', author_id=request.user.profile.id)
 
 def share_post(request, post_id):
 	post = Post.objects.get(id=post_id)
