@@ -11,7 +11,7 @@ class Profile(models.Model):
     bio = models.TextField(max_length=500, blank=True)
     location = models.CharField(max_length=30, blank=True)
     birth_date = models.DateField(null=True, blank=True)
-    
+
     # Not sure if this is the best way to do this
     friends = models.ManyToManyField('self')
     followers = models.ManyToManyField('self', symmetrical=False)
@@ -60,7 +60,7 @@ class Post(models.Model):
     )
 
     unlisted = models.BooleanField(default=False) # used for images so that they don't show up in timelines
-    
+
 class PostCategory(models.Model):
     name = models.CharField(max_length=50)
 
