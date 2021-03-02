@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.views import generic
 # Create your views here.
 
-from .forms import UserForm, ProfileForm, SignUpForm
+from .forms import UserForm, ProfileForm, SignUpForm, PostForm
 # Potentially problematic
 from .models import Profile, Post
 from Search.models import FriendRequest
@@ -123,8 +123,22 @@ class CreatePostView(generic.CreateView):
 		form.instance.author = author
 		return super().form_valid(form)
 
-def view_profile(request):
-	pass
+def share_post(request, post_id):
+	post = Post.objects.get(id=post_id)
+	author_original = post.author
+	author_share = request.user.profile
+	if request.method == "GET":
+		form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original)}',\
+												'origin': post.origin + f';http://localhost:8000/author/{author_original.id}/posts/{post_id}'})
+
+		return render(request, "profile/create_post.html", {'form':form})
+	else:
+		form = PostForm(data=request.POST)
+		form.instance.author = author_share
+		if form.is_valid():
+			post_share = form.save(commit=False)
+			post_share.save()
+			return redirect('Profile:posts', author_share.id)
 
 def view_profile(request, author_id):
 	user = Profile.objects.get(user__username=request.user.username)
