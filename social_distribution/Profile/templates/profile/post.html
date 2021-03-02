@@ -1,2 +1,5 @@
 <h1>{{post.title}}</h1>
+<p>{{post.author}}</p>
+<p>{{post.origin}}</p>
 <p>{{post.content}}</p>
+<a href="{% url 'Profile:share_post' post_id=post.id %}">Share this post!</a>
