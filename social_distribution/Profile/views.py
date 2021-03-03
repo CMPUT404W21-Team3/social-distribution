@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.views import generic
 from django.http import HttpResponseForbidden
 from django.forms import ModelForm
+import commonmark
 # Create your views here.
 
 from .forms import UserForm, ProfileForm, SignUpForm, PostForm
@@ -126,7 +127,13 @@ def posts(request, author_id):
 def post(request, author_id, post_id):
 	current_user = request.user
 	post = get_object_or_404(Post, id=post_id, author__id=author_id)
-	return render(request, 'profile/post.html', {'post':post, 'current_user':current_user})
+	if post.content_type == Post.ContentType.PLAIN:
+		content = post.content
+	if post.content_type == Post.ContentType.MARKDOWN:
+		content = commonmark.commonmark(post.content)
+	else:
+		content = 'Content type not supported yet'
+	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user})
 
 class CreatePostView(generic.CreateView):
 	model = Post
