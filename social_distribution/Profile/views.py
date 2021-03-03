@@ -22,7 +22,8 @@ def home(request):
 	-------
 	Render to the home.html
 	"""
-	return render(request, 'profile/home.html')
+	posts = Post.objects.all().order_by('-timestamp')
+	return render(request, 'profile/home.html', {'posts':posts})
 
 @login_required(login_url='/login/')
 def update_profile(request):
