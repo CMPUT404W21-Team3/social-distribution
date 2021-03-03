@@ -25,8 +25,20 @@ def home(request):
 	-------
 	Render to the home.html
 	"""
-	posts = Post.objects.all().order_by('-timestamp')
-	return render(request, 'profile/home.html', {'posts':posts})
+	# Grab all public posts
+	public_posts = Post.objects.filter(visibility='PUBLIC').order_by('-timestamp')
+
+	# Grab self posts
+	self_posts = Post.objects.filter(author=request.user.profile).order_by('-timestamp')
+
+	# Grab friend's posts
+	friends = Profile.objects.get(user__username=request.user.username).friends.all()
+	friends_posts = Post.objects.filter(visibility='FRIENDS').filter(author__in=friends).order_by('-timestamp')
+
+	# Merge posts, sort them
+	posts = public_posts | self_posts | friends_posts
+
+	return render(request, 'profile/home.html', {'posts': posts})
 
 @login_required(login_url='/login/')
 def update_profile(request):
@@ -84,12 +96,13 @@ def signup(request):
 
 
 def list(request):
-	# Fetch friend requests and friends
+	# Fetch friend requests, friends and following
 	friend_requests = FriendRequest.objects.filter(receiver=request.user.username)
 	user = Profile.objects.get(user__username=request.user.username)
 	friends = user.friends.all()
+	following = user.following.all()
 
-	return render(request, 'profile/list.html', {'friend_requests': friend_requests, 'friends': friends})
+	return render(request, 'profile/list.html', {'friend_requests': friend_requests, 'friends': friends, 'following': following})
 
 def accept(request):
 	# Delete that request
@@ -138,7 +151,7 @@ def edit_post(request, post_id):
 	post = Post.objects.get(id=post_id)
 	if post.author.id != request.user.profile.id:
 		return HttpResponseForbidden
-	
+
 	if request.method == 'POST':
 		post_form = PostForm(request.POST, instance=post)
 		if post_form.is_valid():
@@ -184,6 +197,21 @@ def view_profile(request, author_id):
 
 	if request.method == "GET":
 		return render(request, 'profile/view_profile.html', {'author': author, 'posts': friend_posts, 'friend_status': friend_status})
+
+# TODO: check if request has already been made
+def friend_request(request, author_id):
+    # Create request object
+    receiver = Profile.objects.get(user__id=author_id)
+    friend_request = FriendRequest(type='follow', sender=request.user.username, receiver=receiver)
+
+    # Add to database
+    friend_request.save()
+
+    # Add the receiver to the sender's following list
+    user = Profile.objects.get(user__username=request.user.username)
+    user.following.add(receiver)
+
+    return redirect('Profile:view_profile', author_id)
 
 def remove_friend(request, author_id):
 	user = Profile.objects.get(user__username=request.user.username)
