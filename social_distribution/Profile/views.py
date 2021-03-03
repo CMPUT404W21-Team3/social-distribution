@@ -27,14 +27,14 @@ def home(request):
 	Render to the home.html
 	"""
 	# Grab all public posts
-	public_posts = Post.objects.filter(visibility='PUBLIC').order_by('-timestamp')
+	public_posts = Post.objects.filter(visibility='PUBLIC', unlisted=False).order_by('-timestamp')
 
 	# Grab self posts
-	self_posts = Post.objects.filter(author=request.user.profile).order_by('-timestamp')
+	self_posts = Post.objects.filter(author=request.user.profile, unlisted=False).order_by('-timestamp')
 
 	# Grab friend's posts
 	friends = Profile.objects.get(user__username=request.user.username).friends.all()
-	friends_posts = Post.objects.filter(visibility='FRIENDS').filter(author__in=friends).order_by('-timestamp')
+	friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
 
 	# Merge posts, sort them
 	posts = public_posts | self_posts | friends_posts
@@ -122,6 +122,8 @@ def decline(request):
 def posts(request, author_id):
 	author = Profile.objects.get(id=author_id)
 	posts = author.posts.all()
+	if author.id != request.user.profile.id: # Only show unlisted posts if viewed by the owner
+		posts.filter(unlisted=False)
 	return render(request, 'profile/posts.html', {'posts':posts, 'author':author})
 
 def post(request, author_id, post_id):
@@ -138,7 +140,7 @@ def post(request, author_id, post_id):
 class CreatePostView(generic.CreateView):
 	model = Post
 	template_name = 'profile/create_post.html'
-	fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility']
+	fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility', 'unlisted']
 
 	def form_valid(self, form):
 		author = self.request.user.profile
@@ -149,7 +151,7 @@ class CreatePostView(generic.CreateView):
 class PostForm(ModelForm):
     class Meta:
         model = Post
-        fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility']
+        fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility', 'unlisted']
 
 @login_required(login_url='/login/')
 def edit_post(request, post_id):
