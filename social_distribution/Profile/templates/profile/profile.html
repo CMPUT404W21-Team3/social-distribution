@@ -1,7 +1,73 @@
-<form method="post">
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- <form method="post">
   {% csrf_token %}
   <h2>Edit your profile, {{ user.username }}</h2>
   {{ user_form.as_p }}
   {{ profile_form.as_p }}
   <button type="submit">Save changes</button>
+</form> -->
+
+<!-- form -->
+<form class="row g-3 profile-form" method="post">
+  {% csrf_token %}
+  <div class="row g-3">
+    <!-- first and last name -->
+    <div class="col-md-3">
+      <div class="input-group">
+        <span class="input-group-text">First name</span>
+        <input type="text" aria-label="First name" class="form-control" name="first_name" value="{{user_form.first_name.value}}">
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="input-group">
+        <span class="input-group-text">Last name</span>
+        <input type="text" aria-label="Last name" class="form-control" name="last_name" value="{{user_form.last_name.value}}">
+      </div>
+    </div>
+  </div>
+    
+  <div class="row g-3">
+    <div class="col-md-3">
+      <div class="input-group">
+        <span class="input-group-text">Email Address</span>
+        <input type="email" aria-label="Email address" class="form-control" name="email" value="{{user_form.email.value}}">
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="input-group">
+        <span class="input-group-text">Birth date</span>
+        <input type="date" aria-label="Birth date" class="form-control" name="birth_date" value={{profile_form.birth_date.value}}>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-4">
+      <div class="input-group">
+        <span class="input-group-text">Location</span>
+        <input type="text" aria-label="Location" class="form-control" name="location" value="{{profile_form.location.value}}">
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-4">
+      <div class="input-group">
+        <span class="input-group-text">Bio</span>
+        <textarea class="form-control" aria-label="Bio" name="bio">{{profile_form.bio.value}}</textarea>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row g-3">
+    <div class="col-md-2">
+      <a href="/" class="btn btn-success">Cancel</a>
+      <button type="submit" class="btn btn-success">Save Changes</button>
+    </div>
+  </div>
 </form>
+
+{% endblock %}

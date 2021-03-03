@@ -87,7 +87,8 @@ nav div div ul {
     margin: 16px 16px 0 16px;
 }
 
-.post-button a {
-    text-decoration: none;
-    color: #198754;
+.profile-form {
+    margin: 8px auto;
+    width: fit-content;
 }
+
