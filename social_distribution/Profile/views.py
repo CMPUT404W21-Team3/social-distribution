@@ -180,9 +180,10 @@ def view_profile(request, author_id):
 	user = Profile.objects.get(user__username=request.user.username)
 	author = Profile.objects.get(user_id=author_id)
 	friend_status = user.friends.filter(user_id=author_id).exists()
+	friend_posts = author.posts.all()
 
 	if request.method == "GET":
-		return render(request, 'profile/view_profile.html', {'author': author, 'posts': posts, 'friend_status': friend_status})
+		return render(request, 'profile/view_profile.html', {'author': author, 'posts': friend_posts, 'friend_status': friend_status})
 
 def remove_friend(request, author_id):
 	user = Profile.objects.get(user__username=request.user.username)
