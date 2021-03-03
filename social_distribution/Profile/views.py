@@ -83,13 +83,11 @@ def signup(request):
 		form = SignUpForm(request.POST)
 		if form.is_valid():
 			user = form.save()
-			user.refresh_from_db()  # load the profile instance created by the signal
+			user.refresh_from_db()
+			user.is_active = False  # load the profile instance created by the signal
 			user.save()
-			raw_password = form.cleaned_data.get('password1')
-			user = authenticate(username=user.username, password=raw_password)
-			login(request, user)
 			messages.success(request, 'Your user was successfully created!')
-			return redirect('Profile:profile')
+			return redirect('Profile:login')
 	else:
 		form = SignUpForm()
 	return render(request, 'profile/signup.html', {'form': form})
