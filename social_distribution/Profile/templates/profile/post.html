@@ -1,0 +1,15 @@
+<h1>{{post.title}}</h1>
+<p>{{post.author}}</p>
+<p>{{post.origin}}</p>
+<p>{{post.content}}</p>
+
+<div>
+    <a href="{% url 'Profile:share_post' post_id=post.id %}">Share this post!</a>
+</div>
+
+{% if post.author.id == current_user.profile.id %}
+    <div>
+        <a href="{% url 'Profile:edit_post' post_id=post.id %}">Edit this post</a></br>
+        <a href="{% url 'Profile:delete_post' post_id=post.id %}">Delete this post</a>
+    <div>
+{% endif %}

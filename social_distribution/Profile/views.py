@@ -1,13 +1,17 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate
-from django.shortcuts import render, redirect
+from django.db.models.query import InstanceCheckMeta
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.models import User
+from django.views import generic
+from django.http import HttpResponseForbidden
+from django.forms import ModelForm
 # Create your views here.
 
-from .forms import UserForm, ProfileForm, SignUpForm
+from .forms import UserForm, ProfileForm, SignUpForm, PostForm
 # Potentially problematic
-from .models import Profile
+from .models import Profile, Post
 from Search.models import FriendRequest
 
 
@@ -21,7 +25,8 @@ def home(request):
 	-------
 	Render to the home.html
 	"""
-	return render(request, 'profile/home.html')
+	posts = Post.objects.all().order_by('-timestamp')
+	return render(request, 'profile/home.html', {'posts':posts})
 
 @login_required(login_url='/login/')
 def update_profile(request):
@@ -101,3 +106,87 @@ def decline(request):
 	# Delete that request
 	FriendRequest.objects.filter(receiver=request.user.username).filter(sender=request.POST.get('sender', '')).delete()
 	return redirect('/friends')
+
+def posts(request, author_id):
+	author = Profile.objects.get(id=author_id)
+	posts = author.posts.all()
+	return render(request, 'profile/posts.html', {'posts':posts, 'author':author})
+
+def post(request, author_id, post_id):
+	current_user = request.user
+	post = get_object_or_404(Post, id=post_id, author__id=author_id)
+	return render(request, 'profile/post.html', {'post':post, 'current_user':current_user})
+
+class CreatePostView(generic.CreateView):
+	model = Post
+	template_name = 'profile/create_post.html'
+	fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility']
+
+	def form_valid(self, form):
+		author = self.request.user.profile
+		self.success_url = '/author/' + str(author.id) + '/posts'
+		form.instance.author = author
+		return super().form_valid(form)
+
+class PostForm(ModelForm):
+    class Meta:
+        model = Post
+        fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility']
+
+@login_required(login_url='/login/')
+def edit_post(request, post_id):
+	post = Post.objects.get(id=post_id)
+	if post.author.id != request.user.profile.id:
+		return HttpResponseForbidden
+	
+	if request.method == 'POST':
+		post_form = PostForm(request.POST, instance=post)
+		if post_form.is_valid():
+			post_form.save()
+			return redirect('Profile:post', author_id=post.author.id, post_id=post.id)
+		else:
+			messages.error(request, 'Please correct the error')
+	else:
+		post_form = PostForm(instance=post)
+	return render(request, 'profile/edit_post.html', {'post_form':post_form})
+
+@login_required(login_url='/login/')
+def delete_post(request, post_id):
+	post = Post.objects.get(id=post_id)
+	if post.author.id != request.user.profile.id:
+		return HttpResponseForbidden
+	else:
+		post.delete()
+		return redirect('Profile:posts', author_id=request.user.profile.id)
+
+def share_post(request, post_id):
+	post = Post.objects.get(id=post_id)
+	author_original = post.author
+	author_share = request.user.profile
+	if request.method == "GET":
+		form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original)}',\
+												'origin': post.origin + f';http://localhost:8000/author/{author_original.id}/posts/{post_id}'})
+
+		return render(request, "profile/create_post.html", {'form':form})
+	else:
+		form = PostForm(data=request.POST)
+		form.instance.author = author_share
+		if form.is_valid():
+			post_share = form.save(commit=False)
+			post_share.save()
+			return redirect('Profile:posts', author_share.id)
+
+def view_profile(request, author_id):
+	user = Profile.objects.get(user__username=request.user.username)
+	author = Profile.objects.get(user_id=author_id)
+	friend_status = user.friends.filter(user_id=author_id).exists()
+
+	if request.method == "GET":
+		return render(request, 'profile/view_profile.html', {'author': author, 'posts': posts, 'friend_status': friend_status})
+
+def remove_friend(request, author_id):
+	user = Profile.objects.get(user__username=request.user.username)
+	to_delete = Profile.objects.get(user__id=author_id)
+	user.friends.remove(to_delete)
+
+	return redirect('Profile:view_profile', author_id)

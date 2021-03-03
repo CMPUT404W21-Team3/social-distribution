@@ -3,7 +3,7 @@
 <p> Results page for query: {{ query }}</p>
 {% for user in users %}
     <li>
-      {{ user.username }}
+      <a href="{% url 'Profile:view_profile' author_id=user.id %}">{{ user.username }}</a>
       <form action="/sendrequest" method="POST">
         {% csrf_token %}
         <input type="hidden" name="query" id="query" value="{{ query }}" />
@@ -15,4 +15,4 @@
     </li>
 {% endfor %}
 
-<a href="/">Return</a>
+<a href="javascript:history.back()">Return</a>
