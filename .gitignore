@@ -142,3 +142,4 @@ cython_debug/
 # Local vscode settinsg
 .vscode/
 .idea/
+social_distribution/db.sqlite3
