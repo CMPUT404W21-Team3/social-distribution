@@ -1,8 +1,5 @@
 # From: https://github.com/github/gitignore/blob/master/Python.gitignore
 
-# Database
-db.sqlite3
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -63,6 +60,8 @@ cover/
 # Django stuff:
 *.log
 local_settings.py
+db.sqlite3
+db.sqlite3-journal
 
 # Flask stuff:
 instance/
@@ -142,3 +141,4 @@ cython_debug/
 
 # Local vscode settinsg
 .vscode/
+.idea/
