@@ -219,3 +219,8 @@ def remove_friend(request, author_id):
 	user.friends.remove(to_delete)
 
 	return redirect('Profile:view_profile', author_id)
+
+
+def like_post(request):
+
+	return

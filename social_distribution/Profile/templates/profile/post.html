@@ -2,6 +2,10 @@
 <p>{{post.author}}</p>
 <p>{{post.origin}}</p>
 <p>{{post.content}}</p>
+<br>
+<p>Likes:{{post.likes_count}}</p><br>
+
+
 
 <div>
     <a href="{% url 'Profile:share_post' post_id=post.id %}">Share this post!</a>

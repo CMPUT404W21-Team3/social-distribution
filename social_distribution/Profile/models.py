@@ -62,6 +62,9 @@ class Post(models.Model):
 
     unlisted = models.BooleanField(default=False) # used for images so that they don't show up in timelines
 
+    # count for likes made to the post
+    likes_count = models.IntegerField(default=0)
+
 class PostCategory(models.Model):
     name = models.CharField(max_length=50)
 
