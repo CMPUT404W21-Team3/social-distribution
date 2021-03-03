@@ -17,7 +17,6 @@ def get_profile(request, id):
     try:
         profile = Profile.objects.get(user_id=id)
     except Profile.DoesNotExist:
-        print("NOT EXIST")
         return HttpResponse(status=404)
 
     if request.method == 'GET':
