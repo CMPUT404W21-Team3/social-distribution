@@ -14,7 +14,7 @@ class Profile(models.Model):
 
     # Not sure if this is the best way to do this
     friends = models.ManyToManyField('self')
-    followers = models.ManyToManyField('self', symmetrical=False)
+    following = models.ManyToManyField('self', symmetrical=False)
 
     def __str__(self):
         return self.user.username
