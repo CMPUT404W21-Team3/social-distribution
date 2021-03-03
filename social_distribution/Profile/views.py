@@ -1,9 +1,12 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate
+from django.db.models.query import InstanceCheckMeta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.views import generic
+from django.http import HttpResponseForbidden
+from django.forms import ModelForm
 # Create your views here.
 
 from .forms import UserForm, ProfileForm, SignUpForm, PostForm
@@ -22,7 +25,8 @@ def home(request):
 	-------
 	Render to the home.html
 	"""
-	return render(request, 'profile/home.html')
+	posts = Post.objects.all().order_by('-timestamp')
+	return render(request, 'profile/home.html', {'posts':posts})
 
 @login_required(login_url='/login/')
 def update_profile(request):
@@ -109,8 +113,9 @@ def posts(request, author_id):
 	return render(request, 'profile/posts.html', {'posts':posts, 'author':author})
 
 def post(request, author_id, post_id):
-	post = Post.objects.get(id=post_id)
-	return render(request, 'profile/post.html', {'post':post})
+	current_user = request.user
+	post = get_object_or_404(Post, id=post_id, author__id=author_id)
+	return render(request, 'profile/post.html', {'post':post, 'current_user':current_user})
 
 class CreatePostView(generic.CreateView):
 	model = Post
@@ -122,6 +127,37 @@ class CreatePostView(generic.CreateView):
 		self.success_url = '/author/' + str(author.id) + '/posts'
 		form.instance.author = author
 		return super().form_valid(form)
+
+class PostForm(ModelForm):
+    class Meta:
+        model = Post
+        fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility']
+
+@login_required(login_url='/login/')
+def edit_post(request, post_id):
+	post = Post.objects.get(id=post_id)
+	if post.author.id != request.user.profile.id:
+		return HttpResponseForbidden
+	
+	if request.method == 'POST':
+		post_form = PostForm(request.POST, instance=post)
+		if post_form.is_valid():
+			post_form.save()
+			return redirect('Profile:post', author_id=post.author.id, post_id=post.id)
+		else:
+			messages.error(request, 'Please correct the error')
+	else:
+		post_form = PostForm(instance=post)
+	return render(request, 'profile/edit_post.html', {'post_form':post_form})
+
+@login_required(login_url='/login/')
+def delete_post(request, post_id):
+	post = Post.objects.get(id=post_id)
+	if post.author.id != request.user.profile.id:
+		return HttpResponseForbidden
+	else:
+		post.delete()
+		return redirect('Profile:posts', author_id=request.user.profile.id)
 
 def share_post(request, post_id):
 	post = Post.objects.get(id=post_id)
