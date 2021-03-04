@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.views import generic
 from django.http import HttpResponseForbidden
 from django.forms import ModelForm
+import commonmark
 # Create your views here.
 
 from .forms import UserForm, ProfileForm, SignUpForm, PostForm
@@ -26,14 +27,14 @@ def home(request):
 	Render to the home.html
 	"""
 	# Grab all public posts
-	public_posts = Post.objects.filter(visibility='PUBLIC').order_by('-timestamp')
+	public_posts = Post.objects.filter(visibility='PUBLIC', unlisted=False).order_by('-timestamp')
 
 	# Grab self posts
-	self_posts = Post.objects.filter(author=request.user.profile).order_by('-timestamp')
+	self_posts = Post.objects.filter(author=request.user.profile, unlisted=False).order_by('-timestamp')
 
 	# Grab friend's posts
 	friends = Profile.objects.get(user__username=request.user.username).friends.all()
-	friends_posts = Post.objects.filter(visibility='FRIENDS').filter(author__in=friends).order_by('-timestamp')
+	friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
 
 	# Merge posts, sort them
 	posts = public_posts | self_posts | friends_posts
@@ -83,13 +84,11 @@ def signup(request):
 		form = SignUpForm(request.POST)
 		if form.is_valid():
 			user = form.save()
-			user.refresh_from_db()  # load the profile instance created by the signal
+			user.refresh_from_db()
+			user.is_active = False  # load the profile instance created by the signal
 			user.save()
-			raw_password = form.cleaned_data.get('password1')
-			user = authenticate(username=user.username, password=raw_password)
-			login(request, user)
 			messages.success(request, 'Your user was successfully created!')
-			return redirect('Profile:profile')
+			return redirect('Profile:login')
 	else:
 		form = SignUpForm()
 	return render(request, 'profile/signup.html', {'form': form})
@@ -123,17 +122,25 @@ def decline(request):
 def posts(request, author_id):
 	author = Profile.objects.get(id=author_id)
 	posts = author.posts.all()
+	if author.id != request.user.profile.id: # Only show unlisted posts if viewed by the owner
+		posts.filter(unlisted=False)
 	return render(request, 'profile/posts.html', {'posts':posts, 'author':author})
 
 def post(request, author_id, post_id):
 	current_user = request.user
 	post = get_object_or_404(Post, id=post_id, author__id=author_id)
-	return render(request, 'profile/post.html', {'post':post, 'current_user':current_user})
+	if post.content_type == Post.ContentType.PLAIN:
+		content = post.content
+	if post.content_type == Post.ContentType.MARKDOWN:
+		content = commonmark.commonmark(post.content)
+	else:
+		content = 'Content type not supported yet'
+	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user})
 
 class CreatePostView(generic.CreateView):
 	model = Post
 	template_name = 'profile/create_post.html'
-	fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility']
+	fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility', 'unlisted']
 
 	def form_valid(self, form):
 		author = self.request.user.profile
@@ -144,7 +151,7 @@ class CreatePostView(generic.CreateView):
 class PostForm(ModelForm):
     class Meta:
         model = Post
-        fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility']
+        fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility', 'unlisted']
 
 @login_required(login_url='/login/')
 def edit_post(request, post_id):
@@ -193,9 +200,10 @@ def view_profile(request, author_id):
 	user = Profile.objects.get(user__username=request.user.username)
 	author = Profile.objects.get(user_id=author_id)
 	friend_status = user.friends.filter(user_id=author_id).exists()
+	friend_posts = author.posts.all()
 
 	if request.method == "GET":
-		return render(request, 'profile/view_profile.html', {'author': author, 'posts': posts, 'friend_status': friend_status})
+		return render(request, 'profile/view_profile.html', {'author': author, 'posts': friend_posts, 'friend_status': friend_status})
 
 # TODO: check if request has already been made
 def friend_request(request, author_id):
