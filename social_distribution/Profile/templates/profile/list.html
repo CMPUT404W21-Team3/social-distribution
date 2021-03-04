@@ -4,6 +4,12 @@
   <li>{{ f.user }} </li><a href="{% url 'Profile:view_profile' author_id=f.user.id %}">View Profile</a>
 {% endfor %}
 
+<h2>{{user.username }} Following</h2>
+
+{% for f in following %}
+  <li>{{ f.user }} </li><a href="{% url 'Profile:view_profile' author_id=f.user.id %}">View Profile</a>
+{% endfor %}
+
 <h2>Pending Requests</h2>
 <!-- List pending friend requests -->
 {% for r in friend_requests %}
@@ -19,4 +25,4 @@
     <button type="submit">Decline</button>
   </form>
 {% endfor %}
-<a href="/">Return</a>
+<a href="/">Home</a>
