@@ -8,7 +8,7 @@ from django.views import generic
 from django.http import HttpResponseForbidden
 from django.forms import ModelForm
 from django.views.decorators.cache import cache_page
-import commonmark, requests
+import commonmark, requests, ast
 # Create your views here.
 
 from .forms import UserForm, ProfileForm, SignUpForm, PostForm
@@ -151,10 +151,6 @@ class CreatePostView(generic.CreateView):
 		form.instance.author = author
 		return super().form_valid(form)
 
-class PostForm(ModelForm):
-    class Meta:
-        model = Post
-        fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility', 'unlisted']
 
 @login_required(login_url='/login/')
 def edit_post(request, post_id):
@@ -225,6 +221,25 @@ def view_github_activity(request):
 					activities.append(activity)
 
 		return render(request, 'profile/github_activity.html', {'github_activity': activities})
+
+def post_github(request):
+	author = request.user.profile
+	if request.method == "GET":
+		content = ast.literal_eval(request.GET.get("activity"))
+		form = PostForm(initial={
+			'title': 'Sharing an activity from Github!',
+			'origin': '',
+			'source': content['url'],
+			'content': f"{content['message']}\nTimestamp: {content['timestamp']}\nSource:{content['url']}"
+			})
+		return render(request, "profile/create_post.html", {'form':form})
+	else:
+		form = PostForm(data=request.POST)
+		form.instance.author = author
+		if form.is_valid():
+			post = form.save(commit=False)
+			post.save()
+			return redirect('Profile:posts', author.id)
 
 
 def view_profile(request, author_id):
