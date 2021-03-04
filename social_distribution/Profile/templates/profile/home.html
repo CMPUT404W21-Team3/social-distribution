@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
+
   <div class="home">
     <h2 class="fst-italic">Welcome, {{ user.get_full_name }} <small>@{{ user.username }}</small>!</h2>
     <p>Your birth date: {{ user.profile.birth_date }}</p>
@@ -9,4 +10,15 @@
     <a class="btn btn-outline-primary" href="/friends" role="button">Friends List</a>
     <a class="btn btn-outline-primary" href="/author/{{ user.profile.id }}/posts" role="button">My Posts</a>
   </div>
+
+   <h3> Activity Stream </h3>
+  <ul>
+  {% for post in posts %}
+  	<li>
+        <h4><a href="/author/{{post.author.id}}/posts/{{post.id}}">{{post.title}}</a></h4>
+        <p><i>{{post.timestamp}}</i></p>
+  	</li>
+  {% endfor %}
+  </ul>
+
 {% endblock %}
