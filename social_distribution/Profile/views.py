@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.views import generic
 from django.http import HttpResponseForbidden
 from django.forms import ModelForm
+from django.views.decorators.cache import cache_page
 import commonmark, requests
 # Create your views here.
 
@@ -14,6 +15,8 @@ from .forms import UserForm, ProfileForm, SignUpForm, PostForm
 # Potentially problematic
 from .models import Profile, Post
 from Search.models import FriendRequest
+
+from .helpers import timestamp_beautify
 
 
 @login_required(login_url='/login/')
@@ -196,12 +199,14 @@ def share_post(request, post_id):
 			post_share.save()
 			return redirect('Profile:posts', author_share.id)
 
+@cache_page(60 * 5)
 def view_github_activity(request):
 	#get the current user's github username if available
+	#need a helper function to get timestamp in a better format
 	github_username = str(request.user.profile.github)
 	if github_username != "":
 		github_url = f'https://api.github.com/users/{github_username}/events/public'
-		response = requests.get(github_url, headers={'Authorization': 'ab28cc11e711b0a3d405c0b30ff7653094c0de23'})
+		response = requests.get(github_url)
 		jsonResponse = response.json()
 
 		activities = []
@@ -211,14 +216,13 @@ def view_github_activity(request):
 			if event["type"] == "PushEvent":
 				payload = event["payload"]
 				commits = payload["commits"]
+				activity["timestamp"] = timestamp_beautify(event["created_at"])
 				
 				for commit in commits:
-					url = requests.get(commit["url"], headers={'Authorization': 'ab28cc11e711b0a3d405c0b30ff7653094c0de23'}).json()["html_url"]
+					url = commit["url"].replace("api.github.com", "github.com").replace("repos/", "").replace("/commits/", "/commit/")
 					activity["message"] = commit["message"]
 					activity["url"] = url
 					activities.append(activity)
-					activity = {}
-					break
 
 		return render(request, 'profile/github_activity.html', {'github_activity': activities})
 
