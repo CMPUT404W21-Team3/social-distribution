@@ -12,7 +12,7 @@ class UserForm(forms.ModelForm):
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ('bio', 'location', 'birth_date')
+        fields = ('bio', 'location', 'birth_date', 'github')
 
 class SignUpForm(UserCreationForm):
     #birth_date = forms.DateField(help_text='Required. Format: YYYY-MM-DD')

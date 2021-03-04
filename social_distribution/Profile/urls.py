@@ -24,4 +24,6 @@ urlpatterns = [
     path('author/<int:author_id>/posts/<int:post_id>', Profile_views.post, name='post'),
     path('view_profile/<int:author_id>', Profile_views.view_profile, name='view_profile'),
     path('view_profile/<int:author_id>/remove_friend', Profile_views.remove_friend, name='remove_friend'), # remove a friend
+    path('github-activity/', Profile_views.view_github_activity, name='view_github_activity'),
+    path('post-github/', Profile_views.post_github, name='post_github'),
 ]
