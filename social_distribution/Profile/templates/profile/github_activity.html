@@ -3,6 +3,15 @@
 {% block content %}
 
 <h1>Github Activity Stream</h1>
-{{github_activity}}
+{% for activity in github_activity %}
+<div class="col">
+    <div class="card h-100">
+        <div class="card-body">
+            <h5 class="card-title"><a href="/author/{{author.id}}/posts/{{post.id}}">{{activity.message}}</a></h5>
+            <p class="card-text">{{activity.url}}</p>
+        </div>
+    </div>
+</div>
+{% endfor %}
 
 {% endblock %}

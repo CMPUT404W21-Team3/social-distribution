@@ -201,9 +201,26 @@ def view_github_activity(request):
 	github_username = str(request.user.profile.github)
 	if github_username != "":
 		github_url = f'https://api.github.com/users/{github_username}/events/public'
-		response = requests.get(github_url)
+		response = requests.get(github_url, headers={'Authorization': 'ab28cc11e711b0a3d405c0b30ff7653094c0de23'})
 		jsonResponse = response.json()
-		return render(request, 'profile/github_activity.html', {'github_activity': jsonResponse})
+
+		activities = []
+
+		for event in jsonResponse:
+			activity = {}
+			if event["type"] == "PushEvent":
+				payload = event["payload"]
+				commits = payload["commits"]
+				
+				for commit in commits:
+					url = requests.get(commit["url"], headers={'Authorization': 'ab28cc11e711b0a3d405c0b30ff7653094c0de23'}).json()["html_url"]
+					activity["message"] = commit["message"]
+					activity["url"] = url
+					activities.append(activity)
+					activity = {}
+					break
+
+		return render(request, 'profile/github_activity.html', {'github_activity': activities})
 
 
 def view_profile(request, author_id):
