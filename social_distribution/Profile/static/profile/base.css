@@ -92,3 +92,20 @@ nav div div ul {
     width: fit-content;
 }
 
+.friend-list h2 {
+    margin: 12px;
+    width: fit-content;
+}
+
+.friend-list p {
+    margin: 12px;
+    width: fit-content;
+}
+
+.request {
+    margin: 0 10px;
+}
+
+.return {
+    margin: 11px;
+}
