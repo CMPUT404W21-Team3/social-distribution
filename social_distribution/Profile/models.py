@@ -12,7 +12,8 @@ class Profile(models.Model):
     bio = models.TextField(max_length=500, blank=True)
     location = models.CharField(max_length=30, blank=True)
     birth_date = models.DateField(null=True, blank=True)
-
+    github = models.CharField(max_length=50, blank=True)
+    
     # Not sure if this is the best way to do this
     friends = models.ManyToManyField('self')
     following = models.ManyToManyField('self', symmetrical=False)
