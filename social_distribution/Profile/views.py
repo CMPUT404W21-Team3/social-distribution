@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.views import generic
 from django.http import HttpResponseForbidden
 from django.forms import ModelForm
-import commonmark
+import commonmark, requests
 # Create your views here.
 
 from .forms import UserForm, ProfileForm, SignUpForm, PostForm
@@ -195,6 +195,16 @@ def share_post(request, post_id):
 			post_share = form.save(commit=False)
 			post_share.save()
 			return redirect('Profile:posts', author_share.id)
+
+def view_github_activity(request):
+	#get the current user's github username if available
+	github_username = str(request.user.profile.github)
+	if github_username != "":
+		github_url = f'https://api.github.com/users/{github_username}/events/public'
+		response = requests.get(github_url)
+		jsonResponse = response.json()
+		return render(request, 'profile/github_activity.html', {'github_activity': jsonResponse})
+
 
 def view_profile(request, author_id):
 	user = Profile.objects.get(user__username=request.user.username)
