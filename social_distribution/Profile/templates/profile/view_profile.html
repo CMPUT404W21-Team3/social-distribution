@@ -16,12 +16,9 @@
 				<button type="submit">Remove Friend</button>
 			</form>
 		{% else %}
-			<form action="/sendrequest" method="POST">
+			<form action="{{ author.user.id }}/send_request" method="POST">
 				{% csrf_token %}
-				<input type="hidden" name="query" id="query" value="{{ query }}" />
-				<input type="hidden" name="receiver" id="receiver" value="{{ user.username }}" />
-				<!-- Very buggy -->
-				<input type="hidden" name="users" id="users" value="{{ users }}" />
+				<input type="hidden" name="receiver" id="author" value="{{ author.user.id }}" />
 				<button type="submit">Send Friend Request</button>
 			</form>
 		{% endif %}

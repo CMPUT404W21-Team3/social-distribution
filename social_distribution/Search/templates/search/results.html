@@ -4,14 +4,6 @@
 {% for user in users %}
     <li>
       <a href="{% url 'Profile:view_profile' author_id=user.id %}">{{ user.username }}</a>
-      <form action="/sendrequest" method="POST">
-        {% csrf_token %}
-        <input type="hidden" name="query" id="query" value="{{ query }}" />
-        <input type="hidden" name="receiver" id="receiver" value="{{ user.username }}" />
-        <!-- Very buggy -->
-        <input type="hidden" name="users" id="users" value="{{ users }}" />
-        <button type="submit">Send Friend Request</button>
-      </form>
     </li>
 {% endfor %}
 

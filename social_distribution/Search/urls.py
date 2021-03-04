@@ -7,5 +7,4 @@ app_name = 'Search'
 
 urlpatterns = [
     path('search', Search_views.results, name='results'), # see results of search
-    path('sendrequest', Search_views.friend_request, name='friend_request'), # send a friend request
 ]
