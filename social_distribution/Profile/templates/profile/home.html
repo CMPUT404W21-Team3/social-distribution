@@ -4,11 +4,11 @@
 
   <div class="home">
     <h2 class="fst-italic">Welcome, {{ user.get_full_name }} <small>@{{ user.username }}</small>!</h2>
-    <p>Your birth date: {{ user.profile.birth_date }}</p>
+    <p>Your birth date: {{ user.author.birth_date }}</p>
     <!-- <a href="/friends">View Friends List</a></br>
     <a href="/author/{{ user.profile.id }}/posts">View My Posts</a> -->
     <a class="btn btn-outline-primary" href="/friends" role="button">Friends List</a>
-    <a class="btn btn-outline-primary" href="/author/{{ user.profile.id }}/posts" role="button">My Posts</a>
+    <a class="btn btn-outline-primary" href="/author/{{ user.author.id }}/view_posts" role="button">My Posts</a>
     <a class="btn btn-outline-primary" href="/github-activity" role="button">My Github Activity</a>
   </div>
 
@@ -16,7 +16,7 @@
   <ul>
   {% for post in posts %}
   	<li>
-        <h4><a href="/author/{{post.author.id}}/posts/{{post.id}}">{{post.title}}</a></h4>
+        <h4><a href="/author/{{post.author.id}}/view_post/{{post.id}}">{{ post.title }}</a></h4>
         <p><i>{{post.timestamp}}</i></p>
   	</li>
   {% endfor %}

@@ -3,5 +3,6 @@ from rest_framework import routers
 from . import views
 
 urlpatterns = [
-    path('profile/<int:id>/', views.get_profile),
+    path('author/<str:author_id>/', views.get_author),
+    path('author/<str:author_id>/posts/<str:post_id>', views.get_post),
 ]
