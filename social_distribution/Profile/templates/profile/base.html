@@ -6,6 +6,9 @@
 		{% load static %}
 		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
 		<link rel="stylesheet" type="text/css" href="{% static 'profile/base.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet">
   	</head>
 
  	<body>
@@ -33,7 +36,7 @@
                 </li>
               {% endif %}
               </ul>
-              <form class="d-flex" action="search" method="POST">
+              <form class="d-flex" action="/search" method="POST">
                 {% csrf_token %}
                 <input class="form-control me-2" type="text" name="query" id="query" required placeholder="username" aria-label="Search">
                 <button class="btn btn-outline-light" type="submit" value="Search">Search</button>
