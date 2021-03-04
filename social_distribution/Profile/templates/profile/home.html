@@ -1,15 +1,16 @@
 {% extends 'base.html' %}
 
 {% block content %}
-  <form action="/search" method="POST">
-      {% csrf_token %}
-      <input type="text" name="query" id="query" required>
-      <input type="submit" value="Search">
-  </form>
-  <h2>Welcome, {{ user.get_full_name }} <small>@{{ user.username }}</small>!</h2>
-  <p>Your birth date: {{ user.profile.birth_date }}</p>
-  <a href="/friends">View Friends List</a></br>
-  <a href="/author/{{ user.profile.id }}/posts">View My Posts</a>
+
+  <div class="home">
+    <h2 class="fst-italic">Welcome, {{ user.get_full_name }} <small>@{{ user.username }}</small>!</h2>
+    <p>Your birth date: {{ user.profile.birth_date }}</p>
+    <!-- <a href="/friends">View Friends List</a></br>
+    <a href="/author/{{ user.profile.id }}/posts">View My Posts</a> -->
+    <a class="btn btn-outline-primary" href="/friends" role="button">Friends List</a>
+    <a class="btn btn-outline-primary" href="/author/{{ user.profile.id }}/posts" role="button">My Posts</a>
+  </div>
+
    <h3> Activity Stream </h3>
   <ul>
   {% for post in posts %}
@@ -19,4 +20,5 @@
   	</li>
   {% endfor %}
   </ul>
+
 {% endblock %}

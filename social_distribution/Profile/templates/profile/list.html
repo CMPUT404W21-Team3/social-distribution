@@ -1,22 +1,77 @@
-<h2>{{user.username }} Friends</h2>
-<!-- List friends -->
-{% for f in friends %}
-  <li>{{ f.user }} </li><a href="{% url 'Profile:view_profile' author_id=f.user.id %}">View Profile</a>
-{% endfor %}
+{% extends 'base.html' %}
 
-<h2>Pending Requests</h2>
-<!-- List pending friend requests -->
-{% for r in friend_requests %}
-  <li>Request from {{ r.sender }}</li>
-  <form action="/accept" method="POST">
-    {% csrf_token %}
-    <input type="hidden" name="sender" id="sender" value="{{ r.sender }}" />
-    <button type="submit">Accept</button>
-  </form>
-  <form action="/decline" method="POST">
-    {% csrf_token %}
-    <input type="hidden" name="sender" id="sender" value="{{ r.sender }}" />
-    <button type="submit">Decline</button>
-  </form>
-{% endfor %}
-<a href="/">Return</a>
+{% block content %}
+<div class="friend-list">
+  <h2 class="fst-italic">@{{user.username }}</h2>
+  <h2>Friends</h2>
+  <!-- List friends -->
+  <!-- {% for f in friends %}
+    <li>{{ f.user }} </li><a href="{% url 'Profile:view_profile' author_id=f.user.id %}">View Profile</a>
+  {% endfor %} -->
+
+  {% if friends %}
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+      {% for friend in friends %}
+        <div class="col">
+            <div class="card h-100">
+              <div class="card-body">
+                <h3 class="card-title">{{friend.user}}</h3>
+                <a href="{% url 'Profile:view_profile' author_id=friend.user.id %}" class="btn btn-primary">View Profile</a>
+              </div>
+            </div>
+        </div>
+      {% endfor %}
+        <!-- <div class="col">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">Special title treatment</h5>
+              <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+              <a href="#" class="btn btn-primary">Go somewhere</a>
+            </div>
+          </div>
+        </div> -->
+    </div>
+    {% else %}
+        <p>{{user.first_name}} {{user.last_name}} has no friends<p>
+    {% endif %}
+
+  <h2>Pending Requests</h2>
+  <!-- List pending friend requests -->
+  {% if friend_requests %}
+  <div class="row row-cols-auto">
+    {% for request in friend_requests %}
+      <div class="col">
+          <div class="card h-100 text-center">
+            <div class="card-body">
+              <h3 class="card-title">{{request.sender}}</h3>
+              <div class="container">
+                <div class="row">
+                  <div class="col-md-auto">
+                    <form class="request" action="/accept" method="POST">
+                      {% csrf_token %}
+                      <input type="hidden" name="sender" id="sender" value="{{ request.sender }}" />
+                      <button class="btn btn-success btn-sm" type="submit">Accept</button>
+                    </form>
+                  </div>
+                  <div class="col-md-auto">
+                    <form class="request" action="/decline" method="POST">
+                      {% csrf_token %}
+                      <input type="hidden" name="sender" id="sender" value="{{ request.sender }}" />
+                      <button class="btn btn-success btn-sm" type="submit">Decline</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% else %}
+      <p>No requests</p>
+  {% endif %}
+
+  <a href="/" class="btn btn-outline-success return">Return</a>
+
+</div>
+{% endblock %}
