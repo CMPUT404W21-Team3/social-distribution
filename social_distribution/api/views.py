@@ -6,28 +6,67 @@ from rest_framework.decorators import api_view
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 
-from .serializers import ProfileSerializer
-from Profile.models import Profile
+from .serializers import AuthorSerializer
+from Profile.models import Author, Post
 
 
 # Create your views here.
-
 @api_view(['GET', 'POST'])
-def get_profile(request, id):
+def get_author(request, author_id):
     """
-    Retrieve a profile.
+    Retrieve an author.
     """
     try:
-        profile = Profile.objects.get(user_id=id)
-    except Profile.DoesNotExist:
+        author = Author.objects.get(id=author_id)
+    except Author.DoesNotExist:
         return HttpResponse(status=404)
 
     if request.method == 'GET':
-        serializer = ProfileSerializer(profile)
+        serializer = AuthorSerializer(author)
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        serializer = ProfileSerializer(snippet, data=request.data)
+        # TODO: add authentication
+        serializer = AuthorSerializer(author, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'POST', 'DELETE', 'PUT'])
+def get_post(request, author_id, post_id):
+    """
+    Retrieve a post.
+    """
+    try:
+        post = Post.objects.get(id=post_id)
+    except Post.DoesNotExist:
+        return HttpResponse(status=404)
+
+    if request.method == 'GET':
+        if post.visibility != 'PUBLIC':
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        serializer = PostSerializer(post)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        # TODO: add authentication
+        serializer = PostSerializer(post, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        # TODO: add authentication
+        post.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # Create new post
+    elif request.method == 'PUT':
+        # TODO: add authentication
+        serializer = PostSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

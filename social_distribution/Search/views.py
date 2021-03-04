@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from .forms import SearchForm
 from .models import FriendRequest
 
-from Profile.models import Profile
+from Profile.models import Author
 
 # Create your views here.
 def results(request):
