@@ -18,9 +18,10 @@ class Author(models.Model):
     birth_date = models.DateField(null=True, blank=True)
     github = models.CharField(max_length=50, blank=True)
 
-    # Not sure if this is the best way to do this
+
     friends = models.ManyToManyField('self')
-    following = models.ManyToManyField('self', symmetrical=False)
+    following = models.ManyToManyField('self', symmetrical=False, related_name="following_list")
+    followers = models.ManyToManyField('self', symmetrical=False, related_name="follower_list")
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
@@ -116,3 +117,13 @@ class Comment(models.Model):
     )
 
     timestamp = models.DateTimeField(default=timezone.now)
+
+    # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
+    @property
+    def type(self):
+        return 'comment'
+
+    # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
+    @type.setter
+    def type(self, val):
+        pass
