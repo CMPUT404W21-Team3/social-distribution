@@ -1,3 +1,4 @@
+from django.contrib.auth import authenticate
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 
@@ -44,15 +45,30 @@ def get_post(request, author_id, post_id):
 
     # Create new post
     if request.method == 'PUT':
-        # TODO: add authentication
-        author = Author.objects.get(id=author_id)
-        instance = Post.objects.create(author=author, id=post_id)
-        serializer = PostSerializer(instance, data=request.data)
+        # See if credentials supplied
+        if 'password' not in request.data or 'username' not in request.data:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            # Log in with those credentials
+            username = request.data['username']
+            password = request.data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                if author_id == str(Author.objects.get(user__username=username).id):
+                    author = Author.objects.get(id=author_id)
+                    instance = Post.objects.create(author=author, id=post_id)
+                    serializer = PostSerializer(instance, data=request.data)
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                    if serializer.is_valid():
+                        serializer.save()
+                        return Response(serializer.data)
+                else:
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
 
     # Else, do something with existing post
     try:
@@ -67,7 +83,6 @@ def get_post(request, author_id, post_id):
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        # TODO: add authentication
         serializer = PostSerializer(post, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -75,9 +90,24 @@ def get_post(request, author_id, post_id):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     elif request.method == 'DELETE':
-        # TODO: add authentication
-        post.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        if 'password' not in request.data or 'username' not in request.data:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            # Log in with those credentials
+            username = request.data['username']
+            password = request.data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                if str(Author.objects.get(user__username=username).id) == str(Post.objects.get(id=post_id).author.id):
+                    print(author_id)
+                    print(Post.objects.get(id=post_id).author.id)
+                    post.delete()
+                    return Response(status=status.HTTP_204_NO_CONTENT)
+                else:
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+
 
 @api_view(['GET', 'POST'])
 def get_posts(request, author_id):
@@ -91,7 +121,6 @@ def get_posts(request, author_id):
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        # TODO: add authentication
         author = Author.objects.get(id=author_id)
         instance = Post.objects.create(author=author)
         serializer = PostSerializer(instance, data=request.data)
@@ -113,6 +142,7 @@ def get_follower(request, author_id, follower_id):
     """
     Retrieve or delete follower of author, or add user as a follower
     """
+
     try:
         author = Author.objects.get(id=author_id)
         follower = Author.objects.get(id=follower_id)
@@ -121,10 +151,24 @@ def get_follower(request, author_id, follower_id):
 
     # Add as follower
     if request.method == 'PUT':
-        # TODO: add authentication
-        author.followers.add(follower)
-        follower.following.add(author)
-        return HttpResponse(status=200)
+        if 'password' not in request.data or 'username' not in request.data:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            # Log in with those credentials
+            username = request.data['username']
+            password = request.data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                if follower_id == str(Author.objects.get(user__username=username).id):
+                    author.followers.add(follower)
+                    follower.following.add(author)
+                    return HttpResponse(status=200)
+                else:
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
 
     if request.method == 'GET':
         if follower in author.followers.all():
@@ -135,9 +179,23 @@ def get_follower(request, author_id, follower_id):
 
     elif request.method == 'DELETE':
         # TODO: add authentication
-        author.followers.remove(follower)
-        follower.following.remove(author)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        if 'password' not in request.data or 'username' not in request.data:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            # Log in with those credentials
+            username = request.data['username']
+            password = request.data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                if follower_id == str(Author.objects.get(user__username=username).id):
+                    author.followers.remove(follower)
+                    follower.following.remove(author)
+                    return Response(status=status.HTTP_204_NO_CONTENT)
+                else:
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+
 
 @api_view(['GET', 'POST'])
 def get_comments(request, author_id, post_id):
