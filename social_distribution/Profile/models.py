@@ -98,4 +98,21 @@ class PostCategory(models.Model):
     name = models.CharField(max_length=50)
 
 class Comment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name="comments")
     content = models.TextField()
+
+    class ContentType(models.TextChoices):
+        MARKDOWN = 'text/markdown' # common mark
+        PLAIN = 'text/plain' # UTF-8
+        BASE64 = 'application/base64'
+        PNG = 'image/png;base64' # embedded png
+        JPEG = 'image/jpeg;base64' # embedded jpeg
+
+    content_type = models.CharField(
+        max_length=40,
+        choices = ContentType.choices,
+        default=ContentType.PLAIN
+    )
+
+    timestamp = models.DateTimeField(default=timezone.now)
