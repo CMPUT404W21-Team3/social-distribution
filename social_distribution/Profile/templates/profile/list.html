@@ -49,20 +49,20 @@
       <div class="col">
           <div class="card h-100 text-center">
             <div class="card-body">
-              <h3 class="card-title">{{request.sender}}</h3>
+              <h3 class="card-title">{{request.sender.user_name}}</h3>
               <div class="container">
                 <div class="row">
                   <div class="col-md-auto">
                     <form class="request" action="/accept" method="POST">
                       {% csrf_token %}
-                      <input type="hidden" name="sender" id="sender" value="{{ request.sender }}" />
+                      <input type="hidden" name="sender" id="sender" value="{{ request.sender.user_name }}" />
                       <button class="btn btn-success btn-sm" type="submit">Accept</button>
                     </form>
                   </div>
                   <div class="col-md-auto">
                     <form class="request" action="/decline" method="POST">
                       {% csrf_token %}
-                      <input type="hidden" name="sender" id="sender" value="{{ request.sender }}" />
+                      <input type="hidden" name="sender" id="sender" value="{{ request.sender.user_name }}" />
                       <button class="btn btn-success btn-sm" type="submit">Decline</button>
                     </form>
                   </div>
