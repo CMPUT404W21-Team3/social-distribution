@@ -157,7 +157,7 @@ class CreatePostView(generic.CreateView):
 def edit_post(request, post_id):
 	post = Post.objects.get(id=post_id)
 	if post.author.id != request.user.author.id:
-		return HttpResponseForbidden
+		return HttpResponseForbidden()
 
 	if request.method == 'POST':
 		post_form = PostForm(request.POST, instance=post)
@@ -174,7 +174,7 @@ def edit_post(request, post_id):
 def delete_post(request, post_id):
 	post = Post.objects.get(id=post_id)
 	if post.author.id != request.user.author.id:
-		return HttpResponseForbidden
+		return HttpResponseForbidden()
 	else:
 		post.delete()
 		return redirect('Profile:view_posts', author_id=request.user.author.id)
