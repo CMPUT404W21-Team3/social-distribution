@@ -12,14 +12,38 @@
     <a class="btn btn-outline-primary" href="/github_activity" role="button">My Github Activity</a>
   </div>
 
-   <h3> Activity Stream </h3>
-  <ul>
+  <h3 style="margin: 16px; text-align: left;"> Activity Stream </h3>
+  <!-- <ul>
   {% for post in posts %}
   	<li>
         <h4><a href="/author/{{post.author.id}}/view_post/{{post.id}}">{{ post.title }}</a></h4>
         <p><i>{{post.timestamp}}</i></p>
   	</li>
   {% endfor %}
-  </ul>
+  </ul> -->
+
+  <div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for post in posts %}
+      <div class="col">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title"><a href="/author/{{post.author.id}}/view_post/{{post.id}}">{{post.title}}</a></h5>
+            <p class="card-text">{{post.content}}</p>
+            <p class="card-text"><small class="text-muted">Last updated {{post.timestamp}}</small></p>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+    <!-- <div class="col">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title">Special title treatment</h5>
+          <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+          <a href="#" class="btn btn-primary">Go somewhere</a>
+          </div>
+      </div>
+    </div> -->
+  </div>
+</div>
 
 {% endblock %}

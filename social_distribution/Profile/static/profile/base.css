@@ -41,7 +41,7 @@ form {
 }
 
 .home {
-    margin: 10% auto;
+    margin: 5% auto;
     width: fit-content;
     text-align: center;
 }
@@ -68,6 +68,10 @@ nav div div ul {
 
 .navbar-brand {
     font-size: 1.5em;
+}
+
+.card-body {
+    text-align: left;
 }
 
 .card-body h5 a {
@@ -109,3 +113,32 @@ nav div div ul {
 .return {
     margin: 11px;
 }
+
+.login {
+    margin-top: 20px;
+}
+
+.no-post {
+    margin: 16px;
+}
+
+.material-icons a {
+    text-decoration: none;
+    color: black;
+    margin-left: 3px;
+}
+
+/* http://google.github.io/material-design-icons/#icon-images-for-the-web */
+/* Rules for sizing the icon. */
+.material-icons.md-18 { font-size: 18px; }
+.material-icons.md-24 { font-size: 24px; }
+.material-icons.md-36 { font-size: 36px; }
+.material-icons.md-48 { font-size: 48px; }
+
+/* Rules for using icons as black on a light background. */
+.material-icons.md-dark { color: rgba(0, 0, 0, 0.54); }
+.material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26); }
+
+/* Rules for using icons as white on a dark background. */
+.material-icons.md-light { color: rgba(255, 255, 255, 1); }
+.material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3); }
