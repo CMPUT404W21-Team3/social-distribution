@@ -70,7 +70,7 @@ def update_profile(request):
 		author_form = AuthorForm(instance=request.user.author)
 	return render(request, 'profile/profile.html', {
 		'user_form': user_form,
-		'profile_form': author_form
+		'author_form': author_form
 	})
 
 def signup(request):
@@ -99,27 +99,29 @@ def signup(request):
 
 def list(request):
 	# Fetch friend requests, friends and following
-	friend_requests = FriendRequest.objects.filter(receiver=request.user.username)
 	user = Author.objects.get(user__username=request.user.username)
+	friend_requests = FriendRequest.objects.filter(receiver=user)
 	friends = user.friends.all()
 	following = user.following.all()
 
 	return render(request, 'profile/list.html', {'friend_requests': friend_requests, 'friends': friends, 'following': following})
 
 def accept(request):
+	receiver = Author.objects.get(user__username=request.user.username)
+	sender = Author.objects.get(user__username=request.POST.get('sender', ''))
 	# Delete that request
-	FriendRequest.objects.filter(receiver=request.user.username).filter(sender=request.POST.get('sender', '')).delete()
+	FriendRequest.objects.filter(receiver=receiver).filter(sender=sender).delete()
 
 	# Add to friends list
-	r_user = Author.objects.get(user__username=request.user.username)
-	s_user = Author.objects.get(user__username=request.POST.get('sender', ''))
-	r_user.friends.add(s_user)
+	receiver.friends.add(sender)
 
 	return redirect('/friends')
 
 def decline(request):
+	receiver = Author.objects.get(user__username=request.user.username)
+	sender = Author.objects.get(user__username=request.POST.get('sender', ''))
 	# Delete that request
-	FriendRequest.objects.filter(receiver=request.user.username).filter(sender=request.POST.get('sender', '')).delete()
+	FriendRequest.objects.filter(receiver=receiver).filter(sender=sender).delete()
 	return redirect('/friends')
 
 def view_posts(request, author_id):
@@ -130,7 +132,6 @@ def view_posts(request, author_id):
 	return render(request, 'profile/posts.html', {'posts':posts, 'author':author})
 
 def view_post(request, author_id, post_id):
-	print("Post id: ", post_id)
 	current_user = request.user
 	post = get_object_or_404(Post, id=post_id, author__id=author_id)
 	if post.content_type == Post.ContentType.PLAIN:
@@ -148,13 +149,14 @@ class CreatePostView(generic.CreateView):
 
 	def form_valid(self, form):
 		author = self.request.user.author
-		self.success_url = '/author/' + str(author.id) + '/posts'
+		self.success_url = '/author/' + str(author.id) + '/view_posts'
 		form.instance.author = author
 		return super().form_valid(form)
 
 
 @login_required(login_url='/login/')
 def edit_post(request, post_id):
+	print(post_id)
 	post = Post.objects.get(id=post_id)
 	if post.author.id != request.user.author.id:
 		return HttpResponseForbidden
@@ -163,7 +165,7 @@ def edit_post(request, post_id):
 		post_form = PostForm(request.POST, instance=post)
 		if post_form.is_valid():
 			post_form.save()
-			return redirect('Profile:post', author_id=post.author.id, post_id=post.id)
+			return redirect('Profile:view_post', author_id=post.author.id, post_id=post.id)
 		else:
 			messages.error(request, 'Please correct the error')
 	else:
@@ -177,7 +179,7 @@ def delete_post(request, post_id):
 		return HttpResponseForbidden
 	else:
 		post.delete()
-		return redirect('Profile:posts', author_id=request.user.author.id)
+		return redirect('Profile:view_posts', author_id=request.user.author.id)
 
 def share_post(request, post_id):
 	post = Post.objects.get(id=post_id)
@@ -214,7 +216,7 @@ def view_github_activity(request):
 				payload = event["payload"]
 				commits = payload["commits"]
 				activity["timestamp"] = timestamp_beautify(event["created_at"])
-				
+
 				for commit in commits:
 					url = commit["url"].replace("api.github.com", "github.com").replace("repos/", "").replace("/commits/", "/commit/")
 					activity["message"] = commit["message"]
@@ -254,18 +256,18 @@ def view_profile(request, author_id):
 
 # TODO: check if request has already been made
 def friend_request(request, author_id):
-    # Create request object
-    receiver = Author.objects.get(user__id=author_id)
-    friend_request = FriendRequest(type='follow', sender=request.user.username, receiver=receiver)
+	# Create request object
+	receiver = Author.objects.get(user__id=author_id)
+	sender = Author.objects.get(user__username=request.user.username)
+	friend_request = FriendRequest(sender=sender, receiver=receiver)
 
-    # Add to database
-    friend_request.save()
+	# Add to database
+	friend_request.save()
 
-    # Add the receiver to the sender's following list
-    user = Author.objects.get(user__username=request.user.username)
-    user.following.add(receiver)
+	# Add the receiver to the sender's following list
+	sender.following.add(receiver)
 
-    return redirect('Profile:view_profile', author_id)
+	return redirect('Profile:view_profile', author_id)
 
 def remove_friend(request, author_id):
 	user = Author.objects.get(user__username=request.user.username)
