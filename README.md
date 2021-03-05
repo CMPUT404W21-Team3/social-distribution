@@ -28,3 +28,6 @@
 - One to one user model: https://simpleisbetterthancomplex.com/tutorial/2016/07/22/how-to-extend-django-user-model.html#onetoone
 - Unique ID: https://stackoverflow.com/questions/16925129/generate-unique-id-in-django-from-a-model-field/30637668
 - Styles used from: https://getbootstrap.com/docs/5.0/
+
+
+Heroku Site: https://team3-socialdistribution.herokuapp.com/
