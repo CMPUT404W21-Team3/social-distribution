@@ -1,9 +1,9 @@
 <!-- https://stackoverflow.com/questions/49482742/passing-value-along-with-form-in-post-data-in-django -->
 
 <p> Results page for query: {{ query }}</p>
-{% for user in users %}
+{% for author in authors %}
     <li>
-      <a href="{% url 'Profile:view_profile' author_id=user.id %}">{{ user.username }}</a>
+      <a href="{% url 'Profile:view_profile' author_id=author.id %}">{{ author.user_name }}</a>
     </li>
 {% endfor %}
 
