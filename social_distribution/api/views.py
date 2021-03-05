@@ -8,8 +8,9 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from .serializers import AuthorSerializer, PostSerializer, CommentSerializer
-from Profile.models import Author, Post
+from Profile.models import Author, Post, Comment
 
+# https://www.django-rest-framework.org/tutorial/1-serialization/ - was consulted in writing code
 
 # Create your views here.
 @api_view(['GET', 'POST'])
@@ -27,7 +28,7 @@ def get_author(request, author_id):
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        # TODO: add authentication1
+        # TODO: add authentication
         serializer = AuthorSerializer(author, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -42,10 +43,12 @@ def get_post(request, author_id, post_id):
     """
 
     # Create new post
-    # Not working
     if request.method == 'PUT':
         # TODO: add authentication
-        serializer = PostSerializer(data=request.data)
+        author = Author.objects.get(id=author_id)
+        instance = Post.objects.create(author=author, id=post_id)
+        serializer = PostSerializer(instance, data=request.data)
+
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -89,8 +92,9 @@ def get_posts(request, author_id):
 
     elif request.method == 'POST':
         # TODO: add authentication
-        # Not working
-        serializer = PostSerializer(data=request.data)
+        author = Author.objects.get(id=author_id)
+        instance = Post.objects.create(author=author)
+        serializer = PostSerializer(instance, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -107,20 +111,21 @@ def get_followers(request, author_id):
 @api_view(['GET', 'PUT', 'DELETE'])
 def get_follower(request, author_id, follower_id):
     """
-    Create, retrieve or delete follower of author
+    Retrieve or delete follower of author, or add user as a follower
     """
-    # Create new follower
-    if request.method == 'PUT':
-        # TODO: add authentication
-        pass
-
     try:
         author = Author.objects.get(id=author_id)
         follower = Author.objects.get(id=follower_id)
     except Author.DoesNotExist:
         return HttpResponse(status=404)
 
-    # Do something with existing follower
+    # Add as follower
+    if request.method == 'PUT':
+        # TODO: add authentication
+        author.followers.add(follower)
+        follower.following.add(author)
+        return HttpResponse(status=200)
+
     if request.method == 'GET':
         if follower in author.followers.all():
             serializer = AuthorSerializer(follower)
@@ -152,9 +157,15 @@ def get_comments(request, author_id, post_id):
 
     elif request.method == 'POST':
         # TODO: add authentication
-        # Not working
-        serializer = CommentSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if request.data['type'] == "comment":
+            author = Author.objects.get(id=author_id)
+            post = Post.objects.get(id=post_id)
+
+            instance = Comment.objects.create(author=author)
+            post.comments.add(instance)
+
+            serializer = CommentSerializer(instance, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
