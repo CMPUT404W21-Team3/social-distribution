@@ -4,9 +4,10 @@ from django.shortcuts import render
 from rest_framework import viewsets
 from rest_framework.decorators import api_view
 from rest_framework.parsers import JSONParser
+from rest_framework import status
 from rest_framework.response import Response
 
-from .serializers import AuthorSerializer
+from .serializers import AuthorSerializer, PostSerializer
 from Profile.models import Author, Post
 
 
@@ -14,7 +15,7 @@ from Profile.models import Author, Post
 @api_view(['GET', 'POST'])
 def get_author(request, author_id):
     """
-    Retrieve an author.
+    Retrieve or update an author.
     """
     try:
         author = Author.objects.get(id=author_id)
@@ -26,7 +27,7 @@ def get_author(request, author_id):
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        # TODO: add authentication
+        # TODO: add authentication1
         serializer = AuthorSerializer(author, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -37,8 +38,20 @@ def get_author(request, author_id):
 @api_view(['GET', 'POST', 'DELETE', 'PUT'])
 def get_post(request, author_id, post_id):
     """
-    Retrieve a post.
+    Create, retrieve, update or delete a post.
     """
+
+    # Create new post
+    # Not working
+    if request.method == 'PUT':
+        # TODO: add authentication
+        serializer = PostSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # Else, do something with existing post
     try:
         post = Post.objects.get(id=post_id)
     except Post.DoesNotExist:
@@ -52,7 +65,7 @@ def get_post(request, author_id, post_id):
 
     elif request.method == 'POST':
         # TODO: add authentication
-        serializer = PostSerializer(post, data=request.data)
+        serializer = PostSerializer(post, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -62,12 +75,3 @@ def get_post(request, author_id, post_id):
         # TODO: add authentication
         post.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-    # Create new post
-    elif request.method == 'PUT':
-        # TODO: add authentication
-        serializer = PostSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

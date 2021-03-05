@@ -185,13 +185,11 @@ def share_post(request, post_id):
 	author_original = post.author
 	author_share = request.user.author
 	if request.method == "GET":
-		print("Part 1")
 		form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original.user_name)}',\
 												'origin': post.origin + f'http://localhost:8000/author/{author_original.id}/view_post/{post_id}'})
 
 		return render(request, "profile/create_post.html", {'form':form})
 	else:
-		print("Part 2")
 		form = PostForm(data=request.POST)
 		form.instance.author = author_share
 		if form.is_valid():
@@ -275,8 +273,8 @@ def post_github(request):
 
 def view_profile(request, author_id):
 	user = Author.objects.get(user__username=request.user.username)
-	author = Author.objects.get(user_id=author_id)
-	friend_status = user.friends.filter(user_id=author_id).exists()
+	author = Author.objects.get(id=author_id)
+	friend_status = user.friends.filter(id=author_id).exists()
 	friend_posts = author.posts.all()
 
 	if request.method == "GET":
@@ -285,7 +283,7 @@ def view_profile(request, author_id):
 # TODO: check if request has already been made
 def friend_request(request, author_id):
 	# Create request object
-	receiver = Author.objects.get(user__id=author_id)
+	receiver = Author.objects.get(id=author_id)
 	sender = Author.objects.get(user__username=request.user.username)
 	friend_request = FriendRequest(sender=sender, receiver=receiver)
 
@@ -299,7 +297,7 @@ def friend_request(request, author_id):
 
 def remove_friend(request, author_id):
 	user = Author.objects.get(user__username=request.user.username)
-	to_delete = Author.objects.get(user__id=author_id)
+	to_delete = Author.objects.get(id=author_id)
 	user.friends.remove(to_delete)
 
 	return redirect('Profile:view_profile', author_id)
