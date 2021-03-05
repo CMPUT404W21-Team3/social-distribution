@@ -7,7 +7,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework import status
 from rest_framework.response import Response
 
-from .serializers import AuthorSerializer, PostSerializer
+from .serializers import AuthorSerializer, PostSerializer, CommentSerializer
 from Profile.models import Author, Post
 
 
@@ -133,3 +133,28 @@ def get_follower(request, author_id, follower_id):
         author.followers.remove(follower)
         follower.following.remove(author)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET', 'POST'])
+def get_comments(request, author_id, post_id):
+    """
+    Get comments from a post or create a post and auto generate an id for it.
+    """
+
+    if request.method == 'GET':
+        post = Post.objects.get(id=post_id)
+
+        if post.visibility != 'PUBLIC':
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        comments = post.comments.all()
+        serializer = CommentSerializer(comments, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        # TODO: add authentication
+        # Not working
+        serializer = CommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
