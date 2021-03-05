@@ -72,7 +72,7 @@ class Post(models.Model):
     comments_first_page = models.CharField(max_length=200, null=True) # URL to first page of comments for this post
     comments = models.ManyToManyField('Comment', blank=True)
     timestamp = models.DateTimeField(default=timezone.now)
-    likes_count = models.IntegerField(default=0)
+
     class Visibility(models.TextChoices):
         PUBLIC = 'PUBLIC'
         FRIENDS = 'FRIENDS'
@@ -127,7 +127,3 @@ class Comment(models.Model):
     @type.setter
     def type(self, val):
         pass
-
-class Likes(models.Model):
-    post_id = models.ForeignKey(Post, on_delete=models.CASCADE, null=True)
-    who_liked = models.IntegerField()
