@@ -22,8 +22,7 @@ class PostSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
-        comment_ids = [ comment['id'] for comment in data['comments'] ]
-        data['comments'] = CommentSerializer(Comment.objects.filter(id__in=comment_ids), many=True).data
+        data['comments'] = CommentSerializer(Comment.objects.filter(id__in=data['comments']), many=True).data
         return data
 
 class FriendRequestSerializer(serializers.ModelSerializer):
