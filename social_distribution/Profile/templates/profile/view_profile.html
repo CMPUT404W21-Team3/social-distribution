@@ -26,7 +26,9 @@
 		<h3>Public Posts:</h3>
 		{% if posts %}
 			{% for post in posts %}
-				<li><a href="/author/{{author.id}}/view_post/{{post.id}}">{{post.title}}</a>: </li>
+				{% if post.visibility == 'PUBLIC' and post.unlisted == False %}
+					<li><a href="/author/{{author.id}}/view_post/{{post.id}}">{{post.title}}</a>: </li>
+				{% endif %}
 			{% endfor %}
 		{% else %}
 			<p>{{author.user.get_full_name}} has no posts<p>

@@ -7,9 +7,11 @@
     <p>{{post.content | linebreaks}}</p>
 {% endif %}
 
-<div>
-    <a href="{% url 'Profile:share_post' post_id=post.id %}">Share this post!</a>
-</div>
+{% if post.visibility == 'PUBLIC' %}
+  <div>
+      <a href="{% url 'Profile:share_post' post_id=post.id %}">Share this post!</a>
+  </div>
+{% endif %}
 
 {% if post.author.id == current_user.author.id %}
     <div>
