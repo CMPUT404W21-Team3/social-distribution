@@ -60,7 +60,7 @@ class Post(models.Model):
         default=Visibility.PUBLIC
     )
 
-    unlisted = models.BooleanField(default=False) # used for images so that they don't show up in timelines
+    unlisted = models.BooleanField(default=False)  # used for images so that they don't show up in timelines
 
     # count for likes made to the post
     likes_count = models.IntegerField(default=0)
@@ -70,3 +70,8 @@ class PostCategory(models.Model):
 
 class Comment(models.Model):
     content = models.TextField()
+
+class Likes(models.Model):
+    post_id = models.ForeignKey(Post,on_delete=models.CASCADE, null=True)
+    who_liked = models.IntegerField()
+

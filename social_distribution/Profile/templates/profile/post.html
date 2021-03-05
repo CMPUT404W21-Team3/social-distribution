@@ -5,6 +5,15 @@
 <br>
 <p>Likes:{{post.likes_count}}</p><br>
 
+{% if post.author.id != current_user.profile.id %}
+
+    <form action="{% url 'Profile:like' author_id=post.author.id post_id=post.id %}" method = "POST">
+        {% csrf_token %}
+        <input type="hidden" name="user" value="{{current_user.profile}}" />
+        <input type="hidden" name="post" value="{{post.id}}">
+        <button type="submit">Like</button>
+    </form>
+{% endif %}
 
 
 <div>

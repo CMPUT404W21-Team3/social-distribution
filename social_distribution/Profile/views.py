@@ -11,7 +11,7 @@ from django.forms import ModelForm
 
 from .forms import UserForm, ProfileForm, SignUpForm, PostForm
 # Potentially problematic
-from .models import Profile, Post
+from .models import Profile, Post, Likes
 from Search.models import FriendRequest
 
 
@@ -221,6 +221,19 @@ def remove_friend(request, author_id):
 	return redirect('Profile:view_profile', author_id)
 
 
-def like_post(request):
+def like_post(request,author_id,post_id):
+	current_user = request.user
+	post = get_object_or_404(Post, id=post_id, author__id=author_id)
 
-	return
+	# if post.filter(id=request.user.id).exists():
+	# 	post.likes.remove(request.user)
+	# else:
+	# 	post.likes.add(request.user)
+
+	like_instance = Likes(post_id=post, who_liked=request.user.id)
+	like_instance.save()
+	post.likes_count = post.likes_count + 1
+	post.save()
+
+	return render(request, 'profile/post.html', {'post': post, 'current_user': current_user})
+
