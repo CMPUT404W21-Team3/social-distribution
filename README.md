@@ -8,9 +8,11 @@
 - API calls may or may not be prefixed with /api/ 
 - - http://localhost:8000/api/author/{author_id} and http://localhost:8000/author/{author_id} point to the same resource
 - API urls
-- - author/<str:author_id>/ -
-- - author/<str:author_id>/posts/<str:post_id> - 
-- - author/<str:author_id>/posts/ -
-- - author/<str:author_id>/followers -
-- - author/<str:author_id>/followers/<str:follower_id> -
-- - author/<str:author_id>/posts/<str:post_id>/comments - 
+- - author/{author_id}/ - retrieve or update author profile
+- - author/{author_id}/posts/{post_id} - create*, retrieve, update or delete* post
+- - author/{author_id}/posts/ - retrieve posts or create a new post
+- - author/{author_id}/followers - retrieve followers 
+- - author/{author_id}/followers/{follower_id} - retrieve, update* or delete* follower
+- - author/{author_id}/posts/{post_id}/comments - retrieve or add comment 
+
+\* denotes authentication required
