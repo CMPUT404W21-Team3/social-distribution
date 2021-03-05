@@ -265,6 +265,7 @@ def friend_request(request, author_id):
 
 	# Add the receiver to the sender's following list
 	sender.following.add(receiver)
+	receiver.followers.add(sender)
 
 	return redirect('Profile:view_profile', author_id)
 
