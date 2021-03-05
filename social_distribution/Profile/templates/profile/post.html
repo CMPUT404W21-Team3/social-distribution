@@ -2,8 +2,7 @@
 
 {% block content %}
 
-<!-- {% if post.content_type == 'text/markdown' %}
-<h1>{{post.title}}</h1>
+<!-- <h1>{{post.title}}</h1>
 <p>{{ post.author.user_name }}</p>
 <p>{{ post.origin }}</p>
 {% if post.content_type == 'text/markdown' %}
@@ -27,22 +26,21 @@
                     <h3 class="card-header">{{post.title}}<span class="material-icons">
                     <a href="{% url 'Profile:share_post' post_id=post.id %}">share</a></span></h3>
                     <div class="card-body">
-                    <p class="card-text" style="margin: 0;"><small class="text-muted">@{{post.author}} {{post.origin}}</small></p>
-                    <h5 class="card-title">{{post.description}}</h5>
-                    <p class="card-text">{{content | safe}}</p>
-                    {% if post.author.id == current_user.profile.id %}
-                    <div class="row">
-                        <div class="col-sm">
-                            <span class="material-icons md-24"><a href="{% url 'Profile:edit_post' post_id=post.id %}">create</a></span>
-                        </div>
-                        <div class="col-10">
-                        </div>
-                        <div class="col-sm">
-                            <a class="btn btn-danger btn-sm" href="{% url 'Profile:delete_post' post_id=post.id %}">Delete</a>
-                        </div>
-                    </div>
-            <!-- </div> -->
-                    {% endif %}
+                        <p class="card-text" style="margin: 0;"><small class="text-muted">@{{post.author}} {{post.origin}}</small></p>
+                        <h5 class="card-title">{{post.description}}</h5>
+                        <p class="card-text">{{content | safe}}</p>
+                        {% if post.author.id == current_user.profile.id %}
+                            <div class="row">
+                                <div class="col-sm">
+                                    <span class="material-icons md-24"><a href="{% url 'Profile:edit_post' post_id=post.id %}">create</a></span>
+                                </div>
+                                <div class="col-10">
+                                </div>
+                                <div class="col-sm">
+                                    <a class="btn btn-danger btn-sm" href="{% url 'Profile:delete_post' post_id=post.id %}">Delete</a>
+                                </div>
+                            </div>
+                        {% endif %}
                 </div>
                 <div class="card-footer text-muted">
                     Last updated {{post.timestamp}}
@@ -61,22 +59,21 @@
                     <h3 class="card-header">{{post.title}}<span class="material-icons">
                     <a href="{% url 'Profile:share_post' post_id=post.id %}">share</a></span></h3>
                     <div class="card-body">
-                    <p class="card-text" style="margin: 0;"><small class="text-muted">@{{post.author}} {{post.origin}}</small></p>
-                    <h5 class="card-title">{{post.description}}</h5>
-                    <p class="card-text">{{post.content}}</p>
-                    {% if post.author.id == current_user.profile.id %}
-                    <div class="row">
-                        <div class="col-sm">
-                            <span class="material-icons md-24"><a href="{% url 'Profile:edit_post' post_id=post.id %}">create</a></span>
-                        </div>
-                        <div class="col-10">
-                        </div>
-                        <div class="col-sm">
-                            <a class="btn btn-danger btn-sm" href="{% url 'Profile:delete_post' post_id=post.id %}">Delete</a>
-                        </div>
-                    </div>
-            <!-- </div> -->
-                    {% endif %}
+                        <p class="card-text" style="margin: 0;"><small class="text-muted">@{{post.author}} {{post.origin}}</small></p>
+                        <h5 class="card-title">{{post.description}}</h5>
+                        <p class="card-text">{{post.content}}</p>
+                        {% if post.author.id == current_user.profile.id %}
+                            <div class="row">
+                                <div class="col-sm">
+                                    <span class="material-icons md-24"><a href="{% url 'Profile:edit_post' post_id=post.id %}">create</a></span>
+                                </div>
+                                <div class="col-10">
+                                </div>
+                                <div class="col-sm">
+                                    <a class="btn btn-danger btn-sm" href="{% url 'Profile:delete_post' post_id=post.id %}">Delete</a>
+                                </div>
+                            </div>
+                        {% endif %}
                 </div>
                 <div class="card-footer text-muted">
                     Last updated {{post.timestamp}}
