@@ -24,7 +24,10 @@
             <div class="col">
                 <div class="card">
                     <h3 class="card-header">{{post.title}}<span class="material-icons">
-                    <a href="{% url 'Profile:share_post' post_id=post.id %}">share</a></span></h3>
+                        {% if post.visibility == 'PUBLIC' or post.author.id == current_user.author.id %}
+                            <a href="{% url 'Profile:share_post' post_id=post.id %}">share</a>
+                        {% endif %}
+                    </span></h3>
                     <div class="card-body">
                         <p class="card-text" style="margin: 0;"><small class="text-muted">@{{post.author}} {{post.origin}}</small></p>
                         <h5 class="card-title">{{post.description}}</h5>
@@ -57,7 +60,10 @@
             <div class="col">
                 <div class="card">
                     <h3 class="card-header">{{post.title}}<span class="material-icons">
-                    <a href="{% url 'Profile:share_post' post_id=post.id %}">share</a></span></h3>
+                        {% if post.visibility == 'PUBLIC' or post.author.id == current_user.author.id %}
+                            <a href="{% url 'Profile:share_post' post_id=post.id %}">share</a>
+                        {% endif %}
+                    </span></h3>
                     <div class="card-body">
                         <p class="card-text" style="margin: 0;"><small class="text-muted">@{{post.author}} {{post.origin}}</small></p>
                         <h5 class="card-title">{{post.description}}</h5>
@@ -85,7 +91,7 @@
 
 {% endblock %}
       
-{% if post.visibility == 'PUBLIC' %}
+<!-- {% if post.visibility == 'PUBLIC' %}
   <div>
       <a href="{% url 'Profile:share_post' post_id=post.id %}">Share this post!</a>
   </div>
@@ -97,4 +103,4 @@
         <a href="{% url 'Profile:delete_post' post_id=post.id %}">Delete this post</a>
     <div>
 {% endif %}
-<a href="/">Return</a>
+<a href="/">Return</a> -->
