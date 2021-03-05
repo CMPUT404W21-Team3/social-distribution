@@ -199,35 +199,62 @@ def share_post(request, post_id):
 			post_share.save()
 			return redirect('Profile:view_posts', author_share.id)
 
-@cache_page(60 * 5)
 def view_github_activity(request):
 	#get the current user's github username if available
 	#need a helper function to get timestamp in a better format
-	github_username = str(request.user.profile.github)
-	if github_username != "":
+	try:
+		github_username = str(request.user.author.github)
 		github_url = f'https://api.github.com/users/{github_username}/events/public'
 		response = requests.get(github_url)
 		jsonResponse = response.json()
-
 		activities = []
 
 		for event in jsonResponse:
 			activity = {}
-			if event["type"] == "PushEvent":
-				payload = event["payload"]
-				commits = payload["commits"]
-				activity["timestamp"] = timestamp_beautify(event["created_at"])
+			activity["timestamp"] = timestamp_beautify(event["created_at"])
+			repo = event["repo"]["name"]
+			payload = event["payload"]
 
-				for commit in commits:
-					url = commit["url"].replace("api.github.com", "github.com").replace("repos/", "").replace("/commits/", "/commit/")
-					activity["message"] = commit["message"]
-					activity["url"] = url
-					activities.append(activity)
+			if event["type"] == "PushEvent":
+				activity["EventType"] = "PushEvent"
+				head_sha = payload["head"]
+				url = f"http://github.com/{repo}/commit/{head_sha}"
+				activity["url"] = url
+				size = payload["size"]
+				activity["message"] = payload["commits"][size-1]["message"]
+				activities.append(activity)
+
+			elif event["type"] == "PullRequestEvent":
+				activity["EventType"] = "PullRequestEvent"
+				pull_request = payload["pull_request"]
+				activity["url"] = pull_request["html_url"]
+				activity["message"] = f'{pull_request["title"]} #{pull_request["number"]}'
+				activities.append(activity)
+
+			elif event["type"] == "CreateEvent":
+				activity["EventType"] = "CreateEvent"
+				activity["url"] = "No URL source"
+				activity["message"] = f"Created a {payload['ref_type']} called {payload['ref']}"
+				activities.append(activity)
+
+			elif event["type"] == "DeleteEvent":
+				activity["EventType"] = "DeleteEvent"
+				activity["url"] = "No URL source"
+				activity["message"] = f"Deleted a {payload['ref_type']} called {payload['ref']}"
+				activities.append(activity)
+
+			elif event["type"] == "IssuesEvent":
+				activity["EventType"] = "IssuesEvent"
+				activity["url"] = payload["issue"]["html_url"]
+				activity["message"] = f"Issue: {payload['issue']['title']}"
+				activities.append(activity)
 
 		return render(request, 'profile/github_activity.html', {'github_activity': activities})
+	except:
+		return render(request, 'profile/github_activity.html')
 
 def post_github(request):
-	author = request.user.profile
+	author = request.user.author
 	if request.method == "GET":
 		content = ast.literal_eval(request.GET.get("activity"))
 		form = PostForm(initial={
@@ -243,7 +270,7 @@ def post_github(request):
 		if form.is_valid():
 			post = form.save(commit=False)
 			post.save()
-			return redirect('Profile:posts', author.id)
+			return redirect('Profile:view_posts', author.id)
 
 
 def view_profile(request, author_id):
