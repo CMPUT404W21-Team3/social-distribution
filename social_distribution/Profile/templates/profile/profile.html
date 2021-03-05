@@ -27,7 +27,7 @@
       </div>
     </div>
   </div>
-    
+
   <div class="row g-3">
     <div class="col-md-3">
       <div class="input-group">
@@ -38,7 +38,16 @@
     <div class="col-md-3">
       <div class="input-group">
         <span class="input-group-text">Birth date</span>
-        <input type="date" aria-label="Birth date" class="form-control" name="birth_date" value="{{profile_form.birth_date.value}}">
+        <input type="date" aria-label="Birth date" class="form-control" name="birth_date" value="{{ author_form.birth_date.value }}">
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-4">
+      <div class="input-group">
+        <span class="input-group-text">Github Username</span>
+        <input type="text" aria-label="Github Username" class="form-control" name="github" value="{{author_form.github.value}}">
       </div>
     </div>
   </div>
@@ -47,9 +56,8 @@
     <div class="col-md-4">
       <div class="input-group">
         <span class="input-group-text">Location</span>
-        <input type="text" aria-label="Location" class="form-control" name="location" value="{{profile_form.location.value}}">
+        <input type="text" aria-label="Location" class="form-control" name="location" value="{{author_form.location.value}}">
       </div>
-    </div>
     </div>
   </div>
 
@@ -57,11 +65,11 @@
     <div class="col-md-4">
       <div class="input-group">
         <span class="input-group-text">Bio</span>
-        <textarea class="form-control" aria-label="Bio" name="bio">{{profile_form.bio.value}}</textarea>
+        <textarea class="form-control" aria-label="Bio" name="bio">{{author_form.bio.value}}</textarea>
       </div>
     </div>
   </div>
-  
+
   <div class="row g-3">
     <div class="col-md-2">
       <a href="/" class="btn btn-success">Cancel</a>

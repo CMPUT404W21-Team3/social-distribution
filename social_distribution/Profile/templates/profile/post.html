@@ -3,6 +3,10 @@
 {% block content %}
 
 <!-- {% if post.content_type == 'text/markdown' %}
+<h1>{{post.title}}</h1>
+<p>{{ post.author.user_name }}</p>
+<p>{{ post.origin }}</p>
+{% if post.content_type == 'text/markdown' %}
     <p>{{content | safe}}</p>
 {% else %}
     <p>{{post.content | linebreaks}}</p>
@@ -83,3 +87,17 @@
 {% endif %}
 
 {% endblock %}
+      
+{% if post.visibility == 'PUBLIC' %}
+  <div>
+      <a href="{% url 'Profile:share_post' post_id=post.id %}">Share this post!</a>
+  </div>
+{% endif %}
+
+{% if post.author.id == current_user.author.id %}
+    <div>
+        <a href="{% url 'Profile:edit_post' post_id=post.id %}">Edit this post</a><br>
+        <a href="{% url 'Profile:delete_post' post_id=post.id %}">Delete this post</a>
+    <div>
+{% endif %}
+<a href="/">Return</a>

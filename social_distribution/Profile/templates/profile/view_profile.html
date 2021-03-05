@@ -10,18 +10,15 @@
 		<!-- Check if author and current user are friends -->
 		{% if friend_status  %}
 			<!-- Remove friend option -->
-			<form action="{{ author.user.id }}/remove_friend" method="POST">
+			<form action="{{ author.id }}/remove_friend" method="POST">
 				{% csrf_token %}
-				<input type="hidden" name="author" id="author" value="{{ author.user.id }}" />
+				<input type="hidden" name="author" id="author" value="{{ author.id }}" />
 				<button type="submit">Remove Friend</button>
 			</form>
 		{% else %}
-			<form action="/sendrequest" method="POST">
+			<form action="{{ author.id }}/send_request" method="POST">
 				{% csrf_token %}
-				<input type="hidden" name="query" id="query" value="{{ query }}" />
-				<input type="hidden" name="receiver" id="receiver" value="{{ user.username }}" />
-				<!-- Very buggy -->
-				<input type="hidden" name="users" id="users" value="{{ users }}" />
+				<input type="hidden" name="receiver" id="author" value="{{ author.id }}" />
 				<button type="submit">Send Friend Request</button>
 			</form>
 		{% endif %}
@@ -29,7 +26,9 @@
 		<h3>Public Posts:</h3>
 		{% if posts %}
 			{% for post in posts %}
-				<li><a href="/author/{{author.id}}/posts/{{post.id}}">{{post.title}}</a>: </li>
+				{% if post.visibility == 'PUBLIC' and post.unlisted == False %}
+					<li><a href="/author/{{author.id}}/view_post/{{post.id}}">{{post.title}}</a>: </li>
+				{% endif %}
 			{% endfor %}
 		{% else %}
 			<p>{{author.user.get_full_name}} has no posts<p>

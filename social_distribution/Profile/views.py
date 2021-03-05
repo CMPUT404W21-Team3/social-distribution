@@ -7,13 +7,16 @@ from django.contrib.auth.models import User
 from django.views import generic
 from django.http import HttpResponseForbidden
 from django.forms import ModelForm
-import commonmark
+from django.views.decorators.cache import cache_page
+import commonmark, requests, ast
 # Create your views here.
 
-from .forms import UserForm, ProfileForm, SignUpForm, PostForm
+from .forms import UserForm, AuthorForm, SignUpForm, PostForm
 # Potentially problematic
-from .models import Profile, Post
+from .models import Author, Post
 from Search.models import FriendRequest
+
+from .helpers import timestamp_beautify
 
 
 @login_required(login_url='/login/')
@@ -30,10 +33,10 @@ def home(request):
 	public_posts = Post.objects.filter(visibility='PUBLIC', unlisted=False).order_by('-timestamp')
 
 	# Grab self posts
-	self_posts = Post.objects.filter(author=request.user.profile, unlisted=False).order_by('-timestamp')
+	self_posts = Post.objects.filter(author=request.user.author, unlisted=False).order_by('-timestamp')
 
 	# Grab friend's posts
-	friends = Profile.objects.get(user__username=request.user.username).friends.all()
+	friends = Author.objects.get(user__username=request.user.username).friends.all()
 	friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
 
 	# Merge posts, sort them
@@ -54,20 +57,20 @@ def update_profile(request):
 	"""
 	if request.method == 'POST':
 		user_form = UserForm(request.POST, instance=request.user)
-		profile_form = ProfileForm(request.POST, instance=request.user.profile)
-		if user_form.is_valid() and profile_form.is_valid():
+		author_form = AuthorForm(request.POST, instance=request.user.author)
+		if user_form.is_valid() and author_form.is_valid():
 			user_form.save()
-			profile_form.save()
+			author_form.save()
 			messages.success(request, 'Your profile was successfully updated!')
 			return redirect('Profile:home')
 		else:
 			messages.error(request, 'Please correct the error below.')
 	else:
 		user_form = UserForm(instance=request.user)
-		profile_form = ProfileForm(instance=request.user.profile)
+		author_form = AuthorForm(instance=request.user.author)
 	return render(request, 'profile/profile.html', {
 		'user_form': user_form,
-		'profile_form': profile_form
+		'author_form': author_form
 	})
 
 def signup(request):
@@ -96,37 +99,39 @@ def signup(request):
 
 def list(request):
 	# Fetch friend requests, friends and following
-	friend_requests = FriendRequest.objects.filter(receiver=request.user.username)
-	user = Profile.objects.get(user__username=request.user.username)
+	user = Author.objects.get(user__username=request.user.username)
+	friend_requests = FriendRequest.objects.filter(receiver=user)
 	friends = user.friends.all()
 	following = user.following.all()
 
 	return render(request, 'profile/list.html', {'friend_requests': friend_requests, 'friends': friends, 'following': following})
 
 def accept(request):
+	receiver = Author.objects.get(user__username=request.user.username)
+	sender = Author.objects.get(user__username=request.POST.get('sender', ''))
 	# Delete that request
-	FriendRequest.objects.filter(receiver=request.user.username).filter(sender=request.POST.get('sender', '')).delete()
+	FriendRequest.objects.filter(receiver=receiver).filter(sender=sender).delete()
 
 	# Add to friends list
-	r_user = Profile.objects.get(user__username=request.user.username)
-	s_user = Profile.objects.get(user__username=request.POST.get('sender', ''))
-	r_user.friends.add(s_user)
+	receiver.friends.add(sender)
 
-	return redirect('/friends')
+	return redirect('Profile:friends')
 
 def decline(request):
+	receiver = Author.objects.get(user__username=request.user.username)
+	sender = Author.objects.get(user__username=request.POST.get('sender', ''))
 	# Delete that request
-	FriendRequest.objects.filter(receiver=request.user.username).filter(sender=request.POST.get('sender', '')).delete()
-	return redirect('/friends')
+	FriendRequest.objects.filter(receiver=receiver).filter(sender=sender).delete()
+	return redirect('Profile:friends')
 
-def posts(request, author_id):
-	author = Profile.objects.get(id=author_id)
+def view_posts(request, author_id):
+	author = Author.objects.get(id=author_id)
 	posts = author.posts.all()
-	if author.id != request.user.profile.id: # Only show unlisted posts if viewed by the owner
+	if author.id != request.user.author.id: # Only show unlisted posts if viewed by the owner
 		posts.filter(unlisted=False)
 	return render(request, 'profile/posts.html', {'posts':posts, 'author':author})
 
-def post(request, author_id, post_id):
+def view_post(request, author_id, post_id):
 	current_user = request.user
 	post = get_object_or_404(Post, id=post_id, author__id=author_id)
 	if post.content_type == Post.ContentType.PLAIN:
@@ -143,27 +148,23 @@ class CreatePostView(generic.CreateView):
 	fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility', 'unlisted']
 
 	def form_valid(self, form):
-		author = self.request.user.profile
-		self.success_url = '/author/' + str(author.id) + '/posts'
+		author = self.request.user.author
+		self.success_url = '/author/' + str(author.id) + '/view_posts'
 		form.instance.author = author
 		return super().form_valid(form)
 
-class PostForm(ModelForm):
-    class Meta:
-        model = Post
-        fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility', 'unlisted']
 
 @login_required(login_url='/login/')
 def edit_post(request, post_id):
 	post = Post.objects.get(id=post_id)
-	if post.author.id != request.user.profile.id:
-		return HttpResponseForbidden
+	if post.author.id != request.user.author.id:
+		return HttpResponseForbidden()
 
 	if request.method == 'POST':
 		post_form = PostForm(request.POST, instance=post)
 		if post_form.is_valid():
 			post_form.save()
-			return redirect('Profile:post', author_id=post.author.id, post_id=post.id)
+			return redirect('Profile:view_post', author_id=post.author.id, post_id=post.id)
 		else:
 			messages.error(request, 'Please correct the error')
 	else:
@@ -173,19 +174,19 @@ def edit_post(request, post_id):
 @login_required(login_url='/login/')
 def delete_post(request, post_id):
 	post = Post.objects.get(id=post_id)
-	if post.author.id != request.user.profile.id:
-		return HttpResponseForbidden
+	if post.author.id != request.user.author.id:
+		return HttpResponseForbidden()
 	else:
 		post.delete()
-		return redirect('Profile:posts', author_id=request.user.profile.id)
+		return redirect('Profile:view_posts', author_id=request.user.author.id)
 
 def share_post(request, post_id):
 	post = Post.objects.get(id=post_id)
 	author_original = post.author
-	author_share = request.user.profile
+	author_share = request.user.author
 	if request.method == "GET":
-		form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original)}',\
-												'origin': post.origin + f';http://localhost:8000/author/{author_original.id}/posts/{post_id}'})
+		form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original.user_name)}',\
+												'origin': post.origin + f'http://localhost:8000/author/{author_original.id}/view_post/{post_id}'})
 
 		return render(request, "profile/create_post.html", {'form':form})
 	else:
@@ -194,12 +195,86 @@ def share_post(request, post_id):
 		if form.is_valid():
 			post_share = form.save(commit=False)
 			post_share.save()
-			return redirect('Profile:posts', author_share.id)
+			return redirect('Profile:view_posts', author_share.id)
+
+def view_github_activity(request):
+	#get the current user's github username if available
+	#need a helper function to get timestamp in a better format
+	try:
+		github_username = str(request.user.author.github)
+		github_url = f'https://api.github.com/users/{github_username}/events/public'
+		response = requests.get(github_url)
+		jsonResponse = response.json()
+		activities = []
+
+		for event in jsonResponse:
+			activity = {}
+			activity["timestamp"] = timestamp_beautify(event["created_at"])
+			repo = event["repo"]["name"]
+			payload = event["payload"]
+
+			if event["type"] == "PushEvent":
+				activity["EventType"] = "PushEvent"
+				head_sha = payload["head"]
+				url = f"http://github.com/{repo}/commit/{head_sha}"
+				activity["url"] = url
+				size = payload["size"]
+				activity["message"] = payload["commits"][size-1]["message"]
+				activities.append(activity)
+
+			elif event["type"] == "PullRequestEvent":
+				activity["EventType"] = "PullRequestEvent"
+				pull_request = payload["pull_request"]
+				activity["url"] = pull_request["html_url"]
+				activity["message"] = f'{pull_request["title"]} #{pull_request["number"]}'
+				activities.append(activity)
+
+			elif event["type"] == "CreateEvent":
+				activity["EventType"] = "CreateEvent"
+				activity["url"] = "No URL source"
+				activity["message"] = f"Created a {payload['ref_type']} called {payload['ref']}"
+				activities.append(activity)
+
+			elif event["type"] == "DeleteEvent":
+				activity["EventType"] = "DeleteEvent"
+				activity["url"] = "No URL source"
+				activity["message"] = f"Deleted a {payload['ref_type']} called {payload['ref']}"
+				activities.append(activity)
+
+			elif event["type"] == "IssuesEvent":
+				activity["EventType"] = "IssuesEvent"
+				activity["url"] = payload["issue"]["html_url"]
+				activity["message"] = f"Issue: {payload['issue']['title']}"
+				activities.append(activity)
+
+		return render(request, 'profile/github_activity.html', {'github_activity': activities})
+	except:
+		return render(request, 'profile/github_activity.html')
+
+def post_github(request):
+	author = request.user.author
+	if request.method == "GET":
+		content = ast.literal_eval(request.GET.get("activity"))
+		form = PostForm(initial={
+			'title': 'Sharing an activity from Github!',
+			'origin': '',
+			'source': content['url'],
+			'content': f"{content['message']}\nTimestamp: {content['timestamp']}\nSource:{content['url']}"
+			})
+		return render(request, "profile/create_post.html", {'form':form})
+	else:
+		form = PostForm(data=request.POST)
+		form.instance.author = author
+		if form.is_valid():
+			post = form.save(commit=False)
+			post.save()
+			return redirect('Profile:view_posts', author.id)
+
 
 def view_profile(request, author_id):
-	user = Profile.objects.get(user__username=request.user.username)
-	author = Profile.objects.get(user_id=author_id)
-	friend_status = user.friends.filter(user_id=author_id).exists()
+	user = Author.objects.get(user__username=request.user.username)
+	author = Author.objects.get(id=author_id)
+	friend_status = user.friends.filter(id=author_id).exists()
 	friend_posts = author.posts.all()
 
 	if request.method == "GET":
@@ -207,22 +282,23 @@ def view_profile(request, author_id):
 
 # TODO: check if request has already been made
 def friend_request(request, author_id):
-    # Create request object
-    receiver = Profile.objects.get(user__id=author_id)
-    friend_request = FriendRequest(type='follow', sender=request.user.username, receiver=receiver)
+	# Create request object
+	receiver = Author.objects.get(id=author_id)
+	sender = Author.objects.get(user__username=request.user.username)
+	friend_request = FriendRequest(sender=sender, receiver=receiver)
 
-    # Add to database
-    friend_request.save()
+	# Add to database
+	friend_request.save()
 
-    # Add the receiver to the sender's following list
-    user = Profile.objects.get(user__username=request.user.username)
-    user.following.add(receiver)
+	# Add the receiver to the sender's following list
+	sender.following.add(receiver)
+	receiver.followers.add(sender)
 
-    return redirect('Profile:view_profile', author_id)
+	return redirect('Profile:view_profile', author_id)
 
 def remove_friend(request, author_id):
-	user = Profile.objects.get(user__username=request.user.username)
-	to_delete = Profile.objects.get(user__id=author_id)
+	user = Author.objects.get(user__username=request.user.username)
+	to_delete = Author.objects.get(id=author_id)
 	user.friends.remove(to_delete)
 
 	return redirect('Profile:view_profile', author_id)
