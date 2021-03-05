@@ -223,5 +223,68 @@ class TestFriendRequest(TestCase):
             msg_prefix='Should redirect to friends list page'
         )
 
-        self.assertEqual((set(self.author1.friends.all())), set([self.author2]))
-        self.assertEqual((set(self.author2.friends.all())), set([self.author1]))
+        self.assertEqual((set(self.author1.friends.all())), set([self.author2]), 'author1 and author2 should be friends')
+        self.assertEqual((set(self.author2.friends.all())), set([self.author1]), 'author2 should also have author1 in their friends list')
+
+    def test_decline_friend_request(self):
+        self.setup()
+
+        # Send a friend request to author2 loggin in as author1
+        response = self.client1.get(reverse('Profile:friend_request', kwargs={'author_id':self.author2.id}))
+        self.assertRedirects(
+            response,
+            expected_url=reverse('Profile:view_profile', kwargs={'author_id':self.author2.id}),
+            status_code=302,
+            target_status_code=200,
+            msg_prefix='Should have been redirected to author2\'s profile page'
+        )
+
+        # Decline the request
+        response = self.client2.post(reverse('Profile:decline'), data={'sender':self.author1.user.username})
+        self.assertRedirects(
+            response,
+            expected_url=reverse('Profile:friends'),
+            status_code=302,
+            target_status_code=200,
+            msg_prefix='Should redirect to friends list page'
+        )
+
+        # author1 can still be a follower of author2
+        self.assertEqual(set(self.author2.followers.all()), set([self.author1]), 'author1 should be a follower of author2')
+        self.assertEqual(set(self.author1.following.all()), set([self.author2]), 'author1 should be following author2')
+
+        # But they are not friends
+        self.assertEqual((set(self.author1.friends.all())), set([]), 'author1 and author2 should not be friends')
+        self.assertEqual((set(self.author2.friends.all())), set([]), 'author1 and author2 should not be friends')
+        
+        # The request should no longer be shown
+        response = self.client2.get(reverse('Profile:friends'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['friend_requests']), 0, 'author2 should not have any requests')
+
+    def test_remove_friend(self):
+        self.setup()
+
+        # Send request from author1 to author2
+        response = self.client1.get(reverse('Profile:friend_request', kwargs={'author_id':self.author2.id}))
+        self.assertEqual(response.status_code, 302)
+
+        # Accept the request
+        response = self.client2.post(reverse('Profile:accept'), data={'sender':self.author1.user.username})
+        self.assertEqual(response.status_code, 302)
+
+        self.assertEqual((set(self.author1.friends.all())), set([self.author2]), 'author1 and author2 should be friends')
+        self.assertEqual((set(self.author2.friends.all())), set([self.author1]), 'author2 should also have author1 in their friends list')
+
+        # Remove the friend as author1
+        response = self.client1.get(reverse('Profile:remove_friend', kwargs={'author_id':self.author2.id}))
+        self.assertRedirects(
+            response,
+            expected_url=reverse('Profile:view_profile', kwargs={'author_id':self.author1.id}),
+            status_code=302,
+            target_status_code=200,
+            msg_prefix='Should redirect to profile page'
+        )
+
+        self.assertEqual((set(self.author1.friends.all())), set([]), 'author1 and author2 should no longer be friends')
+        self.assertEqual((set(self.author2.friends.all())), set([]), 'author1 and author2 should no longer be friends')
