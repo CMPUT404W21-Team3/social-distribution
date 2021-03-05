@@ -156,7 +156,6 @@ class CreatePostView(generic.CreateView):
 
 @login_required(login_url='/login/')
 def edit_post(request, post_id):
-	print(post_id)
 	post = Post.objects.get(id=post_id)
 	if post.author.id != request.user.author.id:
 		return HttpResponseForbidden
@@ -186,17 +185,19 @@ def share_post(request, post_id):
 	author_original = post.author
 	author_share = request.user.author
 	if request.method == "GET":
-		form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original)}',\
-												'origin': post.origin + f';http://localhost:8000/author/{author_original.id}/posts/{post_id}'})
+		print("Part 1")
+		form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original.user_name)}',\
+												'origin': post.origin + f'http://localhost:8000/author/{author_original.id}/view_post/{post_id}'})
 
 		return render(request, "profile/create_post.html", {'form':form})
 	else:
+		print("Part 2")
 		form = PostForm(data=request.POST)
 		form.instance.author = author_share
 		if form.is_valid():
 			post_share = form.save(commit=False)
 			post_share.save()
-			return redirect('Profile:posts', author_share.id)
+			return redirect('Profile:view_posts', author_share.id)
 
 @cache_page(60 * 5)
 def view_github_activity(request):
