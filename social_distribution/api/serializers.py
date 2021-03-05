@@ -3,6 +3,7 @@ from rest_framework import serializers
 from Profile.models import Author, Post, Comment
 from Search.models import FriendRequest
 
+from django.contrib.auth.models import User
 
 
 class AuthorSerializer(serializers.ModelSerializer):
@@ -11,6 +12,7 @@ class AuthorSerializer(serializers.ModelSerializer):
         fields = ('type', 'id', 'user_name', 'bio', 'location', 'birth_date', 'github')
 
 class PostSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Post
         fields = ('type', 'title', 'id', 'source', 'origin', 'description',
@@ -24,6 +26,11 @@ class PostSerializer(serializers.ModelSerializer):
         data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
         data['comments'] = CommentSerializer(Comment.objects.filter(id__in=data['comments']), many=True).data
         return data
+
+    # https://www.django-rest-framework.org/tutorial/4-authentication-and-permissions/
+    def perform_create(self, serializer):
+        author = Author.objects.get(user__username=self.request.user.username)
+        serializer.save(author=author)
 
 class FriendRequestSerializer(serializers.ModelSerializer):
     class Meta:

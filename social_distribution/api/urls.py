@@ -16,3 +16,7 @@ urlpatterns = [
     path('api/author/<str:author_id>/followers/<str:follower_id>', views.get_follower),
     path('api/author/<str:author_id>/posts/<str:post_id>/comments', views.get_comments),
 ]
+
+urlpatterns += [
+    path('api-auth/', include('rest_framework.urls')),
+]
