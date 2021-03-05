@@ -163,7 +163,7 @@ def edit_post(request, post_id):
 		post_form = PostForm(request.POST, instance=post)
 		if post_form.is_valid():
 			post_form.save()
-			return redirect('Profile:post', author_id=post.author.id, post_id=post.id)
+			return redirect('Profile:view_post', author_id=post.author.id, post_id=post.id)
 		else:
 			messages.error(request, 'Please correct the error')
 	else:
@@ -177,7 +177,7 @@ def delete_post(request, post_id):
 		return HttpResponseForbidden
 	else:
 		post.delete()
-		return redirect('Profile:posts', author_id=request.user.author.id)
+		return redirect('Profile:view_posts', author_id=request.user.author.id)
 
 def share_post(request, post_id):
 	post = Post.objects.get(id=post_id)
@@ -194,7 +194,7 @@ def share_post(request, post_id):
 		if form.is_valid():
 			post_share = form.save(commit=False)
 			post_share.save()
-			return redirect('Profile:posts', author_share.id)
+			return redirect('Profile:view_posts', author_share.id)
 
 @cache_page(60 * 5)
 def view_github_activity(request):
@@ -240,7 +240,7 @@ def post_github(request):
 		if form.is_valid():
 			post = form.save(commit=False)
 			post.save()
-			return redirect('Profile:posts', author.id)
+			return redirect('Profile:view_posts', author.id)
 
 
 def view_profile(request, author_id):
