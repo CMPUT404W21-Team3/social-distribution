@@ -13,7 +13,7 @@ import commonmark, requests, ast
 
 from .forms import UserForm, AuthorForm, SignUpForm, PostForm
 # Potentially problematic
-from .models import Author, Post, Likes
+from .models import Author, Post
 from Search.models import FriendRequest
 
 from .helpers import timestamp_beautify
@@ -302,29 +302,3 @@ def remove_friend(request, author_id):
 	user.friends.remove(to_delete)
 
 	return redirect('Profile:view_profile', author_id)
-
-
-
-def like_post(request,author_id,post_id):
-	current_user = request.user
-	post = get_object_or_404(Post, id=post_id, author__id=author_id)
-
-	try:
-		obj = Likes.objects.get(post_id=post, who_liked=request.user.id)
-	except:
-		like_instance = Likes(post_id=post, who_liked=request.user.id)
-		like_instance.save()
-		post.likes_count = post.likes_count + 1
-		post.save()
-	else:
-		post.likes_count -= 1
-		post.save()
-		obj.delete()
-
-	if post.content_type == Post.ContentType.PLAIN:
-		content = post.content
-	if post.content_type == Post.ContentType.MARKDOWN:
-		content = commonmark.commonmark(post.content)
-	else:
-		content = 'Content type not supported yet'
-	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user})
