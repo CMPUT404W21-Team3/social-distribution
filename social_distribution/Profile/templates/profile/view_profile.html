@@ -10,15 +10,15 @@
 		<!-- Check if author and current user are friends -->
 		{% if friend_status  %}
 			<!-- Remove friend option -->
-			<form action="{{ author.user.id }}/remove_friend" method="POST">
+			<form action="{{ author.id }}/remove_friend" method="POST">
 				{% csrf_token %}
-				<input type="hidden" name="author" id="author" value="{{ author.user.id }}" />
+				<input type="hidden" name="author" id="author" value="{{ author.id }}" />
 				<button type="submit">Remove Friend</button>
 			</form>
 		{% else %}
-			<form action="{{ author.user.id }}/send_request" method="POST">
+			<form action="{{ author.id }}/send_request" method="POST">
 				{% csrf_token %}
-				<input type="hidden" name="receiver" id="author" value="{{ author.user.id }}" />
+				<input type="hidden" name="receiver" id="author" value="{{ author.id }}" />
 				<button type="submit">Send Friend Request</button>
 			</form>
 		{% endif %}
