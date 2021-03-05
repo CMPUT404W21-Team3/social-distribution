@@ -15,4 +15,4 @@
 - - author/{author_id}/followers/{follower_id} - retrieve, update* or delete* follower
 - - author/{author_id}/posts/{post_id}/comments - retrieve or add comment 
 
-* denotes authentication required
+\* denotes authentication required
