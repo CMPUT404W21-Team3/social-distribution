@@ -18,10 +18,9 @@ class Author(models.Model):
     birth_date = models.DateField(null=True, blank=True)
     github = models.CharField(max_length=50, blank=True)
 
-
+    # Not sure if this is the best way to do this
     friends = models.ManyToManyField('self')
-    following = models.ManyToManyField('self', symmetrical=False, related_name="following_list")
-    followers = models.ManyToManyField('self', symmetrical=False, related_name="follower_list")
+    following = models.ManyToManyField('self', symmetrical=False)
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
@@ -72,7 +71,7 @@ class Post(models.Model):
     comments_first_page = models.CharField(max_length=200, null=True) # URL to first page of comments for this post
     comments = models.ManyToManyField('Comment', blank=True)
     timestamp = models.DateTimeField(default=timezone.now)
-    likes_count = models.IntegerField(default=0)
+
     class Visibility(models.TextChoices):
         PUBLIC = 'PUBLIC'
         FRIENDS = 'FRIENDS'
@@ -84,7 +83,7 @@ class Post(models.Model):
     )
 
     unlisted = models.BooleanField(default=False) # used for images so that they don't show up in timelines
-
+    likes_count = models.IntegerField(default=0)
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
     def type(self):
@@ -117,16 +116,6 @@ class Comment(models.Model):
     )
 
     timestamp = models.DateTimeField(default=timezone.now)
-
-    # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
-    @property
-    def type(self):
-        return 'comment'
-
-    # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
-    @type.setter
-    def type(self, val):
-        pass
 
 class Likes(models.Model):
     post_id = models.ForeignKey(Post, on_delete=models.CASCADE, null=True)

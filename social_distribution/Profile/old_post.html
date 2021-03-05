@@ -6,7 +6,7 @@
 {% else %}
     <p>{{post.content | linebreaks}}</p>
 {% endif %}
-
+<br>
 <p>Likes:{{post.likes_count}}</p>
 {% if post.author.id != current_user.profile.id %}
     <form action="{% url 'Profile:like' author_id=post.author.id post_id=post.id %}" method = "POST">
@@ -16,7 +16,6 @@
         <button type="submit">Like</button>
     </form>
 {% endif %}
-
 
 
 
