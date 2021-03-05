@@ -225,15 +225,17 @@ def like_post(request,author_id,post_id):
 	current_user = request.user
 	post = get_object_or_404(Post, id=post_id, author__id=author_id)
 
-	# if post.filter(id=request.user.id).exists():
-	# 	post.likes.remove(request.user)
-	# else:
-	# 	post.likes.add(request.user)
-
-	like_instance = Likes(post_id=post, who_liked=request.user.id)
-	like_instance.save()
-	post.likes_count = post.likes_count + 1
-	post.save()
+	try:
+		obj = Likes.objects.get(post_id=post, who_liked=request.user.id)
+	except:
+		like_instance = Likes(post_id=post, who_liked=request.user.id)
+		like_instance.save()
+		post.likes_count = post.likes_count + 1
+		post.save()
+	else:
+		post.likes_count -= 1
+		post.save()
+		obj.delete()
 
 	return render(request, 'profile/post.html', {'post': post, 'current_user': current_user})
 
