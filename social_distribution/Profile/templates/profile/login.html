@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 
 {% block content %}
-  <h2>Log in to My Site</h2>
+  <h2 class="fst-italic text-center login">Log in to My Site</h2>
   {% if form.errors %}
-    <p style="color: red">Your username and password didn't match. Please try again.</p>
+    <p class="text-center" style="color: red">Your username and password didn't match. Please try again.</p>
   {% endif %}
   <form method="post">
     {% csrf_token %}
@@ -20,7 +20,7 @@
         {% endif %}
       </p>
     {% endfor %}
-    <button type="submit">Log in</button>
+    <button class="btn btn-primary" type="submit">Log in</button>
     <a href="{% url 'Profile:signup' %}">New to My Site? Sign up</a>
   </form>
 {% endblock %}
