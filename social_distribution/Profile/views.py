@@ -115,14 +115,14 @@ def accept(request):
 	# Add to friends list
 	receiver.friends.add(sender)
 
-	return redirect('/friends')
+	return redirect('Profile:friends')
 
 def decline(request):
 	receiver = Author.objects.get(user__username=request.user.username)
 	sender = Author.objects.get(user__username=request.POST.get('sender', ''))
 	# Delete that request
 	FriendRequest.objects.filter(receiver=receiver).filter(sender=sender).delete()
-	return redirect('/friends')
+	return redirect('Profile:friends')
 
 def view_posts(request, author_id):
 	author = Author.objects.get(id=author_id)
