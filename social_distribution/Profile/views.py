@@ -301,4 +301,4 @@ def remove_friend(request, author_id):
 	to_delete = Author.objects.get(id=author_id)
 	user.friends.remove(to_delete)
 
-	return redirect('Profile:view_profile', author_id)
+	return redirect('Profile:view_profile', request.user.author.id)
