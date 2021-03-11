@@ -32,6 +32,17 @@
                         <p class="card-text" style="margin: 0;"><small class="text-muted">@{{post.author}} {{post.origin}}</small></p>
                         <h5 class="card-title">{{post.description}}</h5>
                         <p class="card-text">{{content | safe}}</p>
+
+                        <p>Likes:{{post.likes_count}}</p>
+                        {% if post.author.id != current_user.profile.id %}
+                            <form action="{% url 'Profile:like' author_id=post.author.id post_id=post.id %}" method = "POST">
+                                {% csrf_token %}
+                                <input type="hidden" name="user" value="{{current_user.profile}}" />
+                                <input type="hidden" name="post" value="{{post.id}}">
+                                <button type="submit">Like</button>
+                            </form>
+                        {% endif %}
+
                         {% if post.author.id == current_user.profile.id %}
                             <div class="row">
                                 <div class="col-sm">
@@ -68,6 +79,17 @@
                         <p class="card-text" style="margin: 0;"><small class="text-muted">@{{post.author}} {{post.origin}}</small></p>
                         <h5 class="card-title">{{post.description}}</h5>
                         <p class="card-text">{{post.content}}</p>
+
+                        <p>Likes:{{post.likes_count}}</p>
+                        {% if post.author.id != current_user.profile.id %}
+                            <form action="{% url 'Profile:like' author_id=post.author.id post_id=post.id %}" method = "POST">
+                                {% csrf_token %}
+                                <input type="hidden" name="user" value="{{current_user.profile}}" />
+                                <input type="hidden" name="post" value="{{post.id}}">
+                                <button type="submit">Like</button>
+                            </form>
+                        {% endif %}
+
                         {% if post.author.id == current_user.profile.id %}
                             <div class="row">
                                 <div class="col-sm">
