@@ -186,7 +186,13 @@ def share_post(request, post_id):
 	author_share = request.user.author
 	if request.method == "GET":
 		form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original.user_name)}',\
-												'origin': post.origin + f'http://localhost:8000/author/{author_original.id}/view_post/{post_id}'})
+												'origin': post.origin + f'http://localhost:8000/author/{author_original.id}/view_post/{post_id}', \
+												'visibility': post.visibility})
+
+		if post.visibility == 'FRIENDS':
+			# Can't edit FRIENDS visibility
+			form.fields['visibility'].widget.attrs['style'] = 'pointer-events: none'
+			form.fields['visibility'].label = 'Visibility (FRIENDS only)'
 
 		return render(request, "profile/create_post.html", {'form':form})
 	else:
@@ -196,6 +202,8 @@ def share_post(request, post_id):
 			post_share = form.save(commit=False)
 			post_share.save()
 			return redirect('Profile:view_posts', author_share.id)
+		else:
+			print(form.errors)
 
 def view_github_activity(request):
 	#get the current user's github username if available
@@ -261,7 +269,7 @@ def view_github_activity(request):
 					activities.append(activity)
 			except:
 				pass
-				
+
 		return render(request, 'profile/github_activity.html', {'github_activity': activities})
 	except:
 		return render(request, 'profile/github_activity.html')
