@@ -71,7 +71,7 @@
             <div class="col">
                 <div class="card">
                     <h3 class="card-header">{{post.title}}<span class="material-icons">
-                        {% if post.visibility == 'PUBLIC' or post.author.id == current_user.author.id %}
+                        {% if post.visibility == 'PUBLIC' or post.author.id == current_user.author.id or post.visibility == 'FRIENDS' %}
                             <a href="{% url 'Profile:share_post' post_id=post.id %}">share</a>
                         {% endif %}
                     </span></h3>
