@@ -213,40 +213,55 @@ def view_github_activity(request):
 			repo = event["repo"]["name"]
 			payload = event["payload"]
 
-			if event["type"] == "PushEvent":
-				activity["EventType"] = "PushEvent"
-				head_sha = payload["head"]
-				url = f"http://github.com/{repo}/commit/{head_sha}"
-				activity["url"] = url
-				size = payload["size"]
-				activity["message"] = payload["commits"][size-1]["message"]
-				activities.append(activity)
+			try:
+				if event["type"] == "PushEvent":
+					activity["EventType"] = "PushEvent"
+					head_sha = payload["head"]
+					url = f"http://github.com/{repo}/commit/{head_sha}"
+					activity["url"] = url
+					size = payload["size"]
+					activity["message"] = payload["commits"][size-1]["message"]
+					activities.append(activity)
+			except:
+				pass
 
-			elif event["type"] == "PullRequestEvent":
-				activity["EventType"] = "PullRequestEvent"
-				pull_request = payload["pull_request"]
-				activity["url"] = pull_request["html_url"]
-				activity["message"] = f'{pull_request["title"]} #{pull_request["number"]}'
-				activities.append(activity)
+			try:
+				if event["type"] == "PullRequestEvent":
+					activity["EventType"] = "PullRequestEvent"
+					pull_request = payload["pull_request"]
+					activity["url"] = pull_request["html_url"]
+					activity["message"] = f'{pull_request["title"]} #{pull_request["number"]}'
+					activities.append(activity)
+			except:
+				pass
 
-			elif event["type"] == "CreateEvent":
-				activity["EventType"] = "CreateEvent"
-				activity["url"] = "No URL source"
-				activity["message"] = f"Created a {payload['ref_type']} called {payload['ref']}"
-				activities.append(activity)
+			try:
+				if event["type"] == "CreateEvent":
+					activity["EventType"] = "CreateEvent"
+					activity["url"] = "No URL source"
+					activity["message"] = f"Created a {payload['ref_type']} called {payload['ref']}"
+					activities.append(activity)
+			except:
+				pass
 
-			elif event["type"] == "DeleteEvent":
-				activity["EventType"] = "DeleteEvent"
-				activity["url"] = "No URL source"
-				activity["message"] = f"Deleted a {payload['ref_type']} called {payload['ref']}"
-				activities.append(activity)
+			try:
+				if event["type"] == "DeleteEvent":
+					activity["EventType"] = "DeleteEvent"
+					activity["url"] = "No URL source"
+					activity["message"] = f"Deleted a {payload['ref_type']} called {payload['ref']}"
+					activities.append(activity)
+			except:
+				pass
 
-			elif event["type"] == "IssuesEvent":
-				activity["EventType"] = "IssuesEvent"
-				activity["url"] = payload["issue"]["html_url"]
-				activity["message"] = f"Issue: {payload['issue']['title']}"
-				activities.append(activity)
-
+			try:
+				if event["type"] == "IssuesEvent":
+					activity["EventType"] = "IssuesEvent"
+					activity["url"] = payload["issue"]["html_url"]
+					activity["message"] = f"Issue: {payload['issue']['title']}"
+					activities.append(activity)
+			except:
+				pass
+				
 		return render(request, 'profile/github_activity.html', {'github_activity': activities})
 	except:
 		return render(request, 'profile/github_activity.html')
