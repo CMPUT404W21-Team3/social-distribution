@@ -351,3 +351,31 @@ def like_post(request,author_id,post_id):
 	else:
 		content = 'Content type not supported yet'
 	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user})
+
+def private_post(request, author_id):
+	author = request.user.author
+	to_author = Author.objects.get(id=author_id)
+	if request.method == "GET":
+		form = PostForm(initial={'title': f'Private DM from @{author.user_name} --',\
+								 'origin': f'http://localhost:8000/view_profile/{author.id}',\
+								 'visibility': 'PRIVATE',\
+								 'to_author_id': to_author})
+		form.fields['visibility'].widget.attrs['style'] = 'pointer-events: none'
+		form.fields['visibility'].label = 'Visibility (PRIVATE)'
+
+		return render(request, "profile/create_post.html", {'form':form})
+	elif request.method == "POST":
+		form = PostForm(data=request.POST)
+		form.instance.author = author
+		form.instance.to_author = to_author
+		if form.is_valid():
+			post_share = form.save(commit=False)
+			post_share.save()
+			return redirect('Profile:view_posts', author.id)
+		else:
+			print(form.errors)
+
+def private_inbox(request):
+	author = Author.objects.get(id=request.user.author.id)
+	posts = Post.objects.filter(to_author=request.user.author.id)
+	return render(request, 'profile/posts.html', {'posts':posts, 'author':author})

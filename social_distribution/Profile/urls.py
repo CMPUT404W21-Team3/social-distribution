@@ -25,8 +25,10 @@ urlpatterns = [
     path('view_profile/<str:author_id>', Profile_views.view_profile, name='view_profile'),
     path('view_profile/<str:author_id>/send_request', Profile_views.friend_request, name='friend_request'), # send a friend request
     path('view_profile/<str:author_id>/remove_friend', Profile_views.remove_friend, name='remove_friend'), # remove a friend
+    path('view_profile/<str:author_id>/private_post', Profile_views.private_post, name='private_post'),
     path('github_activity/', Profile_views.view_github_activity, name='view_github_activity'),
     path('post_github/', Profile_views.post_github, name='post_github'),
     path('author/<str:author_id>/view_post/<str:post_id>/liked', Profile_views.like_post, name='like'), # like a post
+    path('private_inbox/', Profile_views.private_inbox, name='private_inbox'),
 
 ]
