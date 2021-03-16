@@ -53,15 +53,14 @@ class Post(models.Model):
         MARKDOWN = 'text/markdown' # common mark
         PLAIN = 'text/plain' # UTF-8
         BASE64 = 'application/base64'
-        PNG = 'image/png;base64' # embedded png
-        JPEG = 'image/jpeg;base64' # embedded jpeg
+        PNG = 'image/png' # embedded png
+        JPEG = 'image/jpeg' # embedded jpeg
 
     content_type = models.CharField(
         max_length=40,
         choices = ContentType.choices,
         default=ContentType.PLAIN
     )
-
 
     content = models.TextField(blank=True)
     author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name="posts")
@@ -73,6 +72,7 @@ class Post(models.Model):
     comments = models.ManyToManyField('Comment', blank=True)
     timestamp = models.DateTimeField(default=timezone.now)
     likes_count = models.IntegerField(default=0)
+    
     class Visibility(models.TextChoices):
         PUBLIC = 'PUBLIC'
         FRIENDS = 'FRIENDS'
