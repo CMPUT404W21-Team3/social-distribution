@@ -20,6 +20,16 @@
         <div class="row row-cols-1 row-cols-md-3 g-4">
             {% for post in posts %}
                 <!-- <li><a href="/author/{{author.id}}/posts/{{post.id}}">{{post.title}}</a>: </li> -->
+                {% if post.visibility == 'PRIVATE' %}
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title"><a href="/author/{{post.author_id}}/view_post/{{post.id}}">{{post.title}}</a></h5>
+                                <p class="card-text">{{post.content}}</p>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
                 <div class="col">
                     <div class="card h-100">
                         <div class="card-body">
@@ -28,6 +38,7 @@
                         </div>
                     </div>
                 </div>
+                {% endif %}
             {% endfor %}
                 <!-- <div class="col">
                     <div class="card h-100">
