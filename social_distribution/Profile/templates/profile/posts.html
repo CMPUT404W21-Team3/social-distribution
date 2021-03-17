@@ -13,6 +13,7 @@
     <!-- <a href="/author/new_post">New Post</a> -->
 
     <a href="/author/new_post" class="btn btn-outline-success post-button" role="button">New Post</a>
+    <a href="/author/new_image_post" class="btn btn-outline-success post-button" role="button">New Image Post</a>
     <a href="/" class="btn btn-outline-success post-button" role="button">Back</a>
     <!-- <button type="button" class="btn btn-primary">New Post</button> -->
     {% if posts %}
@@ -33,7 +34,7 @@
                     <div class="card h-100">
                         <div class="card-body">
                             <h5 class="card-title"><a href="/author/{{author.id}}/view_post/{{post.id}}">{{post.title}}</a></h5>
-                            <p class="card-text">{{post.content}}</p>
+                            <p class="card-text">{{post.content_html | safe}}</p>
                         </div>
                     </div>
                 </div>

@@ -5,19 +5,20 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.views import generic
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponse
 from django.forms import ModelForm
 from django.views.decorators.cache import cache_page
+from base64 import b64encode, b64decode
 import commonmark, requests, ast
+
 # Create your views here.
 
-from .forms import UserForm, AuthorForm, SignUpForm, PostForm
+from .forms import UserForm, AuthorForm, SignUpForm, PostForm, ImagePostForm
 # Potentially problematic
 from .models import Author, Post, Likes
 from Search.models import FriendRequest
 
 from .helpers import timestamp_beautify
-
 
 @login_required(login_url='/login/')
 def home(request):
@@ -134,13 +135,19 @@ def view_posts(request, author_id):
 def view_post(request, author_id, post_id):
 	current_user = request.user
 	post = get_object_or_404(Post, id=post_id, author__id=author_id)
-	if post.content_type == Post.ContentType.PLAIN:
-		content = post.content
-	if post.content_type == Post.ContentType.MARKDOWN:
-		content = commonmark.commonmark(post.content)
+	liked = False
+
+	try:
+		obj = Likes.objects.get(post_id=post, who_liked=request.user.id)
+	except:
+		liked = False
 	else:
-		content = 'Content type not supported yet'
-	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user})
+		liked = True
+
+	if post.content_type == Post.ContentType.PNG or post.content_type == Post.ContentType.JPEG:
+		return HttpResponse(b64decode(post.content), content_type=post.content_type)
+	else:
+		return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked})
 
 class CreatePostView(generic.CreateView):
 	model = Post
@@ -152,6 +159,24 @@ class CreatePostView(generic.CreateView):
 		self.success_url = '/author/' + str(author.id) + '/view_posts'
 		form.instance.author = author
 		return super().form_valid(form)
+
+@login_required(login_url='/login/')
+def new_image_post(request):
+	if request.method == 'POST':
+		form = ImagePostForm(request.POST, request.FILES)
+		if form.is_valid():
+			image_post = form.save(commit=False)
+			image_post.content = b64encode(request.FILES['image'].read()).decode('ascii') # https://stackoverflow.com/a/45151058
+			image_post.content_type = request.FILES['image'].content_type
+			image_post.author = request.user.author
+			image_post.unlisted = True
+			image_post.save()
+			form.save_m2m() # https://docs.djangoproject.com/en/3.1/topics/forms/modelforms/#the-save-method
+			return redirect('Profile:view_posts', author_id=request.user.author.id)
+
+	else:
+		form = ImagePostForm()
+		return render(request, 'profile/create_image_post.html', {'form':form})
 
 
 @login_required(login_url='/login/')
@@ -331,6 +356,7 @@ def remove_friend(request, author_id):
 def like_post(request,author_id,post_id):
 	current_user = request.user
 	post = get_object_or_404(Post, id=post_id, author__id=author_id)
+	liked = False
 
 	try:
 		obj = Likes.objects.get(post_id=post, who_liked=request.user.id)
@@ -339,6 +365,7 @@ def like_post(request,author_id,post_id):
 		like_instance.save()
 		post.likes_count = post.likes_count + 1
 		post.save()
+		liked = True
 	else:
 		post.likes_count -= 1
 		post.save()
@@ -350,7 +377,7 @@ def like_post(request,author_id,post_id):
 		content = commonmark.commonmark(post.content)
 	else:
 		content = 'Content type not supported yet'
-	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user})
+	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user, 'liked': liked})
 
 def private_post(request, author_id):
 	author = request.user.author

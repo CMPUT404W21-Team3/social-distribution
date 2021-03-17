@@ -18,6 +18,7 @@ urlpatterns = [
     path('decline', Profile_views.decline, name='decline'),
     path('author/<str:author_id>/view_posts', Profile_views.view_posts, name='view_posts'), # recent posts by author
     path('author/new_post', Profile_views.CreatePostView.as_view(), name='new_post'), # post creation
+    path('author/new_image_post', Profile_views.new_image_post, name='new_image_post'), # image post creation
     path('author/edit_post/<str:post_id>', Profile_views.edit_post, name='edit_post'),
     path('author/delete_post/<str:post_id>', Profile_views.delete_post, name='delete_post'),
     path('author/share_post/<str:post_id>/', Profile_views.share_post, name='share_post'),
