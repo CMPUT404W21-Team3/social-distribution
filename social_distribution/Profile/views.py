@@ -135,10 +135,19 @@ def view_posts(request, author_id):
 def view_post(request, author_id, post_id):
 	current_user = request.user
 	post = get_object_or_404(Post, id=post_id, author__id=author_id)
+	liked = False
+
+	try:
+		obj = Likes.objects.get(post_id=post, who_liked=request.user.id)
+	except:
+		liked = False
+	else:
+		liked = True
+
 	if post.content_type == Post.ContentType.PNG or post.content_type == Post.ContentType.JPEG:
 		return HttpResponse(b64decode(post.content), content_type=post.content_type)
 	else:
-		return render(request, 'profile/post.html', {'post':post, 'current_user':current_user})
+		return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked})
 
 class CreatePostView(generic.CreateView):
 	model = Post
@@ -347,6 +356,7 @@ def remove_friend(request, author_id):
 def like_post(request,author_id,post_id):
 	current_user = request.user
 	post = get_object_or_404(Post, id=post_id, author__id=author_id)
+	liked = False
 
 	try:
 		obj = Likes.objects.get(post_id=post, who_liked=request.user.id)
@@ -355,6 +365,7 @@ def like_post(request,author_id,post_id):
 		like_instance.save()
 		post.likes_count = post.likes_count + 1
 		post.save()
+		liked = True
 	else:
 		post.likes_count -= 1
 		post.save()
@@ -366,4 +377,4 @@ def like_post(request,author_id,post_id):
 		content = commonmark.commonmark(post.content)
 	else:
 		content = 'Content type not supported yet'
-	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user})
+	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user, 'liked': liked})

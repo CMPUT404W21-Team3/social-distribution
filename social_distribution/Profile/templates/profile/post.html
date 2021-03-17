@@ -15,23 +15,33 @@
                     {% endif %}
                 </span></h3>
                 <div class="card-body">
-                    <p class="card-text" style="margin: 0;"><small class="text-muted">@{{post.author}} {{post.origin}}</small></p>
+                    <p class="card-text" style="margin: 0;"><small class="text-muted">@{{post.author.user}} {{post.origin}}</small></p>
                     <h5 class="card-title">{{post.description}}</h5>
                     <p class="card-text">{{post.content_html | safe}}</p>
-                    <p>Likes:{{post.likes_count}}</p>
-                    {% if post.author.id != current_user.profile.id %}
-                        <form action="{% url 'Profile:like' author_id=post.author.id post_id=post.id %}" method = "POST">
-                            {% csrf_token %}
-                            <input type="hidden" name="user" value="{{current_user.profile}}" />
-                            <input type="hidden" name="post" value="{{post.id}}">
-                            <button type="submit">Like</button>
-                        </form>
+                    {% if post.author.id != current_user.author.id %}
+                        <div style="display: inline-flex;">
+                            <form action="{% url 'Profile:like' author_id=post.author.id post_id=post.id %}" method = "POST" style="margin: 0;">
+                                {% csrf_token %}
+                                <input type="hidden" name="user" value="{{current_user.profile}}" />
+                                <input type="hidden" name="post" value="{{post.id}}">
+                                {% if liked %}
+                                <button type="submit" style="background-color: Transparent;border: none;padding-left:0;"><i class="bi bi-hand-thumbs-up-fill"></i></button>
+                                {% else %}
+                                <button type="submit" style="background-color: Transparent;border: none;padding-left:0;"><i class="bi bi-hand-thumbs-up"></i></button>
+                                {% endif %}
+                            </form>
+                            <p>{{post.likes_count}}</p>
+                        </div>
                     {% endif %}
 
-                    {% if post.author.id == current_user.profile.id %}
+                    {% if post.author.id == current_user.author.id %}
+                        <div style="display: inline-flex;">
+                            <i class="bi bi-hand-thumbs-up-fill" style="padding-right: 6px;"></i>
+                            <p>{{post.likes_count}}</p>
+                        </div>
                         <div class="row">
-                            <div class="col-sm">
-                                <span class="material-icons md-24"><a href="{% url 'Profile:edit_post' post_id=post.id %}">create</a></span>
+                            <div class="col-sm" style="padding-left: 0;">
+                                <span class="material-icons md-24"><a href="{% url 'Profile:edit_post' post_id=post.id %}" style="margin: 0;">create</a></span>
                             </div>
                             <div class="col-10">
                             </div>
