@@ -28,3 +28,8 @@ class PostForm(forms.ModelForm):
     class Meta:
         model = Post
         fields = ('title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility')
+
+class ImagePostForm(forms.ModelForm):
+    class Meta:
+        model = Post
+        fields = ('title', 'source', 'origin', 'description', 'categories', 'visibility')

@@ -28,7 +28,7 @@
         <div class="card h-100">
           <div class="card-body">
             <h5 class="card-title"><a href="/author/{{post.author.id}}/view_post/{{post.id}}">{{post.title}}</a></h5>
-            <p class="card-text">{{post.content}}</p>
+            <p class="card-text">{{ post.content_html | safe }}</p>
             <p class="card-text"><small class="text-muted">Last updated {{post.timestamp}}</small></p>
           </div>
         </div>
