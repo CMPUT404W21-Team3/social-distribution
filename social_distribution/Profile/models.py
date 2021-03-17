@@ -1,4 +1,4 @@
-import uuid
+import uuid, commonmark
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -6,6 +6,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from django.forms import ModelForm
+from django.urls import reverse
 
 # https://simpleisbetterthancomplex.com/tutorial/2016/07/22/how-to-extend-django-user-model.html#onetoone
 # https://stackoverflow.com/questions/16925129/generate-unique-id-in-django-from-a-model-field/30637668
@@ -94,6 +95,14 @@ class Post(models.Model):
     @type.setter
     def type(self, val):
         pass
+
+    def content_html(self):
+        if self.content_type == Post.ContentType.PLAIN:
+            return self.content
+        elif self.content_type == Post.ContentType.MARKDOWN:
+            return commonmark.commonmark(self.content)
+        elif self.content_type == Post.ContentType.JPEG or self.content_type == Post.ContentType.PNG:
+            return '<img src="' + reverse('Profile:view_post', kwargs={'author_id':self.author.id, 'post_id':self.id}) + '">'
 
 class PostCategory(models.Model):
     name = models.CharField(max_length=50)
