@@ -1,6 +1,95 @@
-<form enctype="multipart/form-data" method="post">
+{% extends 'base.html' %}
+
+{% block content%}
+
+<!-- <form enctype="multipart/form-data" method="post">
     {% csrf_token %}
     {{ form.as_p }}
     <p> <input type="file" name="image" accept="image/png, image/jpeg">Upload Image</input> </p>
     <input type="submit" value="Post!">
-</form>
+</form> -->
+<div class="container" style="margin-top: 10px;">
+    <div class="row">
+        <div class="col-sm-auto">
+            <span class="material-icons"><a href="/author/{{ user.author.id }}/view_posts">arrow_back_ios</a></span>
+        </div>
+        <div class="col">
+            <form method="post" class="row g-3 profile-form" enctype="multipart/form-data">
+                {% csrf_token %}
+            
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text" id="id_title">Title</span>
+                            <input type="text" class="form-control"  aria-describedby="id_title" name="title" maxlength="200" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text" id="id_source">Source</span>
+                            <input type="text" class="form-control"  aria-describedby="id_source" name="source" maxlength="200">
+                        </div>
+                    </div>
+                </div>
+            
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text" id="id_origin">Origin</span>
+                            <input type="text" class="form-control"  aria-describedby="id_origin" name="origin" maxlength="200">
+                          </div>
+                    </div>
+                </div>
+            
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">Description</span>
+                            <textarea class="form-control" aria-label="Description" name="description" id="id_desciption"></textarea>
+                        </div>
+                    </div>
+                </div>
+            
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <label class="input-group-text" for="id_visibility">Visibility</label>
+                            <select class="form-select" name="visibility" id="id_visibility">
+                              <option value="PUBLIC" selected>Public</option>
+                              <option value="FRIENDS">Friends</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <input type="file" class="form-control" id="id_image" name="image" accept="image/png, image/jpeg">
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="id_unlisted" name="unlisted">
+                            <label class="form-check-label" for="id_unlisted">
+                              Unlisted
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <div class="input-group"><button type="submit" class="btn btn-success">Post!</button></div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
