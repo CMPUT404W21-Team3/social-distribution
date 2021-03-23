@@ -219,7 +219,7 @@ def share_post(request, post_id):
 			form.fields['visibility'].widget.attrs['style'] = 'pointer-events: none'
 			form.fields['visibility'].label = 'Visibility (FRIENDS only)'
 
-		return render(request, "profile/create_post.html", {'form':form})
+		return render(request, "profile/share_post.html", {'form':form})
 	else:
 		form = PostForm(data=request.POST)
 		form.instance.author = author_share
