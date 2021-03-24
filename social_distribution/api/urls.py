@@ -15,6 +15,7 @@ urlpatterns = [
     path('api/author/<str:author_id>/followers', views.get_followers),
     path('api/author/<str:author_id>/followers/<str:follower_id>', views.get_follower),
     path('api/author/<str:author_id>/posts/<str:post_id>/comments', views.get_comments),
+    path('api/posts', views.get_all_posts)
 ]
 
 urlpatterns += [
