@@ -14,6 +14,38 @@ from Profile.models import Author, Post, Comment, PostLike, CommentLike
 # https://www.django-rest-framework.org/tutorial/1-serialization/ - was consulted in writing code
 
 # Create your views here.
+@api_view(['GET'])
+def authors(request):
+    """
+    Retrieve or update an author.
+    """
+    try:
+        authors = Author.objects.all()
+    except Author.DoesNotExist:
+        return HttpResponse(status=404)
+
+    if request.method == 'GET':
+        serializer = AuthorSerializer(authors, many=True)
+        return Response(serializer.data)
+
+    else:
+        return Response(serializer.errors, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+@api_view(['GET'])
+def author_search(request, query):
+    """
+    Retrieve or update an author.
+    """
+    if request.method == 'GET':
+        authors = Author.objects.filter(user__username__contains=query)
+        serializer = AuthorSerializer(authors, many=True)
+        return Response(serializer.data)
+
+    else:
+        return Response(serializer.errors, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
 @api_view(['GET', 'POST'])
 def author(request, author_id):
     """
