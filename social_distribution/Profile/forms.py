@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-from .models import Author, Post
+from .models import Author, Post, Comment
 
 class UserForm(forms.ModelForm):
     class Meta:
@@ -33,3 +33,9 @@ class ImagePostForm(forms.ModelForm):
     class Meta:
         model = Post
         fields = ('title', 'source', 'origin', 'description', 'categories', 'visibility')
+
+
+class CommentForm(forms.ModelForm):
+    class Meta:
+        model = Comment
+        fields = ('content',)

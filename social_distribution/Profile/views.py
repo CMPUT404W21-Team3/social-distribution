@@ -10,16 +10,19 @@ from django.forms import ModelForm
 from django.views.decorators.cache import cache_page
 from base64 import b64encode, b64decode
 import commonmark, requests, ast
-from django.db.models import Q
 
+from django.db.models import Q
+from django.http import HttpResponseRedirect
 # Create your views here.
 
-from .forms import UserForm, AuthorForm, SignUpForm, PostForm, ImagePostForm
-# Potentially problematic
+from .forms import UserForm, AuthorForm, SignUpForm, PostForm, ImagePostForm, CommentForm
+
 from .models import Author, Post, CommentLike, PostLike
 from Search.models import FriendRequest
 
 from .helpers import timestamp_beautify
+# ------------------------------------------------------------------------------------------------------------------ #
+# Create your views here.
 
 @login_required(login_url='/login/')
 def home(request):
@@ -138,6 +141,28 @@ def view_post(request, author_id, post_id):
 	post = get_object_or_404(Post, id=post_id, author__id=author_id)
 	liked = False
 
+	#--- Comments Block ---#
+	# https://djangocentral.com/creating-comments-system-with-django/
+	if current_user.author.id == post.author.id:
+		comments = post.comments
+	else:
+		comments = post.comments.filter(author__id=current_user.author.id)
+	new_comment = None
+	if request.method == 'POST':
+		comment_form = CommentForm(data=request.POST)
+		if comment_form.is_valid():
+			new_comment = comment_form.save(commit=False)
+			new_comment.post = post
+			new_comment.author = request.user.author
+			new_comment.save()
+			#new_comment = CommentForm()
+
+			# ref: https://stackoverflow.com/questions/5773408/how-to-clear-form-fields-after-a-submit-in-django
+			return HttpResponseRedirect('')
+	else:
+		comment_form = CommentForm()
+	#--- end of Comments Block ---#
+
 	try:
 		obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
 	except:
@@ -148,7 +173,7 @@ def view_post(request, author_id, post_id):
 	if post.content_type == Post.ContentType.PNG or post.content_type == Post.ContentType.JPEG:
 		return HttpResponse(b64decode(post.content), content_type=post.content_type)
 	else:
-		return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked})
+		return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
 
 class CreatePostView(generic.CreateView):
 	model = Post

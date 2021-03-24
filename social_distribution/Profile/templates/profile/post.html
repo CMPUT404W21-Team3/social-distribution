@@ -34,6 +34,35 @@
                         </div>
                     {% endif %}
 
+                    <!-- ================= Comments block ================= -->
+                    {% if post.author.id != current_user.author.id %}
+                    <p>Leave a Comment</p>
+                    <form method = "POST">
+                        {{ comment_form.as_p }} <!-- Comment text form -->
+                        {% csrf_token %}
+                        <button type="submit">Submit My Comment</button>
+                    </form>
+                    {% endif %}
+
+                    <p>Comments:</p>
+                    <!-- showing all comments -->
+                    <ul>
+                        {% for comment in comments.all %}
+                            <!--{% comment.author.id}-->
+                            <li>
+                                <div>
+                                    <!--Comment body-->
+                                    <p>@{{comment.author.user}} :
+                                        {{comment.content}}</p>
+
+                                    <!--Comment time-->
+                                    <p>Comment at:{{comment.timestamp}}</p>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <!-- ================= End of Comments block ================= -->
+
                     {% if post.author.id == current_user.author.id %}
                         <div style="display: inline-flex;">
                             <i class="bi bi-hand-thumbs-up-fill" style="padding-right: 6px;"></i>
