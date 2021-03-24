@@ -28,6 +28,8 @@ urlpatterns = [
     path('api/authors', views.authors),
     path('api/authors/search?q=<str:query>', views.author_search),
     path('api/authors/search/<str:query>', views.author_search),
+    path('api/posts', views.get_all_posts),
+    
 ]
 
 urlpatterns += [

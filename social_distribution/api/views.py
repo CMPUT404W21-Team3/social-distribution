@@ -13,6 +13,17 @@ from Profile.models import Author, Post, Comment, PostLike, CommentLike
 
 # https://www.django-rest-framework.org/tutorial/1-serialization/ - was consulted in writing code
 
+@api_view(['GET'])
+def get_all_posts(request):
+    """
+    Get all public posts
+    """
+    
+    posts = Post.objects.filter(visibility=Post.Visibility.PUBLIC, unlisted=False)
+    serializer = PostSerializer(posts, many=True)
+    return Response(serializer.data)
+
+
 # Create your views here.
 @api_view(['GET'])
 def authors(request):
