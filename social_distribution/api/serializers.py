@@ -16,15 +16,14 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ('type', 'title', 'id', 'source', 'origin', 'description',
-                    'content_type', 'content', 'author', 'categories', 'comments_count',
-                    'comments_page_size', 'comments_first_page', 'comments', 'timestamp',
+                    'content_type', 'content', 'author', 'categories', 'timestamp',
                     'visibility', 'unlisted')
 
     # https://stackoverflow.com/questions/41312558/django-rest-framework-post-nested-objects
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
-        data['comments'] = CommentSerializer(Comment.objects.filter(id__in=data['comments']), many=True).data
+        #data['comments'] = CommentSerializer(Comment.objects.filter(id__in=data['comments']), many=True).data
         return data
 
     # https://www.django-rest-framework.org/tutorial/4-authentication-and-permissions/
