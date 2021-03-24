@@ -435,8 +435,10 @@ def private_post(request, author_id):
 
 def inbox(request):
 	author = Author.objects.get(id=request.user.author.id)
+	# Private means direct DM or from someone is not your friend (yet)
 	private_posts = Post.objects.filter(to_author=request.user.author.id).order_by('-timestamp')
 	friends = author.friends.all()
+	# Friends posts contain all the post from the people you follow
 	friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
 	posts = private_posts | friends_posts
 	return render(request, 'profile/posts.html', {'posts':posts, 'author':author})
