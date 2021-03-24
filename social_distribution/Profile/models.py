@@ -112,21 +112,22 @@ class PostCategory(models.Model):
 
 class Comment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name="comments")
-    content = models.TextField()
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True, relate_name="post")
+    author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name="commenter")
+    content = models.TextField(blank=True)
 
-    class ContentType(models.TextChoices):
-        MARKDOWN = 'text/markdown' # common mark
-        PLAIN = 'text/plain' # UTF-8
-        BASE64 = 'application/base64'
-        PNG = 'image/png;base64' # embedded png
-        JPEG = 'image/jpeg;base64' # embedded jpeg
+    # class ContentType(models.TextChoices):
+    #     MARKDOWN = 'text/markdown' # common mark
+    #     PLAIN = 'text/plain' # UTF-8
+    #     BASE64 = 'application/base64'
+    #     PNG = 'image/png;base64' # embedded png
+    #     JPEG = 'image/jpeg;base64' # embedded jpeg
 
-    content_type = models.CharField(
-        max_length=40,
-        choices = ContentType.choices,
-        default=ContentType.PLAIN
-    )
+    # content_type = models.CharField(
+    #     max_length=40,
+    #     choices = ContentType.choices,
+    #     default=ContentType.PLAIN
+    # )
 
     timestamp = models.DateTimeField(default=timezone.now)
 
@@ -139,6 +140,7 @@ class Comment(models.Model):
     @type.setter
     def type(self, val):
         pass
+
 
 class Likes(models.Model):
     post_id = models.ForeignKey(Post, on_delete=models.CASCADE, null=True)
