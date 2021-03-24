@@ -8,14 +8,57 @@ from rest_framework.parsers import JSONParser
 from rest_framework import status
 from rest_framework.response import Response
 
-from .serializers import AuthorSerializer, PostSerializer, CommentSerializer
-from Profile.models import Author, Post, Comment
+from .serializers import AuthorSerializer, PostSerializer, CommentSerializer, LikeSerializer, PostLikeSerializer, CommentLikeSerializer
+from Profile.models import Author, Post, Comment, PostLike, CommentLike
 
 # https://www.django-rest-framework.org/tutorial/1-serialization/ - was consulted in writing code
 
+@api_view(['GET'])
+def get_all_posts(request):
+    """
+    Get all public posts
+    """
+    
+    posts = Post.objects.filter(visibility=Post.Visibility.PUBLIC, unlisted=False)
+    serializer = PostSerializer(posts, many=True)
+    return Response(serializer.data)
+
+
 # Create your views here.
+@api_view(['GET'])
+def authors(request):
+    """
+    Retrieve or update an author.
+    """
+    try:
+        authors = Author.objects.all()
+    except Author.DoesNotExist:
+        return HttpResponse(status=404)
+
+    if request.method == 'GET':
+        serializer = AuthorSerializer(authors, many=True)
+        return Response(serializer.data)
+
+    else:
+        return Response(serializer.errors, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+@api_view(['GET'])
+def author_search(request, query):
+    """
+    Retrieve or update an author.
+    """
+    if request.method == 'GET':
+        authors = Author.objects.filter(user__username__contains=query)
+        serializer = AuthorSerializer(authors, many=True)
+        return Response(serializer.data)
+
+    else:
+        return Response(serializer.errors, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
 @api_view(['GET', 'POST'])
-def get_author(request, author_id):
+def author(request, author_id):
     """
     Retrieve or update an author.
     """
@@ -38,7 +81,7 @@ def get_author(request, author_id):
 
 
 @api_view(['GET', 'POST', 'DELETE', 'PUT'])
-def get_post(request, author_id, post_id):
+def post(request, author_id, post_id):
     """
     Create, retrieve, update or delete a post.
     """
@@ -110,7 +153,7 @@ def get_post(request, author_id, post_id):
 
 
 @api_view(['GET', 'POST'])
-def get_posts(request, author_id):
+def posts(request, author_id):
     """
     Get posts from an author or create a post and auto generate an id for it.
     """
@@ -131,14 +174,14 @@ def get_posts(request, author_id):
 
 
 @api_view(['GET'])
-def get_followers(request, author_id):
+def followers(request, author_id):
     if request.method == 'GET':
         followers = Author.objects.get(id=author_id).followers.all()
         serializer = AuthorSerializer(followers, many=True)
         return Response(serializer.data)
 
 @api_view(['GET', 'PUT', 'DELETE'])
-def get_follower(request, author_id, follower_id):
+def follower(request, author_id, follower_id):
     """
     Retrieve or delete follower of author, or add user as a follower
     """
@@ -198,7 +241,7 @@ def get_follower(request, author_id, follower_id):
 
 
 @api_view(['GET', 'POST'])
-def get_comments(request, author_id, post_id):
+def comments(request, author_id, post_id):
     """
     Get comments from a post or create a post and auto generate an id for it.
     """
@@ -349,4 +392,40 @@ def inbox(request, author_id):
             else:
                 return Response(status=status.HTTP_401_UNAUTHORIZED)
 
+
+@api_view(['GET'])
+def post_likes(request, author_id, post_id):
+    if request.method == 'GET':
+        likes = PostLike.objects.filter(post_id=post_id)
+        serializer = PostLikeSerializer(likes, many=True)
+        return Response(serializer.data)
+
+    else:
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+@api_view(['GET'])
+def comment_likes(request, author_id, post_id, comment_id):
+    if request.method == 'GET':
+        likes = CommentLike.objects.filter(post_id=post_id, comment_id=comment_id)
+        serializer = CommentLikeSerializer(likes, many=True)
+        return Response(serializer.data)
+
+    else:
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+@api_view(['GET'])
+def liked(request, author_id):
+    if request.method == 'GET':
+        post_likes = PostLike.objects.filter(author_id=author_id).all()
+        post_serializer = PostLikeSerializer(post_likes, many=True)
+
+        comment_likes = CommentLike.objects.filter(author_id=author_id).all()
+        comment_serializer = CommentLikeSerializer(comment_likes, many=True)
+
+        # Very hacky
+        likes = list(post_serializer.data) + list(comment_serializer.data)
+        return Response(likes)
+
+    else:
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 

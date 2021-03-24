@@ -8,6 +8,8 @@
 - API calls may or may not be prefixed with /api/ 
 - - http://localhost:8000/api/author/{author_id} and http://localhost:8000/author/{author_id} point to the same resource
 - API urls
+- - authors/ - get lists of authors
+- - authors/search/{query} - filters list of authors by query
 - - author/{author_id}/ - retrieve or update author profile
 - - author/{author_id}/posts/{post_id} - create*, retrieve, update or delete* post
 - - author/{author_id}/posts/ - retrieve posts or create a new post

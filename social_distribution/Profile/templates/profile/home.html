@@ -23,7 +23,7 @@
   {% endfor %}
   </ul> -->
 
-  <div class="row row-cols-1 row-cols-md-3 g-4">
+  <div class="row row-cols-1 row-cols-md-3 g-4" id="post-list">
     {% for post in posts %}
       <div class="col">
         <div class="card h-100">
@@ -47,5 +47,37 @@
     </div> -->
   </div>
 </div>
+
+
+<script>
+var connections = JSON.parse(`{{ connections | safe}}`);
+
+for (var connection of connections) {
+  var url = connection.fields.url + "api/posts";
+  console.log(url);
+  fetch(url, {mode:"no-cors"}).then( (response) => {
+    return response.json();
+  }).then( (posts) => {
+    console.log(posts);
+
+    for (post of posts) {
+      postListDiv = document.getElementById("post-list");
+      postListDiv.innerHTML += `
+      <div class="col">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title"><a href="/author/${post.author.id}/view_post/${post.id}">${post.title}</a></h5>
+            <p class="card-text">${ post.content }</p>
+            <p class="card-text"><small class="text-muted">Last updated ${post.timestamp}</small></p>
+          </div>
+        </div>
+      </div>
+      `;
+    }
+    
+  });
+}
+
+</script>
 
 {% endblock %}

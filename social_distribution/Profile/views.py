@@ -8,8 +8,9 @@ from django.views import generic
 from django.http import HttpResponseForbidden, HttpResponse
 from django.forms import ModelForm
 from django.views.decorators.cache import cache_page
+from django.core.serializers import serialize
 from base64 import b64encode, b64decode
-import commonmark, requests, ast
+import commonmark, requests, ast, json
 
 from django.db.models import Q
 from django.http import HttpResponseRedirect
@@ -19,6 +20,7 @@ from .forms import UserForm, AuthorForm, SignUpForm, PostForm, ImagePostForm, Co
 
 from .models import Author, Post, CommentLike, PostLike
 from Search.models import FriendRequest
+from api.models import Connection
 
 from .helpers import timestamp_beautify
 
@@ -47,7 +49,9 @@ def home(request):
 	# Merge posts, sort them
 	posts = public_posts | self_posts | friends_posts
 
-	return render(request, 'profile/home.html', {'posts': posts})
+	connections = serialize('json', Connection.objects.all())
+
+	return render(request, 'profile/home.html', {'posts': posts, 'connections': connections})
 
 @login_required(login_url='/login/')
 def update_profile(request):
