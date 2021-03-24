@@ -69,10 +69,10 @@ class Post(models.Model):
     author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name="posts")
 
     categories = models.ManyToManyField('PostCategory', blank=True)
-    comments_count = models.IntegerField(default=0)
-    comments_page_size = models.IntegerField(default=50)
-    comments_first_page = models.CharField(max_length=200, null=True) # URL to first page of comments for this post
-    comments = models.ManyToManyField('Comment', blank=True)
+    #comments_count = models.IntegerField(default=0)
+    #comments_page_size = models.IntegerField(default=50)
+    #comments_first_page = models.CharField(max_length=200, null=True) # URL to first page of comments for this post
+    #comments = models.ManyToManyField('Comment', blank=True)
     timestamp = models.DateTimeField(default=timezone.now)
     likes_count = models.IntegerField(default=0)
 
@@ -112,25 +112,31 @@ class Post(models.Model):
 class PostCategory(models.Model):
     name = models.CharField(max_length=50)
 
+
 class Comment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name="comments")
-    content = models.TextField()
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True, related_name="comments")
+    author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name="commenter")
 
-    class ContentType(models.TextChoices):
-        MARKDOWN = 'text/markdown' # common mark
-        PLAIN = 'text/plain' # UTF-8
-        BASE64 = 'application/base64'
-        PNG = 'image/png;base64' # embedded png
-        JPEG = 'image/jpeg;base64' # embedded jpeg
+    content = models.TextField(blank=True)
 
-    content_type = models.CharField(
-        max_length=40,
-        choices = ContentType.choices,
-        default=ContentType.PLAIN
-    )
+    # class ContentType(models.TextChoices):
+    #     MARKDOWN = 'text/markdown' # common mark
+    #     PLAIN = 'text/plain' # UTF-8
+    #     BASE64 = 'application/base64'
+    #     PNG = 'image/png;base64' # embedded png
+    #     JPEG = 'image/jpeg;base64' # embedded jpeg
+
+    # content_type = models.CharField(
+    #     max_length=40,
+    #     choices = ContentType.choices,
+    #     default=ContentType.PLAIN
+    # )
 
     timestamp = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['timestamp']
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
@@ -145,7 +151,6 @@ class Comment(models.Model):
 class Like(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True)
-    who_liked = models.IntegerField()
 
     class Meta:
         abstract = True
@@ -174,12 +179,15 @@ class Like(models.Model):
 
 
 class CommentLike(Like):
+    post_id = models.ForeignKey(Post, on_delete=models.CASCADE, null=True)
     comment_id = models.ForeignKey(Comment, on_delete=models.CASCADE, null=True)
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
+
+    # Buggy
     @property
     def object(self):
-        return 'comment'
+        return '/author/' + author.id.id + '/posts/' + post_id + '/comments/' + comment_id
 
     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
     @object.setter
@@ -187,9 +195,11 @@ class CommentLike(Like):
         pass
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
+
+    # Buggy
     @property
     def summary(self):
-        return Author.user__username + "likes your comment"
+        return author.user__username + "likes your comment"
 
     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
     @summary.setter
@@ -198,12 +208,10 @@ class CommentLike(Like):
 
 class PostLike(Like):
     post_id = models.ForeignKey(Post, on_delete=models.CASCADE, null=True)
-
-
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
     def object(self):
-        return 'comment'
+        return '/author/' + str(Author.id) + '/posts/' + str(self.post_id.id)
 
     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
     @object.setter
@@ -211,9 +219,13 @@ class PostLike(Like):
         pass
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
+
+    # How to get access to author?
+    # Subclass initializer?
+
     @property
     def summary(self):
-        return Author.user__username + "likes your post"
+        return str(Author.id) + " likes your post"
 
     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
     @summary.setter
