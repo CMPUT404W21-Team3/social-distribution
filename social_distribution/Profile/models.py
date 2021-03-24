@@ -24,8 +24,6 @@ class Author(models.Model):
     following = models.ManyToManyField('self', symmetrical=False, related_name="following_list")
     followers = models.ManyToManyField('self', symmetrical=False, related_name="follower_list")
 
-    liked = models.ManyToManyField(Like)
-
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
     def type(self):
@@ -145,7 +143,6 @@ class Comment(models.Model):
 class Like(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True)
-    who_liked = models.IntegerField()
 
     class Meta:
         abstract = True
@@ -174,12 +171,15 @@ class Like(models.Model):
 
 
 class CommentLike(Like):
+    post_id = models.ForeignKey(Post, on_delete=models.CASCADE, null=True)
     comment_id = models.ForeignKey(Comment, on_delete=models.CASCADE, null=True)
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
+
+    # Buggy
     @property
     def object(self):
-        return 'comment'
+        return '/author/' + author.id.id + '/posts/' + post_id + '/comments/' + comment_id
 
     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
     @object.setter
@@ -187,9 +187,11 @@ class CommentLike(Like):
         pass
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
+
+    # Buggy
     @property
     def summary(self):
-        return Author.user__username + "likes your comment"
+        return author.user__username + "likes your comment"
 
     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
     @summary.setter
@@ -198,12 +200,10 @@ class CommentLike(Like):
 
 class PostLike(Like):
     post_id = models.ForeignKey(Post, on_delete=models.CASCADE, null=True)
-
-
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
     def object(self):
-        return 'comment'
+        return '/author/' + str(Author.id) + '/posts/' + str(self.post_id.id)
 
     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
     @object.setter
@@ -211,9 +211,13 @@ class PostLike(Like):
         pass
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
+
+    # How to get access to author?
+    # Subclass initializer?
+
     @property
     def summary(self):
-        return Author.user__username + "likes your post"
+        return str(Author.id) + " likes your post"
 
     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
     @summary.setter

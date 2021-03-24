@@ -16,7 +16,7 @@ from django.db.models import Q
 
 from .forms import UserForm, AuthorForm, SignUpForm, PostForm, ImagePostForm
 # Potentially problematic
-from .models import Author, Post, Likes
+from .models import Author, Post, CommentLike, PostLike
 from Search.models import FriendRequest
 
 from .helpers import timestamp_beautify
@@ -139,7 +139,7 @@ def view_post(request, author_id, post_id):
 	liked = False
 
 	try:
-		obj = Likes.objects.get(post_id=post, who_liked=request.user.id)
+		obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
 	except:
 		liked = False
 	else:
@@ -355,15 +355,16 @@ def remove_friend(request, author_id):
 
 
 
-def like_post(request,author_id,post_id):
+def like_post(request, author_id, post_id):
 	current_user = request.user
 	post = get_object_or_404(Post, id=post_id, author__id=author_id)
 	liked = False
 
 	try:
-		obj = Likes.objects.get(post_id=post, who_liked=request.user.id)
+		obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
 	except:
-		like_instance = Likes(post_id=post, who_liked=request.user.id)
+		author = Author.objects.get(id=author_id)
+		like_instance = PostLike(post_id=post, author=author)
 		like_instance.save()
 		post.likes_count = post.likes_count + 1
 		post.save()
