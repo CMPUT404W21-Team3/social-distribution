@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from Profile.models import Author, Post, Comment
+from Profile.models import Author, Post, Comment, PostLike, CommentLike
 from Search.models import FriendRequest
 
 from django.contrib.auth.models import User
@@ -16,15 +16,14 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ('type', 'title', 'id', 'source', 'origin', 'description',
-                    'content_type', 'content', 'author', 'categories', 'comments_count',
-                    'comments_page_size', 'comments_first_page', 'comments', 'timestamp',
+                    'content_type', 'content', 'author', 'categories', 'timestamp',
                     'visibility', 'unlisted')
 
     # https://stackoverflow.com/questions/41312558/django-rest-framework-post-nested-objects
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
-        data['comments'] = CommentSerializer(Comment.objects.filter(id__in=data['comments']), many=True).data
+        # data['comments'] = CommentSerializer(Comment.objects.filter(id__in=data['comments']), many=True).data
         return data
 
     # https://www.django-rest-framework.org/tutorial/4-authentication-and-permissions/
@@ -47,7 +46,56 @@ class FriendRequestSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = ('type', 'author', 'content', 'content_type', 'timestamp', 'id')
+        fields = ('type', 'author', 'content', 'timestamp', 'id')
+
+    # https://stackoverflow.com/questions/41312558/django-rest-framework-post-nested-objects
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
+        return data
+
+
+class LikeSerializer(serializers.ModelSerializer):
+    summary = serializers.CharField(max_length=200)
+    type = serializers.CharField(max_length=200)
+    author = AuthorSerializer(many=False)
+    object = serializers.CharField(max_length=500)
+
+    def create(self, validated_data):
+        if validated_data['type'] == 'post':
+            return PostLike(**validated_data)
+        elif validated_data['type'] == 'comment':
+            return CommentLike(**validated_data)
+
+    def update(self, instance, validated_data):
+        instance.summary = validated_data.get('summary', instance.email)
+        instance.author = validated_data.get('author', instance.email)
+        instance.object = validated_data.get('object', instance.email)
+        instance.save()
+        return instance
+
+    # https://stackoverflow.com/questions/41312558/django-rest-framework-post-nested-objects
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
+        return data
+
+class PostLikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostLike
+        fields = ('summary', 'type', 'author', 'object')
+
+    # https://stackoverflow.com/questions/41312558/django-rest-framework-post-nested-objects
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
+        return data
+
+
+class CommentLikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommentLike
+        fields = ('summary', 'type', 'author', 'object')
 
     # https://stackoverflow.com/questions/41312558/django-rest-framework-post-nested-objects
     def to_representation(self, instance):

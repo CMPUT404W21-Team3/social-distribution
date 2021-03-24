@@ -1,4 +1,7 @@
 <!-- https://stackoverflow.com/questions/49482742/passing-value-along-with-form-in-post-data-in-django -->
+{% extends 'base.html' %}
+
+{% block content %}
 
 <p> Results page for query: {{ query }}</p>
 {% for author in authors %}
@@ -8,3 +11,6 @@
 {% endfor %}
 
 <a href="javascript:history.back()">Return</a>
+
+
+{% endblock %}
