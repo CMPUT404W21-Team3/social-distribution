@@ -10,6 +10,7 @@ from django.forms import ModelForm
 from django.views.decorators.cache import cache_page
 from base64 import b64encode, b64decode
 import commonmark, requests, ast
+from django.db.models import Q
 
 # Create your views here.
 
@@ -214,11 +215,6 @@ def share_post(request, post_id):
 												'origin': post.origin + f'http://localhost:8000/author/{author_original.id}/view_post/{post_id}', \
 												'visibility': post.visibility})
 
-		if post.visibility == 'FRIENDS':
-			# Can't edit FRIENDS visibility
-			form.fields['visibility'].widget.attrs['style'] = 'pointer-events: none'
-			form.fields['visibility'].label = 'Visibility (FRIENDS only)'
-
 		return render(request, "profile/share_post.html", {'form':form})
 	else:
 		form = PostForm(data=request.POST)
@@ -322,11 +318,17 @@ def post_github(request):
 def view_profile(request, author_id):
 	user = Author.objects.get(user__username=request.user.username)
 	author = Author.objects.get(id=author_id)
+	following_status = user.following.filter(id=author_id).exists()
+	follower_status = user.followers.filter(id=author_id).exists()
+	if following_status or follower_status:
+		follow_status = True
+	else:
+		follow_status = False
 	friend_status = user.friends.filter(id=author_id).exists()
 	friend_posts = author.posts.all()
 
 	if request.method == "GET":
-		return render(request, 'profile/view_profile.html', {'author': author, 'posts': friend_posts, 'friend_status': friend_status})
+		return render(request, 'profile/view_profile.html', {'author': author, 'posts': friend_posts, 'friend_status': friend_status, 'follow_status': follow_status})
 
 # TODO: check if request has already been made
 def friend_request(request, author_id):
@@ -387,10 +389,8 @@ def private_post(request, author_id):
 								 'origin': f'http://localhost:8000/view_profile/{author.id}',\
 								 'visibility': 'PRIVATE',\
 								 'to_author_id': to_author})
-		form.fields['visibility'].widget.attrs['style'] = 'pointer-events: none'
-		form.fields['visibility'].label = 'Visibility (PRIVATE)'
 
-		return render(request, "profile/create_post.html", {'form':form})
+		return render(request, "profile/private_post.html", {'form':form})
 	elif request.method == "POST":
 		form = PostForm(data=request.POST)
 		form.instance.author = author
@@ -402,7 +402,10 @@ def private_post(request, author_id):
 		else:
 			print(form.errors)
 
-def private_inbox(request):
+def inbox(request):
 	author = Author.objects.get(id=request.user.author.id)
-	posts = Post.objects.filter(to_author=request.user.author.id)
+	private_posts = Post.objects.filter(to_author=request.user.author.id).order_by('-timestamp')
+	friends = author.friends.all()
+	friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+	posts = private_posts | friends_posts
 	return render(request, 'profile/posts.html', {'posts':posts, 'author':author})
