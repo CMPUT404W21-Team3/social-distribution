@@ -34,27 +34,34 @@
                         </div>
                     {% endif %}
 
-                    <!-- ----------------------Comments block--------------------------- -->
+                    <!-- ================= Comments block ================= -->
                     {% if post.author.id != current_user.author.id %}
                     <p>Leave a Comment</p>
                     <form method = "POST">
-                        {{ comment_form.as_p }}
+                        {{ comment_form.as_p }} <!-- Comment text form -->
                         {% csrf_token %}
-                        <button type="submit">Submit</button>
+                        <button type="submit">Submit My Comment</button>
                     </form>
                     {% endif %}
 
                     <p>Comments:</p>
-                    {% for comment in comments.all %}
-                        <!--{% comment.author.id}-->
-                        <div>
-                            <p>@{{comment.author.user}} :
-                                {{comment.content}}</p>
-                            <p>Comment at:{{comment.timestamp}}</p>
-                        </div>
-                        <br>
-                    {% endfor %}
-                    <!-- ----------------------End of Comments block--------------------------- -->
+                    <!-- showing all comments -->
+                    <ul>
+                        {% for comment in comments.all %}
+                            <!--{% comment.author.id}-->
+                            <li>
+                                <div>
+                                    <!--Comment body-->
+                                    <p>@{{comment.author.user}} :
+                                        {{comment.content}}</p>
+
+                                    <!--Comment time-->
+                                    <p>Comment at:{{comment.timestamp}}</p>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <!-- ================= End of Comments block ================= -->
 
                     {% if post.author.id == current_user.author.id %}
                         <div style="display: inline-flex;">

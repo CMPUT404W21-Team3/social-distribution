@@ -10,7 +10,7 @@ from django.forms import ModelForm
 from django.views.decorators.cache import cache_page
 from base64 import b64encode, b64decode
 import commonmark, requests, ast
-
+from django.http import HttpResponseRedirect
 from .forms import UserForm, AuthorForm, SignUpForm, PostForm, ImagePostForm, CommentForm
 # Potentially problematic
 from .models import Author, Post, Likes, Comment
@@ -152,6 +152,9 @@ def view_post(request, author_id, post_id):
 			new_comment.author = request.user.author
 			new_comment.save()
 			#new_comment = CommentForm()
+
+			# ref: https://stackoverflow.com/questions/5773408/how-to-clear-form-fields-after-a-submit-in-django
+			return HttpResponseRedirect('')
 	else:
 		comment_form = CommentForm()
 	#--- end of Comments Block ---#
