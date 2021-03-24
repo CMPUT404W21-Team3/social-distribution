@@ -3,6 +3,7 @@ from rest_framework import routers
 from . import views
 
 urlpatterns = [
+  
     path('author/<str:author_id>/', views.author),
     path('author/<str:author_id>/posts/<str:post_id>', views.post),
     path('author/<str:author_id>/posts/', views.posts),
@@ -14,6 +15,7 @@ urlpatterns = [
     path('author/<str:author_id>/liked', views.liked),
     path('author/<str:author_id>/inbox', views.inbox),
     path('authors', views.authors),
+    path('posts', views.get_all_posts),
     path('authors/search/<str:query>', views.author_search),
     path('api/author/<str:author_id>/', views.author),
     path('api/author/<str:author_id>/posts/<str:post_id>', views.post),
@@ -28,6 +30,9 @@ urlpatterns = [
     path('api/authors', views.authors),
     path('api/authors/search?q=<str:query>', views.author_search),
     path('api/authors/search/<str:query>', views.author_search),
+    path('api/posts', views.get_all_posts),
+    path('api/inbox/<str:author_id>/', views.inbox),
+
 ]
 
 urlpatterns += [

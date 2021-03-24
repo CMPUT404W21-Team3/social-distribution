@@ -13,6 +13,17 @@ from Profile.models import Author, Post, Comment, PostLike, CommentLike
 
 # https://www.django-rest-framework.org/tutorial/1-serialization/ - was consulted in writing code
 
+@api_view(['GET'])
+def get_all_posts(request):
+    """
+    Get all public posts
+    """
+    
+    posts = Post.objects.filter(visibility=Post.Visibility.PUBLIC, unlisted=False)
+    serializer = PostSerializer(posts, many=True)
+    return Response(serializer.data)
+
+
 # Create your views here.
 @api_view(['GET'])
 def authors(request):
@@ -260,6 +271,128 @@ def comments(request, author_id, post_id):
                 return Response(serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['GET', 'POST', 'DELETE'])
+def inbox(request, author_id):
+    """
+    GET: if authenticated get a list of posts sent to author_id from the inbox
+    """
+    if request.method == 'GET':
+        if ('password' not in request.data) or ('username' not in request.data):
+            try:
+                if author_id != str(request.user.author.id):
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            except AttributeError as e:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                pass
+        # user already authenticated on the web
+        if author_id == str(request.user.author.id):
+            author = Author.objects.get(id=author_id)
+            private_posts = Post.objects.filter(to_author=author_id).order_by('-timestamp')
+            friends = author.friends.all()
+            friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+            posts = private_posts | friends_posts
+            serializer = PostSerializer(posts, many=True)
+            return Response(serializer.data)
+        # for example autheticating via Curl
+        else:
+            username = request.data['username']
+            password = request.data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                if author_id == str(Author.objects.get(user__username=username).id):
+                    author = Author.objects.get(id=author_id)
+                    private_posts = Post.objects.filter(to_author=author_id).order_by('-timestamp')
+                    friends = author.friends.all()
+                    friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+                    posts = private_posts | friends_posts
+                    serializer = PostSerializer(posts, many=True)
+                    return Response(serializer.data)
+                else: 
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+    elif request.method == 'POST':
+        if ('password' not in request.data) or ('username' not in request.data):
+            try:
+                if author_id != str(request.user.author.id):
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            except AttributeError as e:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                pass
+        if author_id == str(request.user.author.id):
+            author_sender = Author.objects.get(request.user.author.id)
+            author_receiver = Author.objects.get(id=author_id)
+            if author_sender in author_receiver.followers.all() or author_sender in author_receiver.friends.all():
+                instance = Post.objects.create(author=author_sender, to_author=author_receiver)
+                if request.data.get('visibility') == 'PUBLIC':
+                    request.data['visibility'] = 'PRIVATE'
+                serializer = PostSerializer(instance, data=request.data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # Log in with those credentials
+            username = request.data['username']
+            password = request.data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                author_sender = Author.objects.get(user__username=username)
+                author_receiver = Author.objects.get(id=author_id)
+                if author_sender in author_receiver.followers.all() or author_sender in author_receiver.friends.all():
+                    instance = Post.objects.create(author=author_sender, to_author=author_receiver)
+                    if request.data.get('visibility') == 'PUBLIC':
+                        request.data['visibility'] = 'PRIVATE'
+                    serializer = PostSerializer(instance, data=request.data)
+                    if serializer.is_valid():
+                        serializer.save()
+                        return Response(serializer.data)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        # This can only clear PRIVATE post... 
+        if ('password' not in request.data) or ('username' not in request.data):
+            try:
+                if author_id != str(request.user.author.id):
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            except AttributeError as e:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                pass
+        if author_id == str(request.user.author.id):
+            author = Author.objects.get(id=author_id)
+            private_posts = Post.objects.filter(to_author=author_id).order_by('-timestamp')
+            friends = author.friends.all()
+            friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+            posts = private_posts | friends_posts
+            for post in posts:
+                if post.visibility == 'PRIVATE':
+                    post.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            # Log in with those credentials
+            username = request.data['username']
+            password = request.data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                if follower_id == str(Author.objects.get(user__username=username).id):
+                    author = Author.objects.get(id=author_id)
+                    private_posts = Post.objects.filter(to_author=author_id).order_by('-timestamp')
+                    friends = author.friends.all()
+                    friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+                    posts = private_posts | friends_posts
+                    for post in posts:
+                        if post.visibility == 'PRIVATE':
+                            post.delete()
+                    return Response(status=status.HTTP_204_NO_CONTENT)
+                else:
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+
 @api_view(['GET'])
 def post_likes(request, author_id, post_id):
     if request.method == 'GET':
@@ -296,28 +429,3 @@ def liked(request, author_id):
     else:
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-@api_view(['GET', 'POST', 'DELETE'])
-def inbox(request, author_id):
-    if request.method == 'GET':
-        author = Author.objects.get(id=author_id)
-        private_posts = Post.objects.filter(to_author=request.user.author.id).order_by('-timestamp')
-        friends = author.friends.all()
-        friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
-        posts = private_posts | friends_posts
-        serializer = PostSerializer(posts, many=True)
-
-        return Response(serializer.data)
-
-    elif request.method == 'POST':
-        if request.data['type'] == "like":
-            pass
-        elif request.data['type'] == "follow":
-            pass
-        elif request.data['type'] == "post":
-            pass
-
-    elif request.method == 'DELETE':
-        pass
-
-    else:
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
