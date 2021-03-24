@@ -155,10 +155,11 @@ def view_post(request, author_id, post_id):
 			new_comment.post = post
 			new_comment.author = request.user.author
 			new_comment.save()
-			#new_comment = CommentForm()
-
+			# new_comment = CommentForm()
 			# ref: https://stackoverflow.com/questions/5773408/how-to-clear-form-fields-after-a-submit-in-django
-			return HttpResponseRedirect('')
+			# Bugged
+			# return HttpResponseRedirect('')
+			comment_form = CommentForm()
 	else:
 		comment_form = CommentForm()
 	#--- end of Comments Block ---#
