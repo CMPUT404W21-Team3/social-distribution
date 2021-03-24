@@ -44,12 +44,15 @@
                     </form>
                     {% endif %}
 
+                    <p>Comments:</p>
                     {% for comment in comments.all %}
-                        {% comment.author.id}
+                        <!--{% comment.author.id}-->
                         <div>
-                            <p>{{comment.author.id}}</p>
-                            <p>{{comment.content | linebreaks}}</p>
+                            <p>@{{comment.author.user}} :
+                                {{comment.content}}</p>
+                            <p>Comment at:{{comment.timestamp}}</p>
                         </div>
+                        <br>
                     {% endfor %}
                     <!-- ----------------------End of Comments block--------------------------- -->
 

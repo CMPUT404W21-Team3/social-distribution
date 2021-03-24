@@ -138,15 +138,20 @@ def view_post(request, author_id, post_id):
 	liked = False
 
 	#--- Comments Block ---#
-
-	comments = post.comments
+	# https://djangocentral.com/creating-comments-system-with-django/
+	if current_user.author.id == post.author.id:
+		comments = post.comments
+	else:
+		comments = post.comments.filter(author__id=current_user.author.id)
 	new_comment = None
 	if request.method == 'POST':
 		comment_form = CommentForm(data=request.POST)
 		if comment_form.is_valid():
 			new_comment = comment_form.save(commit=False)
-			new_comment.post=post
+			new_comment.post = post
+			new_comment.author = request.user.author
 			new_comment.save()
+			#new_comment = CommentForm()
 	else:
 		comment_form = CommentForm()
 	#--- end of Comments Block ---#
@@ -161,7 +166,7 @@ def view_post(request, author_id, post_id):
 	if post.content_type == Post.ContentType.PNG or post.content_type == Post.ContentType.JPEG:
 		return HttpResponse(b64decode(post.content), content_type=post.content_type)
 	else:
-		return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'new_comment':new_comment,'comment_form':comment_form})
+		return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
 
 class CreatePostView(generic.CreateView):
 	model = Post
