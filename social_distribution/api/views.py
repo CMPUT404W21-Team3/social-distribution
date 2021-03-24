@@ -273,11 +273,16 @@ def inbox(request, author_id):
         friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
         posts = private_posts | friends_posts
         serializer = PostSerializer(posts, many=True)
-        
+
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        pass
+        if request.data['type'] == "like":
+            pass
+        elif request.data['type'] == "follow":
+            pass
+        elif request.data['type'] == "post":
+            pass
 
     elif request.method == 'DELETE':
         pass
