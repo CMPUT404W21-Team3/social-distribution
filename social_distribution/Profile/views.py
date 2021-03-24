@@ -17,12 +17,11 @@ from django.http import HttpResponseRedirect
 
 from .forms import UserForm, AuthorForm, SignUpForm, PostForm, ImagePostForm, CommentForm
 
-# Potentially problematic
-from .models import Author, Post, Likes, Comment
+from .models import Author, Post, CommentLike, PostLike
 from Search.models import FriendRequest
 
 from .helpers import timestamp_beautify
-# ------------------------------------------------------------------------------------------------------------------ #
+
 # Create your views here.
 
 @login_required(login_url='/login/')
@@ -156,16 +155,17 @@ def view_post(request, author_id, post_id):
 			new_comment.post = post
 			new_comment.author = request.user.author
 			new_comment.save()
-			#new_comment = CommentForm()
-
+			# new_comment = CommentForm()
 			# ref: https://stackoverflow.com/questions/5773408/how-to-clear-form-fields-after-a-submit-in-django
-			return HttpResponseRedirect('')
+			# Bugged
+			# return HttpResponseRedirect('')
+			comment_form = CommentForm()
 	else:
 		comment_form = CommentForm()
 	#--- end of Comments Block ---#
 
 	try:
-		obj = Likes.objects.get(post_id=post, who_liked=request.user.id)
+		obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
 	except:
 		liked = False
 	else:
@@ -381,15 +381,16 @@ def remove_friend(request, author_id):
 
 
 
-def like_post(request,author_id,post_id):
+def like_post(request, author_id, post_id):
 	current_user = request.user
 	post = get_object_or_404(Post, id=post_id, author__id=author_id)
 	liked = False
 
 	try:
-		obj = Likes.objects.get(post_id=post, who_liked=request.user.id)
+		obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
 	except:
-		like_instance = Likes(post_id=post, who_liked=request.user.id)
+		author = Author.objects.get(id=author_id)
+		like_instance = PostLike(post_id=post, author=author)
 		like_instance.save()
 		post.likes_count = post.likes_count + 1
 		post.save()

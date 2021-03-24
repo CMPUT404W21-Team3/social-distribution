@@ -24,8 +24,6 @@ class Author(models.Model):
     following = models.ManyToManyField('self', symmetrical=False, related_name="following_list")
     followers = models.ManyToManyField('self', symmetrical=False, related_name="follower_list")
 
-    liked = models.ManyToManyField(Like)
-
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
     def type(self):
