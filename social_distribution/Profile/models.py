@@ -79,12 +79,15 @@ class Post(models.Model):
     class Visibility(models.TextChoices):
         PUBLIC = 'PUBLIC'
         FRIENDS = 'FRIENDS'
+        PRIVATE = 'PRIVATE'
 
     visibility = models.CharField(
         max_length=10,
         choices=Visibility.choices,
         default=Visibility.PUBLIC
     )
+
+    to_author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, blank=True, related_name="to_author")
 
     unlisted = models.BooleanField(default=False) # used for images so that they don't show up in timelines
 
