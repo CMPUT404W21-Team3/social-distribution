@@ -34,6 +34,25 @@
                         </div>
                     {% endif %}
 
+                    <!-- ----------------------Comments block--------------------------- -->
+                    {% if post.author.id != current_user.author.id %}
+                    <p>Leave a Comment</p>
+                    <form method = "POST">
+                        {{ comment_form.as_p }}
+                        {% csrf_token %}
+                        <button type="submit">Submit</button>
+                    </form>
+                    {% endif %}
+
+                    {% for comment in comments.all %}
+                        {% comment.author.id}
+                        <div>
+                            <p>{{comment.author.id}}</p>
+                            <p>{{comment.content | linebreaks}}</p>
+                        </div>
+                    {% endfor %}
+                    <!-- ----------------------End of Comments block--------------------------- -->
+
                     {% if post.author.id == current_user.author.id %}
                         <div style="display: inline-flex;">
                             <i class="bi bi-hand-thumbs-up-fill" style="padding-right: 6px;"></i>

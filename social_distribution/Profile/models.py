@@ -67,10 +67,10 @@ class Post(models.Model):
     author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name="posts")
 
     categories = models.ManyToManyField('PostCategory', blank=True)
-    comments_count = models.IntegerField(default=0)
-    comments_page_size = models.IntegerField(default=50)
-    comments_first_page = models.CharField(max_length=200, null=True) # URL to first page of comments for this post
-    comments = models.ManyToManyField('Comment', blank=True)
+    #comments_count = models.IntegerField(default=0)
+    #comments_page_size = models.IntegerField(default=50)
+    #comments_first_page = models.CharField(max_length=200, null=True) # URL to first page of comments for this post
+    #comments = models.ManyToManyField('Comment', blank=True)
     timestamp = models.DateTimeField(default=timezone.now)
     likes_count = models.IntegerField(default=0)
     
@@ -110,10 +110,12 @@ class Post(models.Model):
 class PostCategory(models.Model):
     name = models.CharField(max_length=50)
 
+
 class Comment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True, relate_name="post")
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True, related_name="comments")
     author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name="commenter")
+
     content = models.TextField(blank=True)
 
     # class ContentType(models.TextChoices):
@@ -130,6 +132,9 @@ class Comment(models.Model):
     # )
 
     timestamp = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['timestamp']
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
