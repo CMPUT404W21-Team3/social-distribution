@@ -21,7 +21,7 @@ from .models import Author, Post, CommentLike, PostLike
 from Search.models import FriendRequest
 
 from .helpers import timestamp_beautify
-# ------------------------------------------------------------------------------------------------------------------ #
+
 # Create your views here.
 
 @login_required(login_url='/login/')
