@@ -14,6 +14,7 @@ urlpatterns = [
     path('author/<str:author_id>/liked', views.liked),
     path('author/<str:author_id>/inbox', views.inbox),
     path('authors', views.authors),
+    path('posts', views.get_all_posts),
     path('authors/search/<str:query>', views.author_search),
     path('api/author/<str:author_id>/', views.author),
     path('api/author/<str:author_id>/posts/<str:post_id>', views.post),
