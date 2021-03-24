@@ -144,7 +144,7 @@ def view_post(request, author_id, post_id):
 
 	#--- Comments Block ---#
 	# https://djangocentral.com/creating-comments-system-with-django/
-	if current_user.author.id == post.author.id:
+	if current_user.author.id == post.author.id or post.visibility=='PUBLIC':
 		comments = post.comments
 	else:
 		comments = post.comments.filter(author__id=current_user.author.id)
