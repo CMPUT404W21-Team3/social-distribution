@@ -21,9 +21,11 @@ def results(request):
         url = connection.url + 'service/authors'
         response = requests.get(url)
         for author in response.json()['items']:
-            print(author)
-            remote_authors.append(Author.objects.create(**author))
+            # print(author)
+            # remote_authors.append(Author.objects.create(**author))
+            remote_authors.append(author)
 
+    authors = list(authors)
     authors += remote_authors
 
     return render(request, 'results.html', {'query': query, 'authors': authors})
