@@ -416,7 +416,7 @@ def private_post(request, author_id):
 	author = request.user.author
 	to_author = Author.objects.get(id=author_id)
 	if request.method == "GET":
-		form = PostForm(initial={'title': f'Private DM from @{author.user_name} --',\
+		form = PostForm(initial={'title': f'Private DM from @{author.displayName} --',\
 								 'origin': f'http://localhost:8000/view_profile/{author.id}',\
 								 'visibility': 'PRIVATE',\
 								 'to_author_id': to_author})
