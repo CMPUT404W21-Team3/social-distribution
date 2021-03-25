@@ -241,7 +241,7 @@ def share_post(request, post_id):
 	author_original = post.author
 	author_share = request.user.author
 	if request.method == "GET":
-		form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original.user_name)}',\
+		form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original.displayName)}',\
 												'origin': post.origin + f'http://localhost:8000/author/{author_original.id}/view_post/{post_id}', \
 												'visibility': post.visibility})
 

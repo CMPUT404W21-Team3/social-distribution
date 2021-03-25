@@ -36,11 +36,11 @@ class Author(models.Model):
         pass
 
     @property
-    def user_name(self):
+    def displayName(self):
         return self.user.username
 
-    @user_name.setter
-    def user_name(self, val):
+    @displayName.setter
+    def displayName(self, val):
         pass
 
 class Post(models.Model):
