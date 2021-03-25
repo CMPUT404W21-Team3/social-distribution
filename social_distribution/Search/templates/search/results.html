@@ -3,14 +3,26 @@
 
 {% block content %}
 
-<p> Results page for query: {{ query }}</p>
+<div style="margin: 8px;">
+<h2> Search results for: {{ query }}</h2>
+<ul>
 {% for author in authors %}
-    <li>
-      <a href="{% url 'Profile:view_profile' author_id=author.id %}">{{ author.user_name }}</a>
+    <li style="list-style: none;">
+      <!-- <div> -->
+      <a href="{% url 'Profile:view_profile' author_id=author.id %}" style="text-decoration: none;">{{ author.user_name }}</a>
+    <!-- </div> -->
     </li>
+    <!-- <div class="card">
+      <div class="card-body">
+        <a href="{% url 'Profile:view_profile' author_id=author.id %}">{{ author.user_name }}</a>
+      </div>
+    </div> -->
 {% endfor %}
+</ul>
 
-<a href="javascript:history.back()">Return</a>
+<!-- <a href="javascript:history.back()" class="btn btn-success" role="button">Return</a> -->
+<a href="javascript:history.back()" class="btn btn-outline-success btn-sm" role="button">Return</a>
+</div>
 
 
 {% endblock %}
