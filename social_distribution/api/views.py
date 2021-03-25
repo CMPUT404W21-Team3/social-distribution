@@ -8,8 +8,8 @@ from rest_framework.parsers import JSONParser
 from rest_framework import status
 from rest_framework.response import Response
 
-from .serializers import AuthorSerializer, PostSerializer, CommentSerializer
-from Profile.models import Author, Post, Comment
+from .serializers import AuthorSerializer, PostSerializer, CommentSerializer, LikeSerializer, PostLikeSerializer, CommentLikeSerializer
+from Profile.models import Author, Post, Comment, PostLike, CommentLike
 
 # https://www.django-rest-framework.org/tutorial/1-serialization/ - was consulted in writing code
 
@@ -25,8 +25,40 @@ def get_all_posts(request):
 
 
 # Create your views here.
+@api_view(['GET'])
+def authors(request):
+    """
+    Retrieve or update an author.
+    """
+    try:
+        authors = Author.objects.all()
+    except Author.DoesNotExist:
+        return HttpResponse(status=404)
+
+    if request.method == 'GET':
+        serializer = AuthorSerializer(authors, many=True)
+        return Response(serializer.data)
+
+    else:
+        return Response(serializer.errors, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+@api_view(['GET'])
+def author_search(request, query):
+    """
+    Retrieve or update an author.
+    """
+    if request.method == 'GET':
+        authors = Author.objects.filter(user__username__contains=query)
+        serializer = AuthorSerializer(authors, many=True)
+        return Response(serializer.data)
+
+    else:
+        return Response(serializer.errors, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
 @api_view(['GET', 'POST'])
-def get_author(request, author_id):
+def author(request, author_id):
     """
     Retrieve or update an author.
     """
@@ -49,7 +81,7 @@ def get_author(request, author_id):
 
 
 @api_view(['GET', 'POST', 'DELETE', 'PUT'])
-def get_post(request, author_id, post_id):
+def post(request, author_id, post_id):
     """
     Create, retrieve, update or delete a post.
     """
@@ -121,7 +153,7 @@ def get_post(request, author_id, post_id):
 
 
 @api_view(['GET', 'POST'])
-def get_posts(request, author_id):
+def posts(request, author_id):
     """
     Get posts from an author or create a post and auto generate an id for it.
     """
@@ -142,14 +174,14 @@ def get_posts(request, author_id):
 
 
 @api_view(['GET'])
-def get_followers(request, author_id):
+def followers(request, author_id):
     if request.method == 'GET':
         followers = Author.objects.get(id=author_id).followers.all()
         serializer = AuthorSerializer(followers, many=True)
         return Response(serializer.data)
 
 @api_view(['GET', 'PUT', 'DELETE'])
-def get_follower(request, author_id, follower_id):
+def follower(request, author_id, follower_id):
     """
     Retrieve or delete follower of author, or add user as a follower
     """
@@ -209,7 +241,7 @@ def get_follower(request, author_id, follower_id):
 
 
 @api_view(['GET', 'POST'])
-def get_comments(request, author_id, post_id):
+def comments(request, author_id, post_id):
     """
     Get comments from a post or create a post and auto generate an id for it.
     """
@@ -238,3 +270,162 @@ def get_comments(request, author_id, post_id):
                 serializer.save()
                 return Response(serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'POST', 'DELETE'])
+def inbox(request, author_id):
+    """
+    GET: if authenticated get a list of posts sent to author_id from the inbox
+    """
+    if request.method == 'GET':
+        if ('password' not in request.data) or ('username' not in request.data):
+            try:
+                if author_id != str(request.user.author.id):
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            except AttributeError as e:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                pass
+        # user already authenticated on the web
+        if author_id == str(request.user.author.id):
+            author = Author.objects.get(id=author_id)
+            private_posts = Post.objects.filter(to_author=author_id).order_by('-timestamp')
+            friends = author.friends.all()
+            friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+            posts = private_posts | friends_posts
+            serializer = PostSerializer(posts, many=True)
+            return Response(serializer.data)
+        # for example autheticating via Curl
+        else:
+            username = request.data['username']
+            password = request.data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                if author_id == str(Author.objects.get(user__username=username).id):
+                    author = Author.objects.get(id=author_id)
+                    private_posts = Post.objects.filter(to_author=author_id).order_by('-timestamp')
+                    friends = author.friends.all()
+                    friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+                    posts = private_posts | friends_posts
+                    serializer = PostSerializer(posts, many=True)
+                    return Response(serializer.data)
+                else: 
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+    elif request.method == 'POST':
+        if ('password' not in request.data) or ('username' not in request.data):
+            try:
+                if author_id != str(request.user.author.id):
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            except AttributeError as e:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                pass
+        if author_id == str(request.user.author.id):
+            author_sender = Author.objects.get(request.user.author.id)
+            author_receiver = Author.objects.get(id=author_id)
+            if author_sender in author_receiver.followers.all() or author_sender in author_receiver.friends.all():
+                instance = Post.objects.create(author=author_sender, to_author=author_receiver)
+                if request.data.get('visibility') == 'PUBLIC':
+                    request.data['visibility'] = 'PRIVATE'
+                serializer = PostSerializer(instance, data=request.data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # Log in with those credentials
+            username = request.data['username']
+            password = request.data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                author_sender = Author.objects.get(user__username=username)
+                author_receiver = Author.objects.get(id=author_id)
+                if author_sender in author_receiver.followers.all() or author_sender in author_receiver.friends.all():
+                    instance = Post.objects.create(author=author_sender, to_author=author_receiver)
+                    if request.data.get('visibility') == 'PUBLIC':
+                        request.data['visibility'] = 'PRIVATE'
+                    serializer = PostSerializer(instance, data=request.data)
+                    if serializer.is_valid():
+                        serializer.save()
+                        return Response(serializer.data)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        # This can only clear PRIVATE post... 
+        if ('password' not in request.data) or ('username' not in request.data):
+            try:
+                if author_id != str(request.user.author.id):
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            except AttributeError as e:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                pass
+        if author_id == str(request.user.author.id):
+            author = Author.objects.get(id=author_id)
+            private_posts = Post.objects.filter(to_author=author_id).order_by('-timestamp')
+            friends = author.friends.all()
+            friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+            posts = private_posts | friends_posts
+            for post in posts:
+                if post.visibility == 'PRIVATE':
+                    post.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            # Log in with those credentials
+            username = request.data['username']
+            password = request.data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                if follower_id == str(Author.objects.get(user__username=username).id):
+                    author = Author.objects.get(id=author_id)
+                    private_posts = Post.objects.filter(to_author=author_id).order_by('-timestamp')
+                    friends = author.friends.all()
+                    friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+                    posts = private_posts | friends_posts
+                    for post in posts:
+                        if post.visibility == 'PRIVATE':
+                            post.delete()
+                    return Response(status=status.HTTP_204_NO_CONTENT)
+                else:
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+
+@api_view(['GET'])
+def post_likes(request, author_id, post_id):
+    if request.method == 'GET':
+        likes = PostLike.objects.filter(post_id=post_id)
+        serializer = PostLikeSerializer(likes, many=True)
+        return Response(serializer.data)
+
+    else:
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+@api_view(['GET'])
+def comment_likes(request, author_id, post_id, comment_id):
+    if request.method == 'GET':
+        likes = CommentLike.objects.filter(post_id=post_id, comment_id=comment_id)
+        serializer = CommentLikeSerializer(likes, many=True)
+        return Response(serializer.data)
+
+    else:
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+@api_view(['GET'])
+def liked(request, author_id):
+    if request.method == 'GET':
+        post_likes = PostLike.objects.filter(author_id=author_id).all()
+        post_serializer = PostLikeSerializer(post_likes, many=True)
+
+        comment_likes = CommentLike.objects.filter(author_id=author_id).all()
+        comment_serializer = CommentLikeSerializer(comment_likes, many=True)
+
+        # Very hacky
+        likes = list(post_serializer.data) + list(comment_serializer.data)
+        return Response(likes)
+
+    else:
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+

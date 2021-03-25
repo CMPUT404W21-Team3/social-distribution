@@ -3,10 +3,13 @@
 {% block content %}
 
 	<h2>{{ author.user.get_full_name }} <small>@{{ author.user.username }}</small>!</h2>
+		<!-- You can only send an inbox if exists following/follower status or friends -->
+		{% if follow_status %}
 		<form action="{{ author.id }}/private_post" method="GET">
 			<input type="hidden" name="author" id="author" value="{{ author.id }}" />
-			<button type="submit">Send Private Post</button>
+			<button type="submit">Send Inbox Post</button>
 		</form>
+		{% endif %}
 		<!-- Check if author and current user are friends -->
 		{% if friend_status  %}
 			<!-- Remove friend option -->

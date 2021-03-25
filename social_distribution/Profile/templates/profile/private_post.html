@@ -100,17 +100,7 @@
                         <div class="input-group">
                             <label class="input-group-text" for="id_visibility">Visibility</label>
                             <select class="form-select" name="visibility" id="id_visibility">
-                                {% if form.visibility.value == 'PUBLIC' %}
-                                    <option value="PUBLIC" selected>Public</option>
-                                {% else %}
-                                    <option value="PUBLIC" disabled>Public</option>
-                                {% endif %}
-
-                                {% if form.visibility.value == 'FRIENDS' %}
-                                    <option value="FRIENDS" selected>Friends</option>
-                                {% else %}
-                                    <option value="FRIENDS">Friends</option>
-                                {% endif %}
+                                    <option value="PRIVATE" selected>Private</option>
                             </select>
                         </div>
                     </div>

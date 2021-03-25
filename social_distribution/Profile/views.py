@@ -12,15 +12,19 @@ from django.core.serializers import serialize
 from base64 import b64encode, b64decode
 import commonmark, requests, ast, json
 
+from django.db.models import Q
+from django.http import HttpResponseRedirect
 # Create your views here.
 
-from .forms import UserForm, AuthorForm, SignUpForm, PostForm, ImagePostForm
-# Potentially problematic
-from .models import Author, Post, Likes
+from .forms import UserForm, AuthorForm, SignUpForm, PostForm, ImagePostForm, CommentForm
+
+from .models import Author, Post, CommentLike, PostLike
 from Search.models import FriendRequest
 from api.models import Connection
 
 from .helpers import timestamp_beautify
+
+# Create your views here.
 
 @login_required(login_url='/login/')
 def home(request):
@@ -141,8 +145,31 @@ def view_post(request, author_id, post_id):
 	post = get_object_or_404(Post, id=post_id, author__id=author_id)
 	liked = False
 
+	#--- Comments Block ---#
+	# https://djangocentral.com/creating-comments-system-with-django/
+	if current_user.author.id == post.author.id or post.visibility=='PUBLIC':
+		comments = post.comments
+	else:
+		comments = post.comments.filter(author__id=current_user.author.id)
+	new_comment = None
+	if request.method == 'POST':
+		comment_form = CommentForm(data=request.POST)
+		if comment_form.is_valid():
+			new_comment = comment_form.save(commit=False)
+			new_comment.post = post
+			new_comment.author = request.user.author
+			new_comment.save()
+			# new_comment = CommentForm()
+			# ref: https://stackoverflow.com/questions/5773408/how-to-clear-form-fields-after-a-submit-in-django
+			# Bugged
+			# return HttpResponseRedirect('')
+			comment_form = CommentForm()
+	else:
+		comment_form = CommentForm()
+	#--- end of Comments Block ---#
+
 	try:
-		obj = Likes.objects.get(post_id=post, who_liked=request.user.id)
+		obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
 	except:
 		liked = False
 	else:
@@ -151,7 +178,7 @@ def view_post(request, author_id, post_id):
 	if post.content_type == Post.ContentType.PNG or post.content_type == Post.ContentType.JPEG:
 		return HttpResponse(b64decode(post.content), content_type=post.content_type)
 	else:
-		return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked})
+		return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
 
 class CreatePostView(generic.CreateView):
 	model = Post
@@ -214,14 +241,9 @@ def share_post(request, post_id):
 	author_original = post.author
 	author_share = request.user.author
 	if request.method == "GET":
-		form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original.user_name)}',\
+		form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original.displayName)}',\
 												'origin': post.origin + f'http://localhost:8000/author/{author_original.id}/view_post/{post_id}', \
 												'visibility': post.visibility})
-
-		if post.visibility == 'FRIENDS':
-			# Can't edit FRIENDS visibility
-			form.fields['visibility'].widget.attrs['style'] = 'pointer-events: none'
-			form.fields['visibility'].label = 'Visibility (FRIENDS only)'
 
 		return render(request, "profile/share_post.html", {'form':form})
 	else:
@@ -326,11 +348,17 @@ def post_github(request):
 def view_profile(request, author_id):
 	user = Author.objects.get(user__username=request.user.username)
 	author = Author.objects.get(id=author_id)
+	following_status = user.following.filter(id=author_id).exists()
+	follower_status = user.followers.filter(id=author_id).exists()
+	if following_status or follower_status:
+		follow_status = True
+	else:
+		follow_status = False
 	friend_status = user.friends.filter(id=author_id).exists()
 	friend_posts = author.posts.all()
 
 	if request.method == "GET":
-		return render(request, 'profile/view_profile.html', {'author': author, 'posts': friend_posts, 'friend_status': friend_status})
+		return render(request, 'profile/view_profile.html', {'author': author, 'posts': friend_posts, 'friend_status': friend_status, 'follow_status': follow_status})
 
 # TODO: check if request has already been made
 def friend_request(request, author_id):
@@ -357,15 +385,16 @@ def remove_friend(request, author_id):
 
 
 
-def like_post(request,author_id,post_id):
+def like_post(request, author_id, post_id):
 	current_user = request.user
 	post = get_object_or_404(Post, id=post_id, author__id=author_id)
 	liked = False
 
 	try:
-		obj = Likes.objects.get(post_id=post, who_liked=request.user.id)
+		obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
 	except:
-		like_instance = Likes(post_id=post, who_liked=request.user.id)
+		author = Author.objects.get(id=author_id)
+		like_instance = PostLike(post_id=post, author=author)
 		like_instance.save()
 		post.likes_count = post.likes_count + 1
 		post.save()
@@ -387,14 +416,12 @@ def private_post(request, author_id):
 	author = request.user.author
 	to_author = Author.objects.get(id=author_id)
 	if request.method == "GET":
-		form = PostForm(initial={'title': f'Private DM from @{author.user_name} --',\
+		form = PostForm(initial={'title': f'Private DM from @{author.displayName} --',\
 								 'origin': f'http://localhost:8000/view_profile/{author.id}',\
 								 'visibility': 'PRIVATE',\
 								 'to_author_id': to_author})
-		form.fields['visibility'].widget.attrs['style'] = 'pointer-events: none'
-		form.fields['visibility'].label = 'Visibility (PRIVATE)'
 
-		return render(request, "profile/create_post.html", {'form':form})
+		return render(request, "profile/private_post.html", {'form':form})
 	elif request.method == "POST":
 		form = PostForm(data=request.POST)
 		form.instance.author = author
@@ -406,7 +433,12 @@ def private_post(request, author_id):
 		else:
 			print(form.errors)
 
-def private_inbox(request):
+def inbox(request):
 	author = Author.objects.get(id=request.user.author.id)
-	posts = Post.objects.filter(to_author=request.user.author.id)
+	# Private means direct DM or from someone is not your friend (yet)
+	private_posts = Post.objects.filter(to_author=request.user.author.id).order_by('-timestamp')
+	friends = author.friends.all()
+	# Friends posts contain all the post from the people you follow
+	friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+	posts = private_posts | friends_posts
 	return render(request, 'profile/posts.html', {'posts':posts, 'author':author})
