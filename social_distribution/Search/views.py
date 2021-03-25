@@ -19,10 +19,8 @@ def results(request):
 
     for connection in Connection.objects.all():
         url = connection.url + 'service/authors'
-        response = requests.get(url)
+        response = requests.get(url, headers={"mode":"no-cors"})
         for author in response.json()['items']:
-            # print(author)
-            # remote_authors.append(Author.objects.create(**author))
             remote_authors.append(author)
 
     authors = list(authors)
