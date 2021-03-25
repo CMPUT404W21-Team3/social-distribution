@@ -18,7 +18,6 @@ class Author(models.Model):
     location = models.CharField(max_length=30, blank=True)
     birth_date = models.DateField(null=True, blank=True)
     github = models.CharField(max_length=50, blank=True)
-    host = models.CharField(max_length=50, blank=True)
 
 
     friends = models.ManyToManyField('self')
@@ -42,6 +41,14 @@ class Author(models.Model):
     @displayName.setter
     def displayName(self, val):
         pass
+
+    @property
+    def url(self):
+        return reverse('api:author', kwargs={'author_id':self.id})
+
+    @property
+    def host(self):
+        return reverse('Profile:home')
 
 class Post(models.Model):
     title = models.CharField(max_length=200)

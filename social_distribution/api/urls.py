@@ -2,9 +2,11 @@ from django.urls import include, path
 from rest_framework import routers
 from . import views
 
+app_name = 'api'
+
 urlpatterns = [
   
-    path('author/<str:author_id>/', views.author),
+    path('author/<str:author_id>/', views.author, name='author'),
     path('author/<str:author_id>/posts/<str:post_id>', views.post),
     path('author/<str:author_id>/posts/', views.posts),
     path('author/<str:author_id>/followers', views.followers),
