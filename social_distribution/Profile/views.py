@@ -448,12 +448,12 @@ def inbox(request):
 		elif inbox_option == "Cleared":
 			posts = author.posts_cleared.all().order_by('-timestamp')
 		else:
-			posts = posts.difference(author.posts_cleared.all())
+			posts = posts.difference(author.posts_cleared.all()).order_by('-timestamp')
 		return render(request, 'profile/posts.html', {'posts':posts, 'author':author, 'inbox':True})
 	elif request.method == "POST":
 		if "clear_signal" in request.POST:
 			author.posts_cleared.add(*posts)
-		posts = posts.difference(author.posts_cleared.all())
+		posts = posts.difference(author.posts_cleared.all()).order_by('-timestamp')
 		return render(request, 'profile/posts.html', {'posts':posts, 'author':author, 'inbox':True})
 
 

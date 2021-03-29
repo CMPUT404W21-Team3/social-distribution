@@ -288,10 +288,11 @@ def inbox(request, author_id):
         # user already authenticated on the web
         if author_id == str(request.user.author.id):
             author = Author.objects.get(id=author_id)
-            private_posts = Post.objects.filter(to_author=author_id).order_by('-timestamp')
+            private_posts = Post.objects.filter(to_author=author_id)
             friends = author.friends.all()
-            friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+            friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends)
             posts = private_posts | friends_posts
+            posts = posts.difference(author.posts_cleared.all()).order_by('-timestamp')
             serializer = PostSerializer(posts, many=True)
             return Response(serializer.data)
         # for example autheticating via Curl
@@ -302,10 +303,11 @@ def inbox(request, author_id):
             if user is not None:
                 if author_id == str(Author.objects.get(user__username=username).id):
                     author = Author.objects.get(id=author_id)
-                    private_posts = Post.objects.filter(to_author=author_id).order_by('-timestamp')
+                    private_posts = Post.objects.filter(to_author=author_id)
                     friends = author.friends.all()
-                    friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+                    friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends)
                     posts = private_posts | friends_posts
+                    posts = posts.difference(author.posts_cleared.all()).order_by('-timestamp')
                     serializer = PostSerializer(posts, many=True)
                     return Response(serializer.data)
                 else: 
@@ -363,9 +365,9 @@ def inbox(request, author_id):
                 pass
         if author_id == str(request.user.author.id):
             author = Author.objects.get(id=author_id)
-            private_posts = Post.objects.filter(to_author=author_id).order_by('-timestamp')
+            private_posts = Post.objects.filter(to_author=author_id)
             friends = author.friends.all()
-            friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+            friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends)
             posts = private_posts | friends_posts
             posts = posts.difference(author.posts_cleared.all())
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -377,9 +379,9 @@ def inbox(request, author_id):
             if user is not None:
                 if follower_id == str(Author.objects.get(user__username=username).id):
                     author = Author.objects.get(id=author_id)
-                    private_posts = Post.objects.filter(to_author=author_id).order_by('-timestamp')
+                    private_posts = Post.objects.filter(to_author=author_id)
                     friends = author.friends.all()
-                    friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+                    friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends)
                     posts = private_posts | friends_posts
                     posts = posts.difference(author.posts_cleared.all())
                     return Response(status=status.HTTP_204_NO_CONTENT)
