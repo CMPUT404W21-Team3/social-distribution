@@ -6,7 +6,7 @@
 <p> Results page for query: {{ query }}</p>
 {% for author in authors %}
     <li>
-      <a href="{{ author.host }}author/{{ author.id }}">{{ author.displayName }}</a>
+      <a href="{{ author.host }}author/{{ author.id }}">{{ author.displayName }}</a><a style="margin-left: 10px;" class="btn btn-info" href="{{ author.host }}view_profile/{{ author.id }}">View Profile</a>
     </li>
 {% endfor %}
 

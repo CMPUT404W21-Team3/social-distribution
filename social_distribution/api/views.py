@@ -367,9 +367,7 @@ def inbox(request, author_id):
             friends = author.friends.all()
             friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
             posts = private_posts | friends_posts
-            for post in posts:
-                if post.visibility == 'PRIVATE':
-                    post.delete()
+            posts = posts.difference(author.posts_cleared.all())
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             # Log in with those credentials
@@ -383,9 +381,7 @@ def inbox(request, author_id):
                     friends = author.friends.all()
                     friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
                     posts = private_posts | friends_posts
-                    for post in posts:
-                        if post.visibility == 'PRIVATE':
-                            post.delete()
+                    posts = posts.difference(author.posts_cleared.all())
                     return Response(status=status.HTTP_204_NO_CONTENT)
                 else:
                     return Response(status=status.HTTP_401_UNAUTHORIZED)
