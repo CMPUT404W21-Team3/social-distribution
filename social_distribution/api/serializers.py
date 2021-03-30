@@ -46,7 +46,7 @@ class FriendRequestSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = ('type', 'author', 'content', 'timestamp', 'id', 'url', 'host')
+        fields = ('type', 'author', 'content', 'timestamp', 'id', 'url')
 
     # https://stackoverflow.com/questions/41312558/django-rest-framework-post-nested-objects
     def to_representation(self, instance):
