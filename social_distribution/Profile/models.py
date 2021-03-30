@@ -108,6 +108,15 @@ class Post(models.Model):
     @type.setter
     def type(self, val):
         pass
+    
+    
+    @property
+    def url(self):
+        return Site.objects.get_current().domain + reverse('api:post', kwargs={'author_id':self.author.id, 'post_id':self.id})
+
+    @property
+    def host(self):
+        return Site.objects.get_current().domain
 
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
