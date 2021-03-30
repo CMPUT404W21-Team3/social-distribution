@@ -15,6 +15,23 @@
     <a href="/author/new_post" class="btn btn-outline-success post-button" role="button">New Post</a>
     <a href="/author/new_image_post" class="btn btn-outline-success post-button" role="button">New Image Post</a>
     <a href="/" class="btn btn-outline-success post-button" role="button">Back</a>
+    {% if inbox %}
+    <form action="{% url 'Profile:inbox' %}?inbox_option=New" method="POST">
+        {% csrf_token %}
+        <input type="hidden" id="clear_signal" name="clear_signal" value="clear_signal">
+        <button type="submit" class="btn btn-outline-danger post-button" id="clear_button">Clear</button>
+    </form>
+    <form class="form-inline" method="GET">
+        <div class="form-group">
+            <select class="form-select form-select-sm" id="inbox_option" name="inbox_option">
+                <option>New</option>
+                <option>Cleared</option>
+                <option>All</option>
+            </select>
+        <button type="submit" class="btn btn-secondary btn-sm">Go</button>
+        </div>
+    </form>
+    {% endif %}
     <!-- <button type="button" class="btn btn-primary">New Post</button> -->
     {% if posts %}
         <div class="row row-cols-1 row-cols-md-3 g-4">
