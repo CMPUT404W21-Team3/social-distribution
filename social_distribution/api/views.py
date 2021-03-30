@@ -283,10 +283,9 @@ def requests(request, author_id):
 @api_view(['GET', 'PUT', 'DELETE'])
 def request(request, author_id, sender_id):
     """ Retrieve, add or delete friend request for an author"""
-
     if request.method == 'GET' or request.method == 'DELETE':
         try:
-            friend_request = FriendRequest.objects.get(receiver_id=author_id, sender_id=sender_id)
+            friend_request = FriendRequest.objects.filter(receiver_id=author_id, sender_id=sender_id).all()[0]
         except:
             return HttpResponse(status=404)
 

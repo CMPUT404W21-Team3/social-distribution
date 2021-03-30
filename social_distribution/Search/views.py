@@ -19,7 +19,7 @@ def results(request):
 
     for connection in Connection.objects.all():
         url = connection.url + 'service/authors'
-        response = requests.get(url, headers={"mode":"no-cors"})
+        response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
         for author in response.json()['items']:
             remote_authors.append(author)
 

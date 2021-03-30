@@ -49,17 +49,9 @@ class Author(models.Model):
     def url(self):
         return Site.objects.get_current().domain + reverse('api:author', kwargs={'author_id':self.id})
 
-    @url.setter
-    def url(self, val):
-        pass
-
     @property
     def host(self):
         return Site.objects.get_current().domain
-
-    @host.setter
-    def host(self, val):
-        pass
 
 class Post(models.Model):
     title = models.CharField(max_length=200)
@@ -134,17 +126,9 @@ class Post(models.Model):
     def url(self):
         return Site.objects.get_current().domain + reverse('api:post', kwargs={'author_id':self.author.id, 'post_id':self.id})
 
-    @url.setter
-    def url(self, val):
-        pass
-
     @property
     def host(self):
         return Site.objects.get_current().domain
-
-    @host.setter
-    def host(self, val):
-        pass
 
     def content_html(self):
         if self.content_type == Post.ContentType.PLAIN:
@@ -193,6 +177,14 @@ class Comment(models.Model):
     def type(self, val):
         pass
 
+    @property
+    def url(self):
+        return Site.objects.get_current().domain + reverse('api:comment', kwargs={'author_id':self.author.id, 'post_id':self.post.id, 'comment_id':self.id})
+
+    @property
+    def host(self):
+        return Site.objects.get_current().domain
+
 class Like(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True)
@@ -210,17 +202,13 @@ class Like(models.Model):
     def type(self, val):
         pass
 
-    # May need to be moved to subclasses
-
-    # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
-    def context(self):
-        return 'comment'
+    def url(self):
+        return Site.objects.get_current().domain + reverse('api:liked', kwargs={'author_id':self.author.id, 'post_id':self.post.id, 'comment_id':self.id})
 
-    # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
-    @context.setter
-    def context(self, val):
-        pass
+    @property
+    def host(self):
+        return Site.objects.get_current().domain
 
 
 class CommentLike(Like):
