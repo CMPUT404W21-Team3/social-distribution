@@ -26,6 +26,7 @@ class Author(models.Model):
     friends = models.ManyToManyField('self')
     following = models.ManyToManyField('self', symmetrical=False, related_name="following_list")
     followers = models.ManyToManyField('self', symmetrical=False, related_name="follower_list")
+    posts_cleared = models.ManyToManyField('Post', related_name="posts_cleared")
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
@@ -226,7 +227,8 @@ class CommentLike(Like):
 
     @property
     def summary(self):
-        return "hello there"
+        return str(self.user) + "likes your comment"
+
 
     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
     @summary.setter
@@ -252,7 +254,7 @@ class PostLike(Like):
 
     @property
     def summary(self):
-        return str(Author.id) + " likes your post"
+        return str(self.user) + " likes your post"
 
     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
     @summary.setter

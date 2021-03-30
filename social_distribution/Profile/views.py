@@ -436,9 +436,25 @@ def private_post(request, author_id):
 def inbox(request):
 	author = Author.objects.get(id=request.user.author.id)
 	# Private means direct DM or from someone is not your friend (yet)
-	private_posts = Post.objects.filter(to_author=request.user.author.id).order_by('-timestamp')
+	private_posts = Post.objects.filter(to_author=request.user.author.id)
 	friends = author.friends.all()
 	# Friends posts contain all the post from the people you follow
-	friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+	friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends)
 	posts = private_posts | friends_posts
-	return render(request, 'profile/posts.html', {'posts':posts, 'author':author})
+	if request.method == "GET":
+		inbox_option = request.GET.get("inbox_option")
+		if inbox_option == "All":
+			posts = posts.order_by('-timestamp')
+		elif inbox_option == "Cleared":
+			posts = author.posts_cleared.all().order_by('-timestamp')
+		else:
+			posts = posts.difference(author.posts_cleared.all()).order_by('-timestamp')
+		return render(request, 'profile/posts.html', {'posts':posts, 'author':author, 'inbox':True})
+	elif request.method == "POST":
+		if "clear_signal" in request.POST:
+			author.posts_cleared.add(*posts)
+		posts = posts.difference(author.posts_cleared.all()).order_by('-timestamp')
+		return render(request, 'profile/posts.html', {'posts':posts, 'author':author, 'inbox':True})
+
+
+	
