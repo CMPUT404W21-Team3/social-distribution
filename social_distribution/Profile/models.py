@@ -112,15 +112,6 @@ class Post(models.Model):
         pass
 
 
-    @property
-    def url(self):
-        return Site.objects.get_current().domain + reverse('api:post', kwargs={'author_id':self.author.id, 'post_id':self.id})
-
-    @property
-    def host(self):
-        return Site.objects.get_current().domain
-
-
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
     def comments(self):
@@ -190,10 +181,6 @@ class Comment(models.Model):
     @property
     def url(self):
         return Site.objects.get_current().domain + reverse('api:comment', kwargs={'author_id':self.author.id, 'post_id':self.post.id, 'comment_id':self.id})
-
-    @property
-    def host(self):
-        return Site.objects.get_current().domain
 
 class Like(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -461,6 +461,26 @@ def comments(request, author_id, post_id):
                 return Response(serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['GET', 'POST'])
+def comment(request, author_id, post_id, comment_id):
+    """
+    Get comments from a post or create a post and auto generate an id for it.
+    """
+
+    if request.method == 'GET':
+        post = Post.objects.get(id=post_id)
+
+        if post.visibility != 'PUBLIC':
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        comment = post.comments.get(id=comment_id)
+        serializer = CommentSerializer(comment)
+        return Response(serializer.data)
+
+    else:
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
 @api_view(['GET', 'POST', 'DELETE'])
 def inbox(request, author_id):
     """

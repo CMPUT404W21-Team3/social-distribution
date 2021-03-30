@@ -6,7 +6,7 @@ app_name = 'api'
 
 urlpatterns = [
     path('author/<str:author_id>/', views.author, name='author'),
-    path('author/<str:author_id>/posts/<str:post_id>', views.post),
+    path('author/<str:author_id>/posts/<str:post_id>', views.post, name='post'),
     path('author/<str:author_id>/posts/', views.posts),
     path('author/<str:author_id>/friends/', views.friends),
     path('author/<str:author_id>/friends/<str:friend_id>', views.friend),
@@ -15,6 +15,7 @@ urlpatterns = [
     path('author/<str:author_id>/followers', views.followers),
     path('author/<str:author_id>/followers/<str:follower_id>', views.follower),
     path('author/<str:author_id>/posts/<str:post_id>/comments', views.comments),
+    path('author/<str:author_id>/posts/<str:post_id>/comments/<str:comment_id>', views.comment, name='comment'),
     path('author/<str:author_id>/posts/<str:post_id>/likes', views.post_likes),
     path('author/<str:author_id>/posts/<str:post_id>/comments/<str:comment_id>/likes', views.comment_likes),
     path('author/<str:author_id>/liked', views.liked),
