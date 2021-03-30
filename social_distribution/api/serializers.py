@@ -68,9 +68,9 @@ class LikeSerializer(serializers.ModelSerializer):
             return CommentLike(**validated_data)
 
     def update(self, instance, validated_data):
-        instance.summary = validated_data.get('summary', instance.email)
-        instance.author = validated_data.get('author', instance.email)
-        instance.object = validated_data.get('object', instance.email)
+        instance.summary = validated_data.get('summary', instance.summary)
+        instance.author = validated_data.get('author', instance.author)
+        instance.object = validated_data.get('object', instance.object)
         instance.save()
         return instance
 
