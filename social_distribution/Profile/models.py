@@ -107,6 +107,17 @@ class Post(models.Model):
     def type(self, val):
         pass
 
+
+    # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
+    @property
+    def comments(self):
+        return Comment.objects.filter(post_id=id, author=author).order_by('-timestamp')
+
+    # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
+    @comments.setter
+    def comments(self, val):
+        pass
+
     def content_html(self):
         if self.content_type == Post.ContentType.PLAIN:
             return self.content
