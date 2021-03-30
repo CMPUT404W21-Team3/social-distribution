@@ -45,11 +45,11 @@ class Author(models.Model):
 
     @property
     def url(self):
-        return reverse('api:author', kwargs={'author_id':self.id})
+        return Site.objects.get_current().domain + reverse('api:author', kwargs={'author_id':self.id})
 
     @property
     def host(self):
-        return reverse('Profile:home')
+        return Site.objects.get_current().domain
 
 class Post(models.Model):
     title = models.CharField(max_length=200)
