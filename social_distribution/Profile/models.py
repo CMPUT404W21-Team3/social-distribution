@@ -129,6 +129,23 @@ class Post(models.Model):
     def comments(self, val):
         pass
 
+
+    @property
+    def url(self):
+        return Site.objects.get_current().domain + reverse('api:post', kwargs={'author_id':self.author.id, 'post_id':self.id})
+
+    @url.setter
+    def url(self, val):
+        pass
+
+    @property
+    def host(self):
+        return Site.objects.get_current().domain
+
+    @host.setter
+    def host(self, val):
+        pass
+
     def content_html(self):
         if self.content_type == Post.ContentType.PLAIN:
             return self.content
