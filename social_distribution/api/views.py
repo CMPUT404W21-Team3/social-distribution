@@ -8,8 +8,9 @@ from rest_framework.parsers import JSONParser
 from rest_framework import status
 from rest_framework.response import Response
 
-from .serializers import AuthorSerializer, PostSerializer, CommentSerializer, LikeSerializer, PostLikeSerializer, CommentLikeSerializer
+from .serializers import AuthorSerializer, PostSerializer, CommentSerializer, LikeSerializer, PostLikeSerializer, CommentLikeSerializer, FriendRequestSerializer
 from Profile.models import Author, Post, Comment, PostLike, CommentLike
+from Search.models import FriendRequest
 
 # https://www.django-rest-framework.org/tutorial/1-serialization/ - was consulted in writing code
 
@@ -18,7 +19,7 @@ def get_all_posts(request):
     """
     Get all public posts
     """
-    
+
     posts = Post.objects.filter(visibility=Post.Visibility.PUBLIC, unlisted=False)
     serializer = PostSerializer(posts, many=True)
     return Response(serializer.data)
@@ -172,6 +173,196 @@ def posts(request, author_id):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['GET'])
+def friends(request, author_id):
+    """ Retrieve friends for an author or create a new one """
+    if request.method == 'GET':
+        friends = Author.objects.get(id=author_id).friends.all()
+        serializer = AuthorSerializer(friends, many=True)
+        return Response(serializer.data)
+    else:
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def friend(request, author_id, friend_id):
+    """ Retrieve friends for an author or create a new one """
+
+    try:
+        author = Author.objects.get(id=author_id)
+        friend = Author.objects.get(id=author_id).friends.get(id=friend_id)
+    except Author.DoesNotExist:
+        return HttpResponse(status=404)
+
+    if request.method == 'GET':
+        serializer = AuthorSerializer(friend)
+        return Response(serializer.data)
+
+    # Add a friend
+    elif request.method == 'PUT':
+        if 'password' not in request.data or 'username' not in request.data:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            # Log in with those credentials
+            username = request.data['username']
+            password = request.data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                if author_id == str(Author.objects.get(user__username=username).id):
+                    author.friends.add(friend)
+                    return HttpResponse(status=200)
+
+                else:
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+    elif request.method == 'DELETE':
+
+        if request.user is not None and author_id == str(Author.objects.get(user__username=request.user).id):
+            author.friends.remove(friend)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        elif 'password' not in request.data or 'username' not in request.data:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        else:
+            # Log in with those credentials
+            username = request.data['username']
+            password = request.data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                if author_id == str(Author.objects.get(user__username=username).id):
+                    author.friends.remove(friend)
+                    return Response(status=status.HTTP_204_NO_CONTENT)
+
+                else:
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+    else:
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+@api_view(['GET'])
+def requests(request, author_id):
+    """ Retrieve friend requests for an author"""
+    try:
+        requests = FriendRequest.objects.filter(receiver_id=author_id).all()
+    except:
+        return HttpResponse(status=404)
+
+
+    if request.method == 'GET':
+        # Check current logged in user
+        if request.user is not None and author_id == str(Author.objects.get(user__username=request.user).id):
+            serializer = FriendRequestSerializer(requests, many=True)
+            return Response(serializer.data)
+
+        elif 'password' not in request.data or 'username' not in request.data:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        else:
+            username = request.data['username']
+            password = request.data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                if author_id == str(Author.objects.get(user__username=username).id):
+                    serializer = FriendRequestSerializer(requests, many=True)
+                    return Response(serializer.data)
+                else:
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+    else:
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def request(request, author_id, sender_id):
+    """ Retrieve, add or delete friend request for an author"""
+
+    if request.method == 'GET' or request.method == 'DELETE':
+        try:
+            friend_request = FriendRequest.objects.get(receiver_id=author_id, sender_id=sender_id)
+        except:
+            return HttpResponse(status=404)
+
+    if request.method == 'GET':
+        # Check current logged in user
+        if request.user is not None and ( sender_id == str(Author.objects.get(user__username=request.user).id) or author_id == str(Author.objects.get(user__username=request.user).id)):
+            serializer = FriendRequestSerializer(friend_request)
+            return Response(serializer.data)
+
+        elif 'password' not in request.data or 'username' not in request.data:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        else:
+            username = request.data['username']
+            password = request.data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                if sender_id == str(Author.objects.get(user__username=username).id):
+                    serializer = FriendRequestSerializer(friend_request)
+                    return Response(serializer.data)
+
+                else:
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+
+    elif request.method =='PUT':
+        if 'password' not in request.data or 'username' not in request.data:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        else:
+            username = request.data['username']
+            password = request.data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                if sender_id == str(Author.objects.get(user__username=username).id):
+                    receiver = Author.objects.get(id=author_id)
+                    sender = Author.objects.get(id=sender_id)
+                    instance = FriendRequest.objects.create(receiver=receiver, sender=sender)
+                    serializer = FriendRequestSerializer(instance, data=request.data)
+                    if serializer.is_valid():
+                        serializer.save()
+                        return Response(serializer.data)
+                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+                else:
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+
+    elif request.method == 'DELETE':
+        # Log in with those credentials
+        if request.user is not None and sender_id == str(Author.objects.get(user__username=request.user).id):
+            friend_request.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        elif 'password' not in request.data or 'username' not in request.data:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        else:
+            username = request.data['username']
+            password = request.data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                if sender_id == str(Author.objects.get(user__username=username).id):
+                    friend_request.delete()
+                    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+    else:
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
 
 @api_view(['GET'])
 def followers(request, author_id):
@@ -192,8 +383,15 @@ def follower(request, author_id, follower_id):
     except Author.DoesNotExist:
         return HttpResponse(status=404)
 
+    if request.method == 'GET':
+        if follower in author.followers.all():
+            serializer = AuthorSerializer(follower)
+            return Response(serializer.data)
+        # Not a follower
+        return HttpResponse(status=404)
+
     # Add as follower
-    if request.method == 'PUT':
+    elif request.method == 'PUT':
         if 'password' not in request.data or 'username' not in request.data:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
         else:
@@ -212,13 +410,6 @@ def follower(request, author_id, follower_id):
                 return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         return Response(status=status.HTTP_401_UNAUTHORIZED)
-
-    if request.method == 'GET':
-        if follower in author.followers.all():
-            serializer = AuthorSerializer(follower)
-            return Response(serializer.data)
-        # Not a follower
-        return HttpResponse(status=404)
 
     elif request.method == 'DELETE':
         # TODO: add authentication
@@ -310,7 +501,7 @@ def inbox(request, author_id):
                     posts = posts.difference(author.posts_cleared.all()).order_by('-timestamp')
                     serializer = PostSerializer(posts, many=True)
                     return Response(serializer.data)
-                else: 
+                else:
                     return Response(status=status.HTTP_401_UNAUTHORIZED)
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
@@ -354,7 +545,7 @@ def inbox(request, author_id):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     elif request.method == 'DELETE':
-        # This can only clear PRIVATE post... 
+        # This can only clear PRIVATE post...
         if ('password' not in request.data) or ('username' not in request.data):
             try:
                 if author_id != str(request.user.author.id):
@@ -426,4 +617,3 @@ def liked(request, author_id):
 
     else:
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
