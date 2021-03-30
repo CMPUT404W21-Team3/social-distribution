@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Author
-        fields = ('type', 'id', 'displayName', 'bio', 'location', 'birth_date', 'github')
+        fields = ('type', 'id', 'displayName', 'bio', 'location', 'url', 'birth_date', 'github', 'host')
 
 class PostSerializer(serializers.ModelSerializer):
 
@@ -68,9 +68,9 @@ class LikeSerializer(serializers.ModelSerializer):
             return CommentLike(**validated_data)
 
     def update(self, instance, validated_data):
-        instance.summary = validated_data.get('summary', instance.email)
-        instance.author = validated_data.get('author', instance.email)
-        instance.object = validated_data.get('object', instance.email)
+        instance.summary = validated_data.get('summary', instance.summary)
+        instance.author = validated_data.get('author', instance.author)
+        instance.object = validated_data.get('object', instance.object)
         instance.save()
         return instance
 
@@ -78,6 +78,7 @@ class LikeSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
+        # data['summary'] = " likes your comment"
         return data
 
 class PostLikeSerializer(serializers.ModelSerializer):

@@ -2,11 +2,13 @@ import uuid, commonmark
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.contrib.sites.models import Site
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from django.forms import ModelForm
 from django.urls import reverse
+
 
 # https://simpleisbetterthancomplex.com/tutorial/2016/07/22/how-to-extend-django-user-model.html#onetoone
 # https://stackoverflow.com/questions/16925129/generate-unique-id-in-django-from-a-model-field/30637668
@@ -18,6 +20,7 @@ class Author(models.Model):
     location = models.CharField(max_length=30, blank=True)
     birth_date = models.DateField(null=True, blank=True)
     github = models.CharField(max_length=50, blank=True)
+
 
 
     friends = models.ManyToManyField('self')
@@ -44,11 +47,19 @@ class Author(models.Model):
 
     @property
     def url(self):
-        return reverse('api:author', kwargs={'author_id':self.id})
+        return Site.objects.get_current().domain + reverse('api:author', kwargs={'author_id':self.id})
+
+    @url.setter
+    def url(self, val):
+        pass
 
     @property
     def host(self):
-        return reverse('Profile:home')
+        return Site.objects.get_current().domain
+
+    @host.setter
+    def host(self, val):
+        pass
 
 class Post(models.Model):
     title = models.CharField(max_length=200)
@@ -111,7 +122,7 @@ class Post(models.Model):
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
     def comments(self):
-        return Comment.objects.filter(post_id=id, author=author).order_by('-timestamp')
+        return Comment.objects.filter(post_id=id, author=author).all().order_by('-timestamp')[:5]
 
     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
     @comments.setter
@@ -213,10 +224,9 @@ class CommentLike(Like):
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
 
-    # Buggy
     @property
     def summary(self):
-        return author.user__username + "likes your comment"
+        return "hello there"
 
     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
     @summary.setter
