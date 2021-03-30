@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.forms import ModelForm
 from django.urls import reverse
 
+
 # https://simpleisbetterthancomplex.com/tutorial/2016/07/22/how-to-extend-django-user-model.html#onetoone
 # https://stackoverflow.com/questions/16925129/generate-unique-id-in-django-from-a-model-field/30637668
 
@@ -19,6 +20,7 @@ class Author(models.Model):
     location = models.CharField(max_length=30, blank=True)
     birth_date = models.DateField(null=True, blank=True)
     github = models.CharField(max_length=50, blank=True)
+
 
 
     friends = models.ManyToManyField('self')
@@ -108,8 +110,8 @@ class Post(models.Model):
     @type.setter
     def type(self, val):
         pass
-    
-    
+
+
     @property
     def url(self):
         return Site.objects.get_current().domain + reverse('api:post', kwargs={'author_id':self.author.id, 'post_id':self.id})
@@ -122,12 +124,21 @@ class Post(models.Model):
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
     def comments(self):
-        return Comment.objects.filter(post_id=id, author=author).order_by('-timestamp')
+        return Comment.objects.filter(post_id=id, author=author).all().order_by('-timestamp')[:5]
 
     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
     @comments.setter
     def comments(self, val):
         pass
+
+
+    @property
+    def url(self):
+        return Site.objects.get_current().domain + reverse('api:post', kwargs={'author_id':self.author.id, 'post_id':self.id})
+
+    @property
+    def host(self):
+        return Site.objects.get_current().domain
 
     def content_html(self):
         if self.content_type == Post.ContentType.PLAIN:
@@ -176,6 +187,14 @@ class Comment(models.Model):
     def type(self, val):
         pass
 
+    @property
+    def url(self):
+        return Site.objects.get_current().domain + reverse('api:comment', kwargs={'author_id':self.author.id, 'post_id':self.post.id, 'comment_id':self.id})
+
+    @property
+    def host(self):
+        return Site.objects.get_current().domain
+
 class Like(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True)
@@ -193,17 +212,13 @@ class Like(models.Model):
     def type(self, val):
         pass
 
-    # May need to be moved to subclasses
-
-    # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
-    def context(self):
-        return 'comment'
+    def url(self):
+        return Site.objects.get_current().domain + reverse('api:liked', kwargs={'author_id':self.author.id, 'post_id':self.post.id, 'comment_id':self.id})
 
-    # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
-    @context.setter
-    def context(self, val):
-        pass
+    @property
+    def host(self):
+        return Site.objects.get_current().domain
 
 
 class CommentLike(Like):
@@ -224,7 +239,6 @@ class CommentLike(Like):
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
 
-    # Buggy
     @property
     def summary(self):
         return str(self.user) + "likes your comment"

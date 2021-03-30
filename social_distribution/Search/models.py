@@ -33,3 +33,11 @@ class FriendRequest(models.Model):
     @summary.setter
     def summary(self, val):
         pass
+
+    @property
+    def url(self):
+        return Site.objects.get_current().domain + reverse('api:author', kwargs={'author_id':self.id})
+
+    @property
+    def host(self):
+        return Site.objects.get_current().domain
