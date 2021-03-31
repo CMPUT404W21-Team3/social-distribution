@@ -21,7 +21,7 @@ from .forms import UserForm, AuthorForm, SignUpForm, PostForm, ImagePostForm, Co
 from .models import Author, Post, CommentLike, PostLike
 from Search.models import FriendRequest
 from api.models import Connection
-from api.serializers import AuthorSerializer
+from api.serializers import AuthorSerializer, PostSerializer
 
 from .helpers import timestamp_beautify
 
@@ -217,6 +217,8 @@ def view_post(request, author_id, post_id):
 		else:
 			liked = True
 
+		if post.contentType == Post.ContentType.MARKDOWN:
+					post.content = commonmark.commonmark(post.content)
 		if post.contentType == Post.ContentType.PNG or post.contentType == Post.ContentType.JPEG:
 			return HttpResponse(b64decode(post.content), contentType=post.contentType)
 		else:
@@ -297,25 +299,50 @@ def delete_post(request, post_id):
 		post.delete()
 		return redirect('Profile:view_posts', author_id=request.user.author.id)
 
-def share_post(request, post_id):
-	post = Post.objects.get(id=post_id)
-	author_original = post.author
-	author_share = request.user.author
-	if request.method == "GET":
-		form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original.displayName)}',\
-												'origin': post.origin + f'http://localhost:8000/author/{author_original.id}/view_post/{post_id}', \
-												'visibility': post.visibility})
+def share_post(request, post_id, author_id):
 
-		return render(request, "profile/share_post.html", {'form':form})
-	else:
-		form = PostForm(data=request.POST)
-		form.instance.author = author_share
-		if form.is_valid():
-			post_share = form.save(commit=False)
-			post_share.save()
-			return redirect('Profile:view_posts', author_share.id)
+	post = None
+	try:
+		post = Post.objects.get(id=post_id)
+		author_original = post.author
+		author_share = request.user.author
+		if request.method == "GET":
+			form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original.displayName)}',\
+													'origin': post.origin + f'http://localhost:8000/author/{author_original.id}/view_post/{post_id}', \
+													'visibility': post.visibility})
+
+			return render(request, "profile/share_post.html", {'form':form})
 		else:
-			print(form.errors)
+			form = PostForm(data=request.POST)
+			form.instance.author = author_share
+			if form.is_valid():
+				post_share = form.save(commit=False)
+				post_share.save()
+				return redirect('Profile:view_posts', author_share.id)
+			else:
+				print(form.errors)
+		
+	except:
+		# Sharing remote post
+		for connection in Connection.objects.all():
+			url = connection.url + 'service/author/' + author_id + '/posts/' + post_id
+			response = requests.get(url)
+			if response.status_code == 200:
+				post_j = response.json()
+				# author.save()
+				post_j['title'] += "-- Shared from " + post_j['author']['displayName']
+				post_j['author'] = request.user.author
+				post_j.pop('categories', None)
+				post_j.pop('comments', None)
+				post_j.pop('count', None)
+				post_j.pop('published', None)
+				post_j['unlisted'] = 'False'
+				print(post_j)
+				post = Post.objects.create(**post_j)
+				post.save()
+				return redirect('Profile:view_posts', request.user.author.id)
+
+		
 
 def view_github_activity(request):
 	#get the current user's github username if available

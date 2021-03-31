@@ -56,6 +56,10 @@ class Author(models.Model):
         # return Site.objects.get_current().domain + reverse('api:author', kwargs={'author_id':self.id})
         return self.host + '/author/' + str(self.id) + '/'
 
+    @url.setter
+    def url(self, value):
+        self.url = value
+
     @property
     def host(self):
         if self.remote_host:
