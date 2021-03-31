@@ -211,7 +211,7 @@ def view_post(request, author_id, post_id):
 		#--- end of Comments Block ---#
 
 		try:
-			obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
+			obj = PostLike.objects.get(post_id=post, author__id=request.user.author.id)
 		except:
 			liked = False
 		else:
@@ -505,9 +505,9 @@ def like_post(request, author_id, post_id):
 	liked = False
 
 	try:
-		obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
+		obj = PostLike.objects.get(post_id=post, author__id=request.user.author.id)
 	except:
-		author = Author.objects.get(id=author_id)
+		author = Author.objects.get(id=request.user.author.id)
 		like_instance = PostLike(post_id=post, author=author)
 		like_instance.save()
 		post.likes_count = post.likes_count + 1
@@ -524,7 +524,11 @@ def like_post(request, author_id, post_id):
 		content = commonmark.commonmark(post.content)
 	else:
 		content = 'Content type not supported yet'
-	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user, 'liked': liked})
+	if current_user.author.id == post.author.id or post.visibility == 'PUBLIC':
+		comments = post.comments
+	else:
+		comments = post.comments.filter(author__id=current_user.author.id)
+	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user, 'liked': liked, 'comments':comments, 'comment_form':comment_form})
 
 def private_post(request, author_id):
 	author = request.user.author
