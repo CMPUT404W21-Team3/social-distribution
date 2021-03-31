@@ -27,6 +27,7 @@ class Author(models.Model):
     posts_cleared = models.ManyToManyField('Post', related_name="posts_cleared")
     # Can't find an effective way of setting displayName for a remote author.
     # Because remote author doesn't have a "user" model linked.
+    remote_host = models.CharField(max_length=50, blank=True)
     remote_username = models.CharField(max_length=50, blank=True)
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
@@ -52,16 +53,26 @@ class Author(models.Model):
 
     @property
     def url(self):
-        return Site.objects.get_current().domain + reverse('api:author', kwargs={'author_id':self.id})
+        # return Site.objects.get_current().domain + reverse('api:author', kwargs={'author_id':self.id})
+        return self.host + '/author/' + str(self.id) + '/'
 
     @property
     def host(self):
-        return Site.objects.get_current().domain
+        if self.remote_host:
+            return self.remote_host
+        else:
+            return Site.objects.get_current().domain
+            
+
+    @host.setter
+    def host(self, value):
+        self.remote_host = value
 
 class Post(models.Model):
     title = models.CharField(max_length=200)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     url = models.CharField(max_length=200, blank=True, null=True)
+    host = models.CharField(max_length=50, blank=True)
     source = models.CharField(max_length=200, blank=True)
     origin = models.CharField(max_length=200, blank=True)
     description = models.TextField(blank=True)
@@ -133,7 +144,10 @@ class Post(models.Model):
 
     @property
     def host(self):
-        return Site.objects.get_current().domain
+        if self.host is None:
+            return Site.objects.get_current().domain
+        else:
+            return self.host
 
     def content_html(self):
         if self.content_type == Post.ContentType.PLAIN:
