@@ -21,6 +21,7 @@ from .forms import UserForm, AuthorForm, SignUpForm, PostForm, ImagePostForm, Co
 from .models import Author, Post, CommentLike, PostLike
 from Search.models import FriendRequest
 from api.models import Connection
+from api.serializers import AuthorSerializer
 
 from .helpers import timestamp_beautify
 
@@ -424,6 +425,8 @@ def view_profile(request, author_id):
 def friend_request(request, author_id):
 	# Create request object
 
+	sender = request.user.author
+
 	local = True
 	try:
 		receiver = Author.objects.get(id=author_id)
@@ -436,21 +439,32 @@ def friend_request(request, author_id):
 				# Found a match!
 				if author_id == author['id']:
 					receiver = author
-					print(receiver)
+					
+					post_data = {}
+					post_data['type'] = 'follow'
+					post_data['summary'] = sender.displayName + ' wants to follow ' + receiver['displayName']
+					post_data['actor'] = AuthorSerializer(sender).data
+					post_data['object'] = receiver
 
-	sender = Author.objects.get(user__username=request.user.username)
+					# print(post_data)
+					# Send request to remote
+					url = connection.url + 'service/author/' + receiver['id'] + '/inbox/'
+					# print(url)
+					post_response = requests.post(url, json.dumps(post_data), auth=('CitrusNetwork', 'oranges'))
+					print(post_response.content)
+	
+	if local:
+		# check if request has already been made
 
-	# check if request has already been made
+		# print("Receiver = ", receiver.displayName)
 
-	# print("Receiver = ", receiver.displayName)
+		friend_request = FriendRequest(sender=sender, receiver=receiver)
 
-	friend_request = FriendRequest(sender=sender, receiver=receiver)
-
-	# Add to database
-	friend_request.save()
-	# Add the receiver to the sender's following list
-	sender.following.add(receiver)
-	receiver.followers.add(sender)
+		# Add to database
+		friend_request.save()
+		# Add the receiver to the sender's following list
+		sender.following.add(receiver)
+		receiver.followers.add(sender)
 
 	return redirect('Profile:view_profile', author_id)
 
