@@ -502,7 +502,14 @@ def like_post(request, author_id, post_id):
 		content = commonmark.commonmark(post.content)
 	else:
 		content = 'Content type not supported yet'
-	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user, 'liked': liked})
+
+	if current_user.author.id == post.author.id or post.visibility=='PUBLIC':
+		comments = post.comments
+	else:
+		comments = post.comments.filter(author__id=current_user.author.id)
+	comment_form = CommentForm()
+
+	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user, 'liked': liked,'comments':comments, 'comment_form':comment_form})
 
 def private_post(request, author_id):
 	author = request.user.author
