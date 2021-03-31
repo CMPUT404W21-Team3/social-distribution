@@ -70,7 +70,7 @@ def home(request):
 							id = item['id'],
 							author = Author(
 								id = item['author']['id'],
-								displayName = item['author']['displayName'],
+								remote_username = item['author']['displayName'],
 							),
 							timestamp = item['published'],
 							title = item['title'],
@@ -78,7 +78,7 @@ def home(request):
 							content_type = item['contentType'].split(';')[0],						
 						)
 						remote_posts.append(post)
-						contentType = item['contentType']
+						# contentType = item['contentType']
 						# if contentType == 'text/plain':
 						# 	pass
 						# elif contentType == 'text/markdown':
