@@ -37,6 +37,7 @@
                     <!-- ================= Comments block ================= -->
                     {% if post.author.id != current_user.author.id %}
                     <div>
+                        <!-- https://www.w3schools.com/howto/howto_js_toggle_hide_show.asp -->
                         <button class="btn btn-success" onclick="showBox()">Leave a Comment</button>
 
                         <script>
