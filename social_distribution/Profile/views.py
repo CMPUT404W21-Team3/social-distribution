@@ -528,6 +528,7 @@ def like_post(request, author_id, post_id):
 		comments = post.comments
 	else:
 		comments = post.comments.filter(author__id=current_user.author.id)
+	comment_form = CommentForm()
 	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user, 'liked': liked, 'comments':comments, 'comment_form':comment_form})
 
 def private_post(request, author_id):
