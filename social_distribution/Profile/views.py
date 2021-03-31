@@ -406,15 +406,14 @@ def friend_request(request, author_id):
 
 	# print("Receiver = ", receiver.displayName)
 
-	if 
 	friend_request = FriendRequest(sender=sender, receiver=receiver)
 	#
 	# # Add to database
-	# friend_request.save()
+	friend_request.save()
 	#
 	# # Add the receiver to the sender's following list
-	# sender.following.add(receiver)
-	# receiver.followers.add(sender)
+	sender.following.add(receiver)
+	receiver.followers.add(sender)
 
 	return redirect('Profile:view_profile', author_id)
 
