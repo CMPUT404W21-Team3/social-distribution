@@ -208,7 +208,7 @@ def view_post(request, author_id, post_id):
 	#--- end of Comments Block ---#
 
 	try:
-		obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
+		obj = PostLike.objects.get(post_id=post, author__id=request.user.author.id)
 	except:
 		liked = False
 	else:
