@@ -2,7 +2,7 @@
 
 {% block content %}
 
-	<h2>{{ author.user.get_full_name }} <small>@{{ author.user.username }}</small>!</h2>
+	<h2>{{ author.user.get_full_name }} <small>@{{ author.displayName }}</small>!</h2>
 		<!-- You can only send an inbox if exists following/follower status or friends -->
 		{% if follow_status %}
 		<form action="{{ author.id }}/private_post" method="GET">
@@ -29,8 +29,10 @@
 		<h3>Public Posts:</h3>
 		{% if posts %}
 			{% for post in posts %}
-				{% if post.visibility == 'PUBLIC' and post.unlisted == False %}
-					<li><a href="/author/{{author.id}}/view_post/{{post.id}}">{{post.title}}</a>: </li>
+				{% if post.visibility == 'PUBLIC' and post.unlisted == 'false' %}
+					<li><a href="/author/{{author.id}}/view_post/{{post.id}}">{{ post.title }}</a>: </li>
+				{% elif post.visibility == 'PUBLIC' and post.unlisted == False %}
+					<li><a href="/author/{{author.id}}/view_post/{{post.id}}">{{ post.title }}</a>: </li>
 				{% endif %}
 			{% endfor %}
 		{% else %}
