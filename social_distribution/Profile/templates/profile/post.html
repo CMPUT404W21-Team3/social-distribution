@@ -17,7 +17,7 @@
                 <div class="card-body">
                     <p class="card-text" style="margin: 0;"><small class="text-muted">@{{post.author.user}} {{post.origin}}</small></p>
                     <h5 class="card-title">{{post.description}}</h5>
-                    <p class="card-text">{{post.content_html | safe}}</p>
+                    <p class="card-text">{{post.content | safe}}</p>
                     {% if post.author.id != current_user.author.id %}
                         <div style="display: inline-flex;">
                             <form action="{% url 'Profile:like' author_id=post.author.id post_id=post.id %}" method = "POST" style="margin: 0;">

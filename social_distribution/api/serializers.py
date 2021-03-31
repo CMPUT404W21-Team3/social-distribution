@@ -16,7 +16,7 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ('type', 'title', 'id', 'source', 'origin', 'description',
-                    'content_type', 'content', 'author', 'url', 'comments', 'categories', 'timestamp',
+                    'contentType', 'content', 'author', 'url', 'comments', 'categories', 'timestamp',
                     'visibility', 'unlisted', 'host')
 
     # https://stackoverflow.com/questions/41312558/django-rest-framework-post-nested-objects
