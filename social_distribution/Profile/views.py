@@ -76,7 +76,7 @@ def home(request):
 							timestamp = item['published'],
 							title = item['title'],
 							content = item['content'],
-							content_type = item['contentType'].split(';')[0],						
+							contentType = item['contentType'].split(';')[0],						
 						)
 						remote_posts.append(post)
 						# contentType = item['contentType']
@@ -180,49 +180,71 @@ def view_posts(request, author_id):
 	return render(request, 'profile/posts.html', {'posts':posts, 'author':author})
 
 def view_post(request, author_id, post_id):
+	
 	current_user = request.user
-	post = get_object_or_404(Post, id=post_id, author__id=author_id)
-	liked = False
-
-	#--- Comments Block ---#
-	# https://djangocentral.com/creating-comments-system-with-django/
-	if current_user.author.id == post.author.id or post.visibility=='PUBLIC':
-		comments = post.comments
-	else:
-		comments = post.comments.filter(author__id=current_user.author.id)
-	new_comment = None
-	if request.method == 'POST':
-		comment_form = CommentForm(data=request.POST)
-		if comment_form.is_valid():
-			new_comment = comment_form.save(commit=False)
-			new_comment.post = post
-			new_comment.author = request.user.author
-			new_comment.save()
-			# new_comment = CommentForm()
-			# ref: https://stackoverflow.com/questions/5773408/how-to-clear-form-fields-after-a-submit-in-django
-			# Bugged
-			# return HttpResponseRedirect('')
-			comment_form = CommentForm()
-	else:
-		comment_form = CommentForm()
-	#--- end of Comments Block ---#
-
 	try:
-		obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
-	except:
-		liked = False
-	else:
-		liked = True
+		post = Post.objects.get(id=post_id, author__id=author_id)
 
-	if post.content_type == Post.ContentType.PNG or post.content_type == Post.ContentType.JPEG:
-		return HttpResponse(b64decode(post.content), content_type=post.content_type)
-	else:
-		return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
+		liked = False
+
+		#--- Comments Block ---#
+		# https://djangocentral.com/creating-comments-system-with-django/
+		if current_user.author.id == post.author.id or post.visibility=='PUBLIC':
+			comments = post.comments
+		else:
+			comments = post.comments.filter(author__id=current_user.author.id)
+		new_comment = None
+		if request.method == 'POST':
+			comment_form = CommentForm(data=request.POST)
+			if comment_form.is_valid():
+				new_comment = comment_form.save(commit=False)
+				new_comment.post = post
+				new_comment.author = request.user.author
+				new_comment.save()
+				# new_comment = CommentForm()
+				# ref: https://stackoverflow.com/questions/5773408/how-to-clear-form-fields-after-a-submit-in-django
+				# Bugged
+				# return HttpResponseRedirect('')
+				comment_form = CommentForm()
+		else:
+			comment_form = CommentForm()
+		#--- end of Comments Block ---#
+
+		try:
+			obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
+		except:
+			liked = False
+		else:
+			liked = True
+
+		if post.contentType == Post.ContentType.PNG or post.contentType == Post.ContentType.JPEG:
+			return HttpResponse(b64decode(post.content), contentType=post.contentType)
+		else:
+			return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
+	except:
+		# Remote post
+		for connection in Connection.objects.all():
+			url = connection.url + 'service/author/' + author_id + '/posts/' + post_id
+			response = requests.get(url)
+			if response.status_code == 200:
+				post = response.json()
+				liked = False # TODO need to get like status
+				comment_form = CommentForm() # TODO Need to make this work for remote
+				comments = post['comments']
+				if post['contentType'] == Post.ContentType.MARKDOWN:
+					post['content'] = commonmark.commonmark(post['content'])
+				print(post['content'])
+				if post['contentType'] == Post.ContentType.PNG or post['contentType'] == Post.ContentType.JPEG:
+					return HttpResponse(b64decode(post.content), contentType=post.contentType)
+				else:
+					return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
+
+	
 
 class CreatePostView(generic.CreateView):
 	model = Post
 	template_name = 'profile/create_post.html'
-	fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility', 'unlisted']
+	fields = ['title', 'source', 'origin', 'contentType', 'description', 'content', 'categories', 'visibility', 'unlisted']
 
 	def form_valid(self, form):
 		author = self.request.user.author
@@ -237,7 +259,7 @@ def new_image_post(request):
 		if form.is_valid():
 			image_post = form.save(commit=False)
 			image_post.content = b64encode(request.FILES['image'].read()).decode('ascii') # https://stackoverflow.com/a/45151058
-			image_post.content_type = request.FILES['image'].content_type
+			image_post.contentType = request.FILES['image'].contentType
 			image_post.author = request.user.author
 			image_post.unlisted = True
 			image_post.save()
@@ -496,9 +518,9 @@ def like_post(request, author_id, post_id):
 		post.save()
 		obj.delete()
 
-	if post.content_type == Post.ContentType.PLAIN:
+	if post.contentType == Post.ContentType.PLAIN:
 		content = post.content
-	if post.content_type == Post.ContentType.MARKDOWN:
+	if post.contentType == Post.ContentType.MARKDOWN:
 		content = commonmark.commonmark(post.content)
 	else:
 		content = 'Content type not supported yet'
