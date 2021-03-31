@@ -327,8 +327,11 @@ def request(request, author_id, sender_id):
                     receiver = Author.objects.get(id=author_id)
                     sender = Author.objects.get(id=sender_id)
                     instance = FriendRequest.objects.create(receiver=receiver, sender=sender)
+                    
                     serializer = FriendRequestSerializer(instance, data=request.data)
-                    if serializer.is_valid():
+                    if serializer.is_valid():	
+                        sender.following.add(receiver)
+	                    receiver.followers.add(sender)
                         serializer.save()
                         return Response(serializer.data)
                     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
