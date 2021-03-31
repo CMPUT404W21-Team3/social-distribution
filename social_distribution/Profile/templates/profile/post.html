@@ -36,14 +36,29 @@
 
                     <!-- ================= Comments block ================= -->
                     {% if post.author.id != current_user.author.id %}
-                    <p>Leave a Comment</p>
-                    <form method = "POST">
-                        {{ comment_form.as_p }} <!-- Comment text form -->
-                        {% csrf_token %}
-                        <button type="submit">Submit My Comment</button>
-                    </form>
-                    {% endif %}
+                    <div>
+                        <button class="btn btn-success" onclick="showBox()">Leave a Comment</button>
 
+                        <script>
+                            function showBox(){
+                                var x = document.getElementById("commentBox");
+                                if (x.style.display === "none"){
+                                    x.style.display = "block"
+                                }
+                                else{
+                                    x.style.display = "none";
+                                }
+                            }
+                        </script>
+
+                        <form id="commentBox" style="display:none; padding-top: 2em" method = "POST">
+                            {{ comment_form.as_p }} <!-- Comment text form -->
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">Submit My Comment</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                    <br>
                     <p>Comments:</p>
                     <!-- showing all comments -->
                     <ul>
