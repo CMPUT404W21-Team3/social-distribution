@@ -347,7 +347,31 @@ def post_github(request):
 
 def view_profile(request, author_id):
 	user = Author.objects.get(user__username=request.user.username)
-	author = Author.objects.get(id=author_id)
+	local = True
+
+	# Try to grab from local server
+	try:
+		found_author = Author.objects.get(id=author_id)
+		posts = found_author.posts.all()
+
+	except:
+		# Remote author!
+		local = False
+		for connection in Connection.objects.all():
+			url = connection.url + 'service/authors'
+			response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+			for author in response.json()['items']:
+				# Found a match!
+				if author_id == author['id']:
+					# Grab posts
+					url = connection.url + 'service/author/' + author_id + '/posts'
+					response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+					posts = response.json()['posts']
+
+					# Set correct author
+					found_author = author
+
+
 	following_status = user.following.filter(id=author_id).exists()
 	follower_status = user.followers.filter(id=author_id).exists()
 	if following_status or follower_status:
@@ -355,24 +379,42 @@ def view_profile(request, author_id):
 	else:
 		follow_status = False
 	friend_status = user.friends.filter(id=author_id).exists()
-	friend_posts = author.posts.all()
 
 	if request.method == "GET":
-		return render(request, 'profile/view_profile.html', {'author': author, 'posts': friend_posts, 'friend_status': friend_status, 'follow_status': follow_status})
+		return render(request, 'profile/view_profile.html', {'author': found_author, 'posts': posts, 'friend_status': friend_status, 'follow_status': follow_status, 'local': local})
 
-# TODO: check if request has already been made
 def friend_request(request, author_id):
 	# Create request object
-	receiver = Author.objects.get(id=author_id)
+
+	local = True
+	try:
+		receiver = Author.objects.get(id=author_id)
+	except:
+		local = False
+		for connection in Connection.objects.all():
+			url = connection.url + 'service/authors'
+			response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+			for author in response.json()['items']:
+				# Found a match!
+				if author_id == author['id']:
+					receiver = author
+					print(receiver)
+
 	sender = Author.objects.get(user__username=request.user.username)
+
+	# check if request has already been made
+
+	# print("Receiver = ", receiver.displayName)
+
+	if 
 	friend_request = FriendRequest(sender=sender, receiver=receiver)
-
-	# Add to database
-	friend_request.save()
-
-	# Add the receiver to the sender's following list
-	sender.following.add(receiver)
-	receiver.followers.add(sender)
+	#
+	# # Add to database
+	# friend_request.save()
+	#
+	# # Add the receiver to the sender's following list
+	# sender.following.add(receiver)
+	# receiver.followers.add(sender)
 
 	return redirect('Profile:view_profile', author_id)
 
@@ -455,6 +497,3 @@ def inbox(request):
 			author.posts_cleared.add(*posts)
 		posts = posts.difference(author.posts_cleared.all()).order_by('-timestamp')
 		return render(request, 'profile/posts.html', {'posts':posts, 'author':author, 'inbox':True})
-
-
-	
