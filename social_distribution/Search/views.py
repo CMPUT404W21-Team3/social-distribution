@@ -15,15 +15,14 @@ def results(request):
     query = request.POST.get('query', '')
     authors = Author.objects.filter(user__username__contains=query)
 
-    remote_authors = []
+    authors = list(authors)
 
     for connection in Connection.objects.all():
         url = connection.url + 'service/authors'
         response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
         for author in response.json()['items']:
-            remote_authors.append(author)
-
-    authors = list(authors)
-    authors += remote_authors
+            print(author)
+            if query in author['displayName']:
+                authors.append(author)
 
     return render(request, 'results.html', {'query': query, 'authors': authors})
