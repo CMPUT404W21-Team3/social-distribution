@@ -152,18 +152,18 @@ def list(request):
 	friends = list(user.friends.all())
 	following = list(user.following.all())
 
-	# Remote friends + followers
-	for connection in Connection.objects.all():
-		url = connection.url + '/service/author/' + user.id + '/friends/'
-		response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
-		for friend in response.json()['items']:
-			# Filter by response
-			friends.append(friend)
+# 	# Remote friends + followers
+# 	for connection in Connection.objects.all():
+# 		url = connection.url + '/service/author/' + user.id + '/friends/'
+# 		response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+# 		for friend in response.json()['items']:
+# 			# Filter by response
+# 			friends.append(friend)
 
-		for following in followers:
-			url = connection.url + '/service/author/' + following.id
-			response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
-			follwing.append(response.json()['items'][0])
+# 		for following in followers:
+# 			url = connection.url + '/service/author/' + following.id
+# 			response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+# 			follwing.append(response.json()['items'][0])
 
 	return render(request, 'profile/list.html', {'friend_requests': friend_requests, 'friends': friends, 'following': following})
 
