@@ -483,9 +483,9 @@ def like_post(request, author_id, post_id):
 	liked = False
 
 	try:
-		obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
+		obj = PostLike.objects.get(post_id=post, author__id=request.user.author.id)
 	except:
-		author = Author.objects.get(id=author_id)
+		author = Author.objects.get(id=request.user.author.id)
 		like_instance = PostLike(post_id=post, author=author)
 		like_instance.save()
 		post.likes_count = post.likes_count + 1
