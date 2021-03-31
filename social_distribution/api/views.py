@@ -331,7 +331,7 @@ def request(request, author_id, sender_id):
                     serializer = FriendRequestSerializer(instance, data=request.data)
                     if serializer.is_valid():	
                         sender.following.add(receiver)
-	                    receiver.followers.add(sender)
+                        receiver.followers.add(sender)
                         serializer.save()
                         return Response(serializer.data)
                     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
