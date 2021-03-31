@@ -47,11 +47,49 @@ def home(request):
 	friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
 
 	# Merge posts, sort them
-	posts = public_posts | self_posts | friends_posts
+	local_posts = public_posts | self_posts | friends_posts
+	
+	posts = []
+	posts.append(local_posts)
 
-	connections = serialize('json', Connection.objects.all())
+	remote_posts = []
+	
+	for connection in Connection.objects.all():
+		url = connection.url + 'service/authors'
+		response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+		for author in response.json()['items']:
+			author_id = author['id']
+			new_url = f'{connection.url}service/author/{author_id}/posts/'
+			response = requests.get(new_url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+			posts_remote = response.json()['posts']
+			if len(posts) > 0:
+				for item in posts_remote:
+					if item['visibility'] == 'PUBLIC':
+						post_id = item['id']
+						post = Post(
+							id = item['id'],
+							author = Author(
+								id = item['author']['id'],
+								displayName = item['author']['displayName'],
+							),
+							timestamp = item['published'],
+							title = item['title'],
+							content = item['content'],
+							content_type = item['contentType'].split(';')[0],						
+						)
+						remote_posts.append(post)
+						contentType = item['contentType']
+						# if contentType == 'text/plain':
+						# 	pass
+						# elif contentType == 'text/markdown':
+						# 	post.content = commonmark.commonmark(post.content)
+						# elif contentType == 'image/png;base64':
+						# 	post.content = b64decode(post.content.replace('data:image/png;base64,',''))
+						# elif contentType == 'application/base64':
+						# 	pass
+	posts.append(remote_posts)
 
-	return render(request, 'profile/home.html', {'posts': posts, 'connections': connections})
+	return render(request, 'profile/home.html', {'posts': posts})
 
 @login_required(login_url='/login/')
 def update_profile(request):
@@ -406,7 +444,6 @@ def friend_request(request, author_id):
 
 	# print("Receiver = ", receiver.displayName)
 
-	if 
 	friend_request = FriendRequest(sender=sender, receiver=receiver)
 	#
 	# # Add to database

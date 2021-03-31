@@ -20,6 +20,7 @@ class Author(models.Model):
     location = models.CharField(max_length=30, blank=True)
     birth_date = models.DateField(null=True, blank=True)
     github = models.CharField(max_length=50, blank=True)
+    url = models.CharField(max_length=300, default="http://localhost:8000/", null=True)
 
 
 
@@ -57,7 +58,7 @@ class Author(models.Model):
 class Post(models.Model):
     title = models.CharField(max_length=200)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    url = models.CharField(max_length=200, blank=True)
+    url = models.CharField(max_length=200, blank=True, null=True)
     source = models.CharField(max_length=200, blank=True)
     origin = models.CharField(max_length=200, blank=True)
     description = models.TextField(blank=True)
