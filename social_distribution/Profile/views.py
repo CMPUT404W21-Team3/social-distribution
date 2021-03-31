@@ -146,24 +146,28 @@ def signup(request):
 
 
 def list(request):
-	# Fetch friend requests, friends and following
 	user = Author.objects.get(user__username=request.user.username)
 	friend_requests = FriendRequest.objects.filter(receiver=user)
-	friends = list(user.friends.all())
-	following = list(user.following.all())
+	friends = user.friends.all()
+	following = user.following.all()
 
-# 	# Remote friends + followers
-# 	for connection in Connection.objects.all():
-# 		url = connection.url + '/service/author/' + user.id + '/friends/'
-# 		response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
-# 		for friend in response.json()['items']:
-# 			# Filter by response
-# 			friends.append(friend)
+	# friends = list(friends)
 
-# 		for following in followers:
-# 			url = connection.url + '/service/author/' + following.id
-# 			response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
-# 			follwing.append(response.json()['items'][0])
+	# Remote friends + followers
+	for connection in Connection.objects.all():
+		url = connection.url + '/service/author/' + str(user.id) + '/friends'
+		response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+
+		if response.status_code == 200:
+			for friend in response.json()['items']:
+				# Filter by response
+				friends.append(friend)
+
+			for following in followers:
+				url = connection.url + '/service/author/' + str(following.id)
+				response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+				if response.status_code == 200:
+					follwing.append(response.json()['items'][0])
 
 	return render(request, 'profile/list.html', {'friend_requests': friend_requests, 'friends': friends, 'following': following})
 
