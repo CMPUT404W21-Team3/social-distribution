@@ -79,15 +79,6 @@ def home(request):
 							content_type = item['contentType'].split(';')[0],						
 						)
 						remote_posts.append(post)
-						# contentType = item['contentType']
-						# if contentType == 'text/plain':
-						# 	pass
-						# elif contentType == 'text/markdown':
-						# 	post.content = commonmark.commonmark(post.content)
-						# elif contentType == 'image/png;base64':
-						# 	post.content = b64decode(post.content.replace('data:image/png;base64,',''))
-						# elif contentType == 'application/base64':
-						# 	pass
 	posts.append(remote_posts)
 
 	return render(request, 'profile/home.html', {'posts': posts})

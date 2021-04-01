@@ -8,7 +8,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework import status
 from rest_framework.response import Response
 
-from .serializers import AuthorSerializer, PostSerializer, CommentSerializer, LikeSerializer, PostLikeSerializer, CommentLikeSerializer, FriendRequestSerializer, FriendRequestRemoteSerializer
+from .serializers import AuthorSerializer, PostSerializer, CommentSerializer, LikeSerializer, PostLikeSerializer, CommentLikeSerializer, FriendRequestSerializer
 from Profile.models import Author, Post, Comment, PostLike, CommentLike
 from Search.models import FriendRequest
 
@@ -327,57 +327,26 @@ def request(request, author_id, sender_id):
                 return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 
-    elif request.method =='PUT':
-        if 'password' not in request.data or 'username' not in request.data:
-            #return Response(status=status.HTTP_401_UNAUTHORIZED)
-            pass
-        if True:
-            # username = request.data['username']
-            # password = request.data['password']
-            # user = authenticate(username=username, password=password)
-            # if user is not None:
-            #     if sender_id == str(Author.objects.get(user__username=username).id):
-            #         receiver = Author.objects.get(id=author_id)
-            #         sender = Author.objects.get(id=sender_id)
-            #         instance = FriendRequest.objects.create(receiver=receiver, sender=sender)
-                    
-            #         serializer = FriendRequestSerializer(instance, data=request.data)
-            #         if serializer.is_valid():	
-            #             sender.following.add(receiver)
-            #             receiver.followers.add(sender)
-            #             serializer.save()
-            #             return Response(serializer.data)
-            #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == 'PUT':
+        # Add authentication here
+        data = request.data            
+        if data['type'].lower() == 'follow' and data['sender']['id'] != None and data['receiver']['id'] == author_id: #remote
+            receiver = Author.objects.get(id=author_id)
+            # Maybe a function to check if the sender exist on the remote node?
+            remote_sender = data["sender"]["id"]
+            # Creating a FriendRequest object:
+            # - Receiver is local author object
+            # - Remote_sender is the remote author's UUID
+            instance = FriendRequest.objects.create(receiver=receiver, remote_sender=remote_sender)
+            # Add to `remote_followers_uuid` list
+            receiver.remote_followers_uuid += f' {remote_sender}'
+            # Send a following API to the remote author?
+            # TODO
+            receiver.save()
+            return Response({'message':'success'}, status=status.HTTP_200_OK)
 
-            #     else:
-            #         return Response(status=status.HTTP_401_UNAUTHORIZED)
-            
-            if True: #remote
-                # for connection in Connection.objects.all():
-                #     url = connection.url + 'service/authors'
-                #     response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
-                #     for author9 in response.json()['items']:
-                #         if author9['id'] == sender_id:
-                sender_json = request.data['remote_sender']
-
-                receiver = Author.objects.get(id=author_id)
-                remote_sender = sender_json["id"]
-                print('***********************************')
-                instance = FriendRequest.objects.create(receiver=receiver, remote_sender=remote_sender)
-                
-
-                # serializer = FriendRequestRemoteSerializer(instance, data=request.data)
-                # if serializer.is_valid():   
-                #     sender.following.add(receiver)
-                #     receiver.followers.add(remote_sender)
-                #     serializer.save()
-                #     return Response(serializer.data)
-                receiver.remote_followers_uuid += f' {remote_sender}'
-                receiver.save()
-                return Response({'message':'hi'})
-
-            else:
-                return Response(status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
     elif request.method == 'DELETE':

@@ -43,16 +43,6 @@ class FriendRequestSerializer(serializers.ModelSerializer):
         data['receiver'] = AuthorSerializer(Author.objects.get(pk=data['receiver'])).data
         return data
 
-class FriendRequestRemoteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = FriendRequest
-        fields = ('type', 'summary', 'remote_sender', 'receiver')
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['receiver'] = AuthorSerializer(Author.objects.get(pk=data['receiver'])).data
-        return data
-
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
