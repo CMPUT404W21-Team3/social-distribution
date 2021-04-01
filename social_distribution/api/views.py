@@ -8,7 +8,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework import status
 from rest_framework.response import Response
 
-from .serializers import AuthorSerializer, PostSerializer, CommentSerializer, LikeSerializer, PostLikeSerializer, CommentLikeSerializer, FriendRequestSerializer
+from .serializers import AuthorSerializer, PostSerializer, CommentSerializer, LikeSerializer, PostLikeSerializer, CommentLikeSerializer, FriendRequestSerializer, FriendRequestRemoteSerializer
 from Profile.models import Author, Post, Comment, PostLike, CommentLike
 from Search.models import FriendRequest
 
@@ -305,6 +305,19 @@ def request(request, author_id, sender_id):
             if user is not None:
                 if sender_id == str(Author.objects.get(user__username=username).id):
                     serializer = FriendRequestSerializer(friend_request)
+
+                    our_host = 'https://team3-socialdistribution.herokuapp.com/'
+
+                # GET the remote friend requests
+                    for connection in Connection.objects.all():
+                        url = connection.url + 'service/authors'
+                        response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+                        for author9 in response.json()['items']:
+                            if author9['id'] == sender_id:
+                                request_url = f'{connection.url}service/author/{sender_id}/follow_remote_3/{author_id}/{our_host}'
+                                # Parse their json here
+                                # TODO
+
                     return Response(serializer.data)
 
                 else:
@@ -316,28 +329,52 @@ def request(request, author_id, sender_id):
 
     elif request.method =='PUT':
         if 'password' not in request.data or 'username' not in request.data:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
-
-        else:
-            username = request.data['username']
-            password = request.data['password']
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                if sender_id == str(Author.objects.get(user__username=username).id):
-                    receiver = Author.objects.get(id=author_id)
-                    sender = Author.objects.get(id=sender_id)
-                    instance = FriendRequest.objects.create(receiver=receiver, sender=sender)
+            #return Response(status=status.HTTP_401_UNAUTHORIZED)
+            pass
+        if True:
+            # username = request.data['username']
+            # password = request.data['password']
+            # user = authenticate(username=username, password=password)
+            # if user is not None:
+            #     if sender_id == str(Author.objects.get(user__username=username).id):
+            #         receiver = Author.objects.get(id=author_id)
+            #         sender = Author.objects.get(id=sender_id)
+            #         instance = FriendRequest.objects.create(receiver=receiver, sender=sender)
                     
-                    serializer = FriendRequestSerializer(instance, data=request.data)
-                    if serializer.is_valid():	
-                        sender.following.add(receiver)
-                        receiver.followers.add(sender)
-                        serializer.save()
-                        return Response(serializer.data)
-                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            #         serializer = FriendRequestSerializer(instance, data=request.data)
+            #         if serializer.is_valid():	
+            #             sender.following.add(receiver)
+            #             receiver.followers.add(sender)
+            #             serializer.save()
+            #             return Response(serializer.data)
+            #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-                else:
-                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+            #     else:
+            #         return Response(status=status.HTTP_401_UNAUTHORIZED)
+            
+            if True: #remote
+                # for connection in Connection.objects.all():
+                #     url = connection.url + 'service/authors'
+                #     response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+                #     for author9 in response.json()['items']:
+                #         if author9['id'] == sender_id:
+                sender_json = request.data['remote_sender']
+
+                receiver = Author.objects.get(id=author_id)
+                remote_sender = sender_json["id"]
+                print('***********************************')
+                instance = FriendRequest.objects.create(receiver=receiver, remote_sender=remote_sender)
+                
+
+                # serializer = FriendRequestRemoteSerializer(instance, data=request.data)
+                # if serializer.is_valid():   
+                #     sender.following.add(receiver)
+                #     receiver.followers.add(remote_sender)
+                #     serializer.save()
+                #     return Response(serializer.data)
+                receiver.remote_followers_uuid += f' {remote_sender}'
+                receiver.save()
+                return Response({'message':'hi'})
 
             else:
                 return Response(status=status.HTTP_401_UNAUTHORIZED)

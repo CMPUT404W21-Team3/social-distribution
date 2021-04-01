@@ -8,13 +8,14 @@ from django.dispatch import receiver
 from django.utils import timezone
 from django.forms import ModelForm
 from django.urls import reverse
+from django.core.validators import int_list_validator
 
 
 # https://simpleisbetterthancomplex.com/tutorial/2016/07/22/how-to-extend-django-user-model.html#onetoone
 # https://stackoverflow.com/questions/16925129/generate-unique-id-in-django-from-a-model-field/30637668
 
 class Author(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='author')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='author', null=True)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     bio = models.TextField(max_length=500, blank=True)
     location = models.CharField(max_length=30, blank=True)
@@ -29,6 +30,10 @@ class Author(models.Model):
     # Because remote author doesn't have a "user" model linked.
     remote_host = models.CharField(max_length=50, blank=True)
     remote_username = models.CharField(max_length=50, blank=True)
+
+    remote_friends_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True)
+    remote_following_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True)
+    remote_followers_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True) 
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property

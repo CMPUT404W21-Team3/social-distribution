@@ -13,8 +13,9 @@ class Search(models.Model):
 
 
 class FriendRequest(models.Model):
-    sender = models.ForeignKey(Author, on_delete=models.CASCADE, null=False, related_name='sender')
     receiver = models.ForeignKey(Author, on_delete=models.CASCADE, null=False, related_name='receiver')
+    sender = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name='sender')
+    remote_sender = models.CharField(max_length=100, blank=True, null=True)
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
@@ -29,7 +30,10 @@ class FriendRequest(models.Model):
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
     def summary(self):
-        return str(self.sender.user) + ' wants to follow ' + str(self.receiver.user)
+        try:
+            return str(self.sender.user) + ' wants to follow ' + str(self.receiver.user)
+        except:
+            return 'A remote user' + 'wants to follow' + str(self.receiver.user)
 
     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
     @summary.setter
