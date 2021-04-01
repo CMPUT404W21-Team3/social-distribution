@@ -268,9 +268,10 @@ def view_post(request, author_id, post_id):
 			liked = True
 
 		if post.contentType == Post.ContentType.MARKDOWN:
-					post.content = commonmark.commonmark(post.content)
+			post.content = commonmark.commonmark(post.content)
 		if post.contentType == Post.ContentType.PNG or post.contentType == Post.ContentType.JPEG:
-			return HttpResponse(b64decode(post.content), contentType=post.contentType)
+			post.content = post.content[len(post.contentType) + 6:] # remove "data:image/jpeg;base64," or "data:image/png;base64," from content to leave just b64 encoding
+			return HttpResponse(b64decode(post.content), content_type=post.contentType)
 		else:
 			return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
 	except:
@@ -283,11 +284,14 @@ def view_post(request, author_id, post_id):
 				liked = False # TODO need to get like status
 				comment_form = CommentForm() # TODO Need to make this work for remote
 				comments = post['comments']
+
+				if post['contentType'] == Post.ContentType.PNG or post['contentType'] == Post.ContentType.JPEG:
+					post['content'] = post['content'][len(post['contentType']) + 6:] # remove "data:image/jpeg;base64," or "data:image/png;base64," from content to leave just b64 encoding
+					return HttpResponse(b64decode(post['content']), content_type=post['contentType'])
+
 				if post['contentType'] == Post.ContentType.MARKDOWN:
 					post['content'] = commonmark.commonmark(post['content'])
-				print(post['content'])
-				if post['contentType'] == Post.ContentType.PNG or post['contentType'] == Post.ContentType.JPEG:
-					return HttpResponse(b64decode(post.content), contentType=post.contentType)
+
 				else:
 					return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
 
@@ -311,7 +315,8 @@ def new_image_post(request):
 		if form.is_valid():
 			image_post = form.save(commit=False)
 			image_post.content = b64encode(request.FILES['image'].read()).decode('ascii') # https://stackoverflow.com/a/45151058
-			image_post.contentType = request.FILES['image'].contentType
+			image_post.contentType = request.FILES['image'].content_type + ';base64'
+			image_post.content = 'data:' + image_post.contentType + ',' + image_post.content
 			image_post.author = request.user.author
 			image_post.unlisted = True
 			image_post.save()
