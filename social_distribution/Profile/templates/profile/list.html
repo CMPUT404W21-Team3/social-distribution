@@ -14,7 +14,7 @@
         <div class="col">
             <div class="card h-100">
               <div class="card-body">
-                <h3 class="card-title">{{friend.user}}</h3>
+                <h3 class="card-title">{{friend.displayName}}</h3>
                 <a href="{% url 'Profile:view_profile' author_id=friend.id %}" class="btn btn-primary">View Profile</a>
               </div>
             </div>
@@ -37,7 +37,7 @@
   <h2>@{{user.username }} Following</h2>
 
   {% for f in following %}
-    <li>{{ f.user }} </li><a href="{% url 'Profile:view_profile' author_id=f.id %}">View Profile</a>
+    <li>{{ f.displayName }} </li><a href="{% url 'Profile:view_profile' author_id=f.id %}">View Profile</a>
   {% endfor %}
 
   <h2>Pending Requests</h2>

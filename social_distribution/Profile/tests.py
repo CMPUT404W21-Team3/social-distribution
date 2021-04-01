@@ -82,7 +82,7 @@ class TestEditPost(TestCase):
             reverse('Profile:edit_post', kwargs={'post_id':self.post1.id}), 
             data={
                 'title':self.post1.title, 
-                'content_type': self.post1.content_type,
+                'contentType': self.post1.contentType,
                 'content':'Test edited content',
                 'visibility': self.post1.visibility
             }
@@ -106,7 +106,7 @@ class TestEditPost(TestCase):
             'Profile:edit_post', kwargs={'post_id':self.post2.id}), 
             data={
                 'title':self.post2.title, 
-                'content_type': self.post2.content_type,
+                'contentType': self.post2.contentType,
                 'content':'Test edited content',
                 'visibility': self.post2.visibility
             }
@@ -133,7 +133,7 @@ class TestNewPost(TestCase):
             reverse('Profile:new_post'),
             data={
                 'title':'New Post Title',
-                'content_type':'text/plain',
+                'contentType':'text/plain',
                 'content':'New post content',
                 'visibility':'PUBLIC'
             }

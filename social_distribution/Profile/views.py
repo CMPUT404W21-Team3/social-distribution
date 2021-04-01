@@ -21,7 +21,7 @@ from .forms import UserForm, AuthorForm, SignUpForm, PostForm, ImagePostForm, Co
 from .models import Author, Post, CommentLike, PostLike
 from Search.models import FriendRequest
 from api.models import Connection
-from api.serializers import AuthorSerializer
+from api.serializers import AuthorSerializer, PostSerializer
 
 from .helpers import timestamp_beautify
 
@@ -76,7 +76,7 @@ def home(request):
 							timestamp = item['published'],
 							title = item['title'],
 							content = item['content'],
-							content_type = item['contentType'].split(';')[0],						
+							contentType = item['contentType'].split(';')[0],						
 						)
 						remote_posts.append(post)
 	posts.append(remote_posts)
@@ -137,11 +137,28 @@ def signup(request):
 
 
 def list(request):
-	# Fetch friend requests, friends and following
 	user = Author.objects.get(user__username=request.user.username)
 	friend_requests = FriendRequest.objects.filter(receiver=user)
 	friends = user.friends.all()
 	following = user.following.all()
+
+	# friends = list(friends)
+
+	# Remote friends + followers
+	for connection in Connection.objects.all():
+		url = connection.url + '/service/author/' + str(user.id) + '/friends'
+		response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+
+		if response.status_code == 200:
+			for friend in response.json()['items']:
+				# Filter by response
+				friends.append(friend)
+
+			for following in followers:
+				url = connection.url + '/service/author/' + str(following.id)
+				response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+				if response.status_code == 200:
+					follwing.append(response.json()['items'][0])
 
 	return render(request, 'profile/list.html', {'friend_requests': friend_requests, 'friends': friends, 'following': following})
 
@@ -153,6 +170,7 @@ def accept(request):
 
 	# Add to friends list
 	receiver.friends.add(sender)
+	receiver.followers.add(sender)
 
 	return redirect('Profile:friends')
 
@@ -171,49 +189,73 @@ def view_posts(request, author_id):
 	return render(request, 'profile/posts.html', {'posts':posts, 'author':author})
 
 def view_post(request, author_id, post_id):
+	
 	current_user = request.user
-	post = get_object_or_404(Post, id=post_id, author__id=author_id)
-	liked = False
-
-	#--- Comments Block ---#
-	# https://djangocentral.com/creating-comments-system-with-django/
-	if current_user.author.id == post.author.id or post.visibility=='PUBLIC':
-		comments = post.comments
-	else:
-		comments = post.comments.filter(author__id=current_user.author.id)
-	new_comment = None
-	if request.method == 'POST':
-		comment_form = CommentForm(data=request.POST)
-		if comment_form.is_valid():
-			new_comment = comment_form.save(commit=False)
-			new_comment.post = post
-			new_comment.author = request.user.author
-			new_comment.save()
-			# new_comment = CommentForm()
-			# ref: https://stackoverflow.com/questions/5773408/how-to-clear-form-fields-after-a-submit-in-django
-			# Bugged
-			# return HttpResponseRedirect('')
-			comment_form = CommentForm()
-	else:
-		comment_form = CommentForm()
-	#--- end of Comments Block ---#
-
 	try:
-		obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
-	except:
-		liked = False
-	else:
-		liked = True
+		post = Post.objects.get(id=post_id, author__id=author_id)
 
-	if post.content_type == Post.ContentType.PNG or post.content_type == Post.ContentType.JPEG:
-		return HttpResponse(b64decode(post.content), content_type=post.content_type)
-	else:
-		return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
+		liked = False
+
+		#--- Comments Block ---#
+		# https://djangocentral.com/creating-comments-system-with-django/
+		if current_user.author.id == post.author.id or post.visibility=='PUBLIC':
+			comments = post.comments
+		else:
+			comments = post.comments.filter(author__id=current_user.author.id)
+		new_comment = None
+		if request.method == 'POST':
+			comment_form = CommentForm(data=request.POST)
+			if comment_form.is_valid():
+				new_comment = comment_form.save(commit=False)
+				new_comment.post = post
+				new_comment.author = request.user.author
+				new_comment.save()
+				# new_comment = CommentForm()
+				# ref: https://stackoverflow.com/questions/5773408/how-to-clear-form-fields-after-a-submit-in-django
+				# Bugged
+				# return HttpResponseRedirect('')
+				comment_form = CommentForm()
+		else:
+			comment_form = CommentForm()
+		#--- end of Comments Block ---#
+
+		try:
+			obj = PostLike.objects.get(post_id=post, author__id=request.user.author.id)
+		except:
+			liked = False
+		else:
+			liked = True
+
+		if post.contentType == Post.ContentType.MARKDOWN:
+					post.content = commonmark.commonmark(post.content)
+		if post.contentType == Post.ContentType.PNG or post.contentType == Post.ContentType.JPEG:
+			return HttpResponse(b64decode(post.content), contentType=post.contentType)
+		else:
+			return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
+	except:
+		# Remote post
+		for connection in Connection.objects.all():
+			url = connection.url + 'service/author/' + author_id + '/posts/' + post_id
+			response = requests.get(url)
+			if response.status_code == 200:
+				post = response.json()
+				liked = False # TODO need to get like status
+				comment_form = CommentForm() # TODO Need to make this work for remote
+				comments = post['comments']
+				if post['contentType'] == Post.ContentType.MARKDOWN:
+					post['content'] = commonmark.commonmark(post['content'])
+				print(post['content'])
+				if post['contentType'] == Post.ContentType.PNG or post['contentType'] == Post.ContentType.JPEG:
+					return HttpResponse(b64decode(post.content), contentType=post.contentType)
+				else:
+					return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
+
+	
 
 class CreatePostView(generic.CreateView):
 	model = Post
 	template_name = 'profile/create_post.html'
-	fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility', 'unlisted']
+	fields = ['title', 'source', 'origin', 'contentType', 'description', 'content', 'categories', 'visibility', 'unlisted']
 
 	def form_valid(self, form):
 		author = self.request.user.author
@@ -228,7 +270,7 @@ def new_image_post(request):
 		if form.is_valid():
 			image_post = form.save(commit=False)
 			image_post.content = b64encode(request.FILES['image'].read()).decode('ascii') # https://stackoverflow.com/a/45151058
-			image_post.content_type = request.FILES['image'].content_type
+			image_post.contentType = request.FILES['image'].contentType
 			image_post.author = request.user.author
 			image_post.unlisted = True
 			image_post.save()
@@ -266,25 +308,50 @@ def delete_post(request, post_id):
 		post.delete()
 		return redirect('Profile:view_posts', author_id=request.user.author.id)
 
-def share_post(request, post_id):
-	post = Post.objects.get(id=post_id)
-	author_original = post.author
-	author_share = request.user.author
-	if request.method == "GET":
-		form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original.displayName)}',\
-												'origin': post.origin + f'http://localhost:8000/author/{author_original.id}/view_post/{post_id}', \
-												'visibility': post.visibility})
+def share_post(request, post_id, author_id):
 
-		return render(request, "profile/share_post.html", {'form':form})
-	else:
-		form = PostForm(data=request.POST)
-		form.instance.author = author_share
-		if form.is_valid():
-			post_share = form.save(commit=False)
-			post_share.save()
-			return redirect('Profile:view_posts', author_share.id)
+	post = None
+	try:
+		post = Post.objects.get(id=post_id)
+		author_original = post.author
+		author_share = request.user.author
+		if request.method == "GET":
+			form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original.displayName)}',\
+													'origin': post.origin + f'http://localhost:8000/author/{author_original.id}/view_post/{post_id}', \
+													'visibility': post.visibility})
+
+			return render(request, "profile/share_post.html", {'form':form})
 		else:
-			print(form.errors)
+			form = PostForm(data=request.POST)
+			form.instance.author = author_share
+			if form.is_valid():
+				post_share = form.save(commit=False)
+				post_share.save()
+				return redirect('Profile:view_posts', author_share.id)
+			else:
+				print(form.errors)
+		
+	except:
+		# Sharing remote post
+		for connection in Connection.objects.all():
+			url = connection.url + 'service/author/' + author_id + '/posts/' + post_id
+			response = requests.get(url)
+			if response.status_code == 200:
+				post_j = response.json()
+				# author.save()
+				post_j['title'] += "-- Shared from " + post_j['author']['displayName']
+				post_j['author'] = request.user.author
+				post_j.pop('categories', None)
+				post_j.pop('comments', None)
+				post_j.pop('count', None)
+				post_j.pop('published', None)
+				post_j['unlisted'] = 'False'
+				print(post_j)
+				post = Post.objects.create(**post_j)
+				post.save()
+				return redirect('Profile:view_posts', request.user.author.id)
+
+		
 
 def view_github_activity(request):
 	#get the current user's github username if available
@@ -474,9 +541,9 @@ def like_post(request, author_id, post_id):
 	liked = False
 
 	try:
-		obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
+		obj = PostLike.objects.get(post_id=post, author__id=request.user.author.id)
 	except:
-		author = Author.objects.get(id=author_id)
+		author = Author.objects.get(id=request.user.author.id)
 		like_instance = PostLike(post_id=post, author=author)
 		like_instance.save()
 		post.likes_count = post.likes_count + 1
@@ -487,13 +554,18 @@ def like_post(request, author_id, post_id):
 		post.save()
 		obj.delete()
 
-	if post.content_type == Post.ContentType.PLAIN:
+	if post.contentType == Post.ContentType.PLAIN:
 		content = post.content
-	if post.content_type == Post.ContentType.MARKDOWN:
+	if post.contentType == Post.ContentType.MARKDOWN:
 		content = commonmark.commonmark(post.content)
 	else:
 		content = 'Content type not supported yet'
-	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user, 'liked': liked})
+	if current_user.author.id == post.author.id or post.visibility == 'PUBLIC':
+		comments = post.comments
+	else:
+		comments = post.comments.filter(author__id=current_user.author.id)
+	comment_form = CommentForm()
+	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user, 'liked': liked, 'comments':comments, 'comment_form':comment_form})
 
 def private_post(request, author_id):
 	author = request.user.author

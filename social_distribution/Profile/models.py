@@ -61,6 +61,10 @@ class Author(models.Model):
         # return Site.objects.get_current().domain + reverse('api:author', kwargs={'author_id':self.id})
         return self.host + 'author/' + str(self.id) + '/'
 
+    @url.setter
+    def url(self, value):
+        self.url = value
+
     @property
     def host(self):
         if self.remote_host:
@@ -77,7 +81,7 @@ class Post(models.Model):
     title = models.CharField(max_length=200)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     url = models.CharField(max_length=200, blank=True, null=True)
-    host = models.CharField(max_length=50, blank=True)
+    _host = models.CharField(max_length=50, blank=True, db_column='host') # https://stackoverflow.com/q/1454727
     source = models.CharField(max_length=200, blank=True)
     origin = models.CharField(max_length=200, blank=True)
     description = models.TextField(blank=True)
@@ -89,7 +93,7 @@ class Post(models.Model):
         PNG = 'image/png' # embedded png
         JPEG = 'image/jpeg' # embedded jpeg
 
-    content_type = models.CharField(
+    contentType = models.CharField(
         max_length=40,
         choices = ContentType.choices,
         default=ContentType.PLAIN
@@ -149,18 +153,16 @@ class Post(models.Model):
 
     @property
     def host(self):
-        if self.host is None:
+        if self._host == "":
             return Site.objects.get_current().domain
         else:
-            return self.host
+            return self._host
 
     def content_html(self):
-        if self.content_type == Post.ContentType.PLAIN:
+        if self.contentType == Post.ContentType.PLAIN:
             return self.content
-        elif self.content_type == Post.ContentType.MARKDOWN:
+        elif self.contentType == Post.ContentType.MARKDOWN:
             return commonmark.commonmark(self.content)
-        elif self.content_type == Post.ContentType.JPEG or self.content_type == Post.ContentType.PNG:
-            return '<img src="' + reverse('Profile:view_post', kwargs={'author_id':self.author.id, 'post_id':self.id}) + '">'
 
 class PostCategory(models.Model):
     name = models.CharField(max_length=50)
@@ -180,7 +182,7 @@ class Comment(models.Model):
     #     PNG = 'image/png;base64' # embedded png
     #     JPEG = 'image/jpeg;base64' # embedded jpeg
 
-    # content_type = models.CharField(
+    # contentType = models.CharField(
     #     max_length=40,
     #     choices = ContentType.choices,
     #     default=ContentType.PLAIN

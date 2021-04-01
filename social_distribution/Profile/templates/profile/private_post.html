@@ -41,33 +41,33 @@
                 <div class="row g-3">
                     <div class="col-md-3">
                         <div class="input-group">
-                            <label class="input-group-text" for="id_content_type">Content Type</label>
-                            <select class="form-select" name="content_type" id="id_content_type">
-                                {% if form.content_type.value == 'text/markdown' %}
+                            <label class="input-group-text" for="id_contentType">Content Type</label>
+                            <select class="form-select" name="contentType" id="id_contentType">
+                                {% if form.contentType.value == 'text/markdown' %}
                                     <option value="text/markdown" selected>Markdown</option>
                                 {% else %}
                                     <option value="text/markdown">Markdown</option>
                                 {% endif %}
 
-                                {% if form.content_type.value == 'text/plain' %}
+                                {% if form.contentType.value == 'text/plain' %}
                                     <option value="text/plain" selected>Plain</option>
                                 {% else %}
                                     <option value="text/plain">Plain</option>
                                 {% endif %}
 
-                                {% if form.content_type.value == 'application/base64' %}
+                                {% if form.contentType.value == 'application/base64' %}
                                     <option value="application/base64" selected>Base64</option>
                                 {% else %}
                                     <option value="application/base64">Base64</option>
                                 {% endif %}
 
-                                {% if form.content_type.value == 'image/png' %}
+                                {% if form.contentType.value == 'image/png' %}
                                     <option value="image/png" selected>Png</option>
                                 {% else %}
                                     <option value="image/png">Png</option>
                                 {% endif %}
 
-                                {% if form.content_type.value == 'image/jpeg' %}
+                                {% if form.contentType.value == 'image/jpeg' %}
                                     <option value="image/jpeg" selected>Jpeg</option>
                                 {% else %}
                                     <option value="image/jpeg">Jpeg</option>
