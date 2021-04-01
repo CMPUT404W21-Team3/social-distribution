@@ -58,7 +58,7 @@ def home(request):
 	for connection in Connection.objects.all():
 		url = connection.url + 'service/authors'
 		response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
-		if 'items' in response.json().keys():
+		if response.status_code == 20:
 			for author in response.json()['items']:
 				author_id = author['id']
 				new_url = f'{connection.url}service/author/{author_id}/posts/'
