@@ -58,27 +58,28 @@ def home(request):
 	for connection in Connection.objects.all():
 		url = connection.url + 'service/authors'
 		response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
-		for author in response.json()['items']:
-			author_id = author['id']
-			new_url = f'{connection.url}service/author/{author_id}/posts/'
-			response = requests.get(new_url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
-			posts_remote = response.json()['posts']
-			if len(posts) > 0:
-				for item in posts_remote:
-					if item['visibility'] == 'PUBLIC':
-						post_id = item['id']
-						post = Post(
-							id = item['id'],
-							author = Author(
-								id = item['author']['id'],
-								remote_username = item['author']['displayName'],
-							),
-							timestamp = item['published'],
-							title = item['title'],
-							content = item['content'],
-							contentType = item['contentType'].split(';')[0],						
-						)
-						remote_posts.append(post)
+		if 'items' in response.json().keys():
+			for author in response.json()['items']:
+				author_id = author['id']
+				new_url = f'{connection.url}service/author/{author_id}/posts/'
+				response = requests.get(new_url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+				posts_remote = response.json()['posts']
+				if len(posts) > 0:
+					for item in posts_remote:
+						if item['visibility'] == 'PUBLIC':
+							post_id = item['id']
+							post = Post(
+								id = item['id'],
+								author = Author(
+									id = item['author']['id'],
+									remote_username = item['author']['displayName'],
+								),
+								timestamp = item['published'],
+								title = item['title'],
+								content = item['content'],
+								contentType = item['contentType'].split(';')[0],						
+							)
+							remote_posts.append(post)
 	posts.append(remote_posts)
 
 	return render(request, 'profile/home.html', {'posts': posts})
