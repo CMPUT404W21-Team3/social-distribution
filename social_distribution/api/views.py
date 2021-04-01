@@ -334,12 +334,16 @@ def request(request, author_id, sender_id):
             receiver = Author.objects.get(id=author_id)
             # Maybe a function to check if the sender exist on the remote node?
             remote_sender = data["sender"]["id"]
+            remote_sender_username = data["sender"]["displayName"]
             # Creating a FriendRequest object:
             # - Receiver is local author object
             # - Remote_sender is the remote author's UUID
-            instance = FriendRequest.objects.create(receiver=receiver, remote_sender=remote_sender)
+            instance = FriendRequest.objects.get_or_create(receiver=receiver, remote_sender=remote_sender, remote_username=remote_sender_username)
             # Add to `remote_followers_uuid` list
-            receiver.remote_followers_uuid += f' {remote_sender}'
+            if receiver.remote_followers_uuid != None and remote_sender not in receiver.remote_followers_uuid:
+                receiver.remote_followers_uuid += f' {remote_sender}'
+            else:
+                receiver.remote_followers_uuid = remote_sender
             # Send a following API to the remote author?
             # TODO
             receiver.save()

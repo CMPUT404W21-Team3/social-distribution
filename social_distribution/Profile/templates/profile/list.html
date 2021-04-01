@@ -20,25 +20,38 @@
             </div>
         </div>
       {% endfor %}
-        <!-- <div class="col">
+    </div>
+  {% endif %}
+
+  {% if friends_remote %}
+  <div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for friend in friends_remote %}
+      <div class="col">
           <div class="card h-100">
             <div class="card-body">
-              <h5 class="card-title">Special title treatment</h5>
-              <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
-              <a href="#" class="btn btn-primary">Go somewhere</a>
+              <!-- <h3 class="card-title">{{friend.displayName}}</h3> -->
+              <h3 class="card-title">{{friend}}</h3>
+              <a href="" class="btn btn-primary">View Profile</a>
             </div>
           </div>
-        </div> -->
-    </div>
-    {% else %}
-        <p>No friends<p>
-    {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+  {% if not friends and not friends_remote %}
+  <p>No friends</p>
+  {% endif %}
 
   <h2>@{{user.username }} Following</h2>
 
   {% for f in following %}
     <li>{{ f.displayName }} </li><a href="{% url 'Profile:view_profile' author_id=f.id %}">View Profile</a>
   {% endfor %}
+  {% for f_r in following_remote %}
+    <!-- <li>{{ f_r.displayName }} </li><a href="">View Profile (Not Implemnted)</a> -->
+    <li>{{ f_r }} </li><a href="">View Profile (Not Implemnted)</a>
+  {% endfor %}  
 
   <h2>Pending Requests</h2>
   <!-- List pending friend requests -->
@@ -48,6 +61,7 @@
       <div class="col">
           <div class="card h-100 text-center">
             <div class="card-body">
+              {% if request.sender %}
               <h3 class="card-title">{{request.sender.displayName}}</h3>
               <div class="container">
                 <div class="row">
@@ -67,6 +81,29 @@
                   </div>
                 </div>
               </div>
+              {% else %}
+              <h3 class="card-title">{{request.remote_username}}</h3>
+              <div class="container">
+                <div class="row">
+                  <div class="col-md-auto">
+                    <form class="request" action="/accept" method="POST">
+                      {% csrf_token %}
+                      <input type="hidden" name="remote" id="remote" value="remote"/>
+                      <input type="hidden" name="sender" id="sender" value="{{ request.remote_sender }}" />
+                      <button class="btn btn-success btn-sm" type="submit">Accept</button>
+                    </form>
+                  </div>
+                  <div class="col-md-auto">
+                    <form class="request" action="/decline" method="POST">
+                      {% csrf_token %}
+                      <input type="hidden" name="remote" id="remote" value="remote"/>
+                      <input type="hidden" name="sender" id="sender" value="{{ request.remote_sender }}" />
+                      <button class="btn btn-success btn-sm" type="submit">Decline</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
             </div>
           </div>
       </div>

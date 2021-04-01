@@ -140,45 +140,86 @@ def list(request):
 	user = Author.objects.get(user__username=request.user.username)
 	friend_requests = FriendRequest.objects.filter(receiver=user)
 	friends = user.friends.all()
+	if user.remote_friends_uuid:
+		friends_remote = user.remote_friends_uuid.strip().split(" ")
+	else:
+		friends_remote = None
 	following = user.following.all()
+	if user.remote_following_uuid:
+		following_remote = user.remote_following_uuid.strip().split(" ")
+	else:
+		following_remote = None
 
-	# friends = list(friends)
 
-	# Remote friends + followers
-	for connection in Connection.objects.all():
-		url = connection.url + '/service/author/' + str(user.id) + '/friends'
-		response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+	# Remote friends + following
+	# Un-comment this for interaction with Citrus
+	# Un-comment line 32+52 in list.html as well
+	# For local testing sake, i'll just use the uuid string.
 
-		if response.status_code == 200:
-			for friend in response.json()['items']:
-				# Filter by response
-				friends.append(friend)
+	# for connection in Connection.objects.all():
+	# 	for i in range(len(friends_remote)):
+	# 		url = f'{connection.url}/service/author/' + friends_remote[i]
+	# 		response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
 
-			for following in followers:
-				url = connection.url + '/service/author/' + str(following.id)
-				response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
-				if response.status_code == 200:
-					follwing.append(response.json()['items'][0])
+	# 		if response.status_code == 200:
+	# 			friends_remote[i] = response.json()
+	# 		else:
+	# 			friends_remote.pop(i) #this guy doesn't exist!
 
-	return render(request, 'profile/list.html', {'friend_requests': friend_requests, 'friends': friends, 'following': following})
+	# 	for i in range(len(following_remote)):
+	# 		url = f'{connection.url}/service/author/' + following_remote[i]
+	# 		response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+
+	# 		if response.status_code == 200:
+	# 			following_remote[i] = response.json()
+	# 		else:
+	# 			following_remote.pop(i) #this guy doesn't exist!
+
+	return render(request, 'profile/list.html', {'friend_requests': friend_requests, 'friends': friends, 'friends_remote': friends_remote, 'following': following, 'following_remote': following_remote})
 
 def accept(request):
 	receiver = Author.objects.get(user__username=request.user.username)
-	sender = Author.objects.get(user__username=request.POST.get('sender', ''))
-	# Delete that request
-	FriendRequest.objects.filter(receiver=receiver).filter(sender=sender).delete()
+	if request.POST.get("remote") == None:
+		sender = Author.objects.get(user__username=request.POST.get('sender', ''))
+		# Delete that request
+		FriendRequest.objects.filter(receiver=receiver).filter(sender=sender).delete()
 
-	# Add to friends list
-	receiver.friends.add(sender)
-	receiver.followers.add(sender)
+		# Add to friends list
+		receiver.friends.add(sender)
+		receiver.followers.add(sender)
+	else:
+		# Get the remote sender's UUID
+		remote_sender = request.POST.get('sender')
+		# Delete that request
+		FriendRequest.objects.filter(receiver=receiver).filter(remote_sender=remote_sender).delete()
+
+		# Add to friend list
+		# Note we already add them to the follower list in the API
+		if receiver.remote_friends_uuid != None and remote_sender not in receiver.remote_friends_uuid:
+			receiver.remote_friends_uuid += f' {remote_sender}'
+		else:
+			receiver.remote_friends_uuid = remote_sender
+		# Add to your following list
+		if receiver.remote_following_uuid != None and remote_sender not in receiver.remote_following_uuid:
+			receiver.remote_following_uuid += f' {remote_sender}'
+		else:
+			receiver.remote_following_uuid = remote_sender
+		receiver.save()
 
 	return redirect('Profile:friends')
 
 def decline(request):
 	receiver = Author.objects.get(user__username=request.user.username)
-	sender = Author.objects.get(user__username=request.POST.get('sender', ''))
-	# Delete that request
-	FriendRequest.objects.filter(receiver=receiver).filter(sender=sender).delete()
+	if request.POST.get("remote") == None:
+		sender = Author.objects.get(user__username=request.POST.get('sender', ''))
+		# Delete that request
+		FriendRequest.objects.filter(receiver=receiver).filter(sender=sender).delete()
+	else:
+		# Get the remote sender's UUID
+		remote_sender = request.POST.get('sender')
+		# Delete that request
+		FriendRequest.objects.filter(receiver=receiver).filter(remote_sender=remote_sender).delete()
+
 	return redirect('Profile:friends')
 
 def view_posts(request, author_id):

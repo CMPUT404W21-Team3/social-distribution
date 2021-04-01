@@ -16,6 +16,7 @@ class FriendRequest(models.Model):
     receiver = models.ForeignKey(Author, on_delete=models.CASCADE, null=False, related_name='receiver')
     sender = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name='sender')
     remote_sender = models.CharField(max_length=100, blank=True, null=True)
+    remote_username = models.CharField(max_length=100, blank=True, null=True)
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
