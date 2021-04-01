@@ -179,6 +179,7 @@ def accept(request):
 
 	# Add to friends list
 	receiver.friends.add(sender)
+	receiver.followers.add(sender)
 
 	return redirect('Profile:friends')
 
