@@ -85,8 +85,8 @@ class Post(models.Model):
         MARKDOWN = 'text/markdown' # common mark
         PLAIN = 'text/plain' # UTF-8
         BASE64 = 'application/base64'
-        PNG = 'image/png' # embedded png
-        JPEG = 'image/jpeg' # embedded jpeg
+        PNG = 'image/png;base64' # embedded png
+        JPEG = 'image/jpeg;base64' # embedded jpeg
 
     contentType = models.CharField(
         max_length=40,
