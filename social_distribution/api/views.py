@@ -305,6 +305,19 @@ def request(request, author_id, sender_id):
             if user is not None:
                 if sender_id == str(Author.objects.get(user__username=username).id):
                     serializer = FriendRequestSerializer(friend_request)
+
+                    our_host = 'https://team3-socialdistribution.herokuapp.com/'
+
+                # GET the remote friend requests
+                    for connection in Connection.objects.all():
+                        url = connection.url + 'service/authors'
+                        response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+                        for author9 in response.json()['items']:
+                            if author9['id'] == sender_id:
+                                request_url = f'{connection.url}service/author/{sender_id}/follow_remote_3/{author_id}/{our_host}'
+                                # Parse their json here
+                                # TODO
+
                     return Response(serializer.data)
 
                 else:
@@ -314,33 +327,30 @@ def request(request, author_id, sender_id):
                 return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 
-    elif request.method =='PUT':
-        if 'password' not in request.data or 'username' not in request.data:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+    elif request.method == 'PUT':
+        # Add authentication here
+        data = request.data            
+        if data['type'].lower() == 'follow' and data['sender']['id'] != None and data['receiver']['id'] == author_id: #remote
+            receiver = Author.objects.get(id=author_id)
+            # Maybe a function to check if the sender exist on the remote node?
+            remote_sender = data["sender"]["id"]
+            remote_sender_username = data["sender"]["displayName"]
+            # Creating a FriendRequest object:
+            # - Receiver is local author object
+            # - Remote_sender is the remote author's UUID
+            instance = FriendRequest.objects.get_or_create(receiver=receiver, remote_sender=remote_sender, remote_username=remote_sender_username)
+            # Add to `remote_followers_uuid` list
+            if receiver.remote_followers_uuid != None and remote_sender not in receiver.remote_followers_uuid:
+                receiver.remote_followers_uuid += f' {remote_sender}'
+            else:
+                receiver.remote_followers_uuid = remote_sender
+            # Send a following API to the remote author?
+            # TODO
+            receiver.save()
+            return Response({'message':'success'}, status=status.HTTP_200_OK)
 
         else:
-            username = request.data['username']
-            password = request.data['password']
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                if sender_id == str(Author.objects.get(user__username=username).id):
-                    receiver = Author.objects.get(id=author_id)
-                    sender = Author.objects.get(id=sender_id)
-                    instance = FriendRequest.objects.create(receiver=receiver, sender=sender)
-                    
-                    serializer = FriendRequestSerializer(instance, data=request.data)
-                    if serializer.is_valid():	
-                        sender.following.add(receiver)
-                        receiver.followers.add(sender)
-                        serializer.save()
-                        return Response(serializer.data)
-                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-                else:
-                    return Response(status=status.HTTP_401_UNAUTHORIZED)
-
-            else:
-                return Response(status=status.HTTP_401_UNAUTHORIZED)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
     elif request.method == 'DELETE':
