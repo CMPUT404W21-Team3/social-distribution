@@ -159,7 +159,7 @@ def list(request):
 	# For local testing sake, i'll just use the uuid string.
 
 	for connection in Connection.objects.all():
-		if (friends_remote not None):
+		if friends_remote:
 			for i in range(len(friends_remote)):
 				url = f'{connection.url}/service/author/' + friends_remote[i]
 				response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
@@ -169,7 +169,7 @@ def list(request):
 				else:
 					friends_remote.pop(i) #this guy doesn't exist!
 
-		if (following_remote not None):
+		if following_remote:
 			for i in range(len(following_remote)):
 				url = f'{connection.url}/service/author/' + following_remote[i]
 				response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
