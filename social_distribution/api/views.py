@@ -330,7 +330,8 @@ def request(request, author_id, sender_id):
 	elif request.method == 'PUT':
 		# Add authentication here
 		data = request.data
-		if data['type'].lower() == 'follow' and data['sender']['id'] != None and data['sender']['id'] == author_id: #remote
+		if data['type'].lower() == 'follow' and data['sender']['id'] != None and data['receiver']['id'] == author_id: #remote
+			print("REACHES HERE")
 			receiver = Author.objects.get(id=author_id)
 			# Maybe a function to check if the sender exist on the remote node?
 			remote_sender = data["sender"]["id"]
