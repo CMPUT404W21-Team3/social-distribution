@@ -158,24 +158,24 @@ def list(request):
 	# Un-comment line 32+52 in list.html as well
 	# For local testing sake, i'll just use the uuid string.
 
-	# for connection in Connection.objects.all():
-	# 	for i in range(len(friends_remote)):
-	# 		url = f'{connection.url}/service/author/' + friends_remote[i]
-	# 		response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+	for connection in Connection.objects.all():
+		for i in range(len(friends_remote)):
+			url = f'{connection.url}/service/author/' + friends_remote[i]
+			response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
 
-	# 		if response.status_code == 200:
-	# 			friends_remote[i] = response.json()
-	# 		else:
-	# 			friends_remote.pop(i) #this guy doesn't exist!
+			if response.status_code == 200:
+				friends_remote[i] = response.json()
+			else:
+				friends_remote.pop(i) #this guy doesn't exist!
 
-	# 	for i in range(len(following_remote)):
-	# 		url = f'{connection.url}/service/author/' + following_remote[i]
-	# 		response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+		for i in range(len(following_remote)):
+			url = f'{connection.url}/service/author/' + following_remote[i]
+			response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
 
-	# 		if response.status_code == 200:
-	# 			following_remote[i] = response.json()
-	# 		else:
-	# 			following_remote.pop(i) #this guy doesn't exist!
+			if response.status_code == 200:
+				following_remote[i] = response.json()
+			else:
+				following_remote.pop(i) #this guy doesn't exist!
 
 	return render(request, 'profile/list.html', {'friend_requests': friend_requests, 'friends': friends, 'friends_remote': friends_remote, 'following': following, 'following_remote': following_remote})
 
