@@ -12,10 +12,10 @@
     <div class="row row-cols-1 row-cols-md-3 g-4">
       {% for friend in friends %}
         <div class="col">
-            <div class="card h-100">
-              <div class="card-body">
-                <h3 class="card-title">{{friend.user}}</h3>
-                <a href="{% url 'Profile:view_profile' author_id=friend.id %}" class="btn btn-primary">View Profile</a>
+            <div class="card h-100" style="width: fit-content;">
+              <div class="card-body" style="padding: 6px 8px 0 8px;">
+                <h4 class="card-title"><a href="{% url 'Profile:view_profile' author_id=friend.id %}" style="text-decoration: none; color: #198754;">{{friend.user}}</a></h4>
+                <!-- <a href="{% url 'Profile:view_profile' author_id=friend.id %}" class="btn btn-primary">View Profile</a> -->
               </div>
             </div>
         </div>
@@ -48,7 +48,7 @@
       <div class="col">
           <div class="card h-100 text-center">
             <div class="card-body">
-              <h3 class="card-title">{{request.sender.user_name}}</h3>
+              <h3 class="card-title"><a href="{% url 'Profile:view_profile' author_id=request.sender.id %}" style="text-decoration: none; color: #198754;">{{request.sender.user_name}}</a></h3>
               <div class="container">
                 <div class="row">
                   <div class="col-md-auto">

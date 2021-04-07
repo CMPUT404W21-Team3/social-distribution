@@ -2,38 +2,68 @@
 
 {% block content %}
 
-	<h2>{{ author.user.get_full_name }} <small>@{{ author.user.username }}</small>!</h2>
+	<div style="margin: 8px">
+		<a href="javascript:history.back()" class="btn btn-outline-success" role="button">Back</a>
+		<h2>{{ author.user.get_full_name }} <small>@{{ author.user.username }}</small></h2>
 		<!-- You can only send an inbox if exists following/follower status or friends -->
-		{% if follow_status %}
-		<form action="{{ author.id }}/private_post" method="GET">
-			<input type="hidden" name="author" id="author" value="{{ author.id }}" />
-			<button type="submit">Send Inbox Post</button>
-		</form>
-		{% endif %}
-		<!-- Check if author and current user are friends -->
-		{% if friend_status  %}
-			<!-- Remove friend option -->
-			<form action="{{ author.id }}/remove_friend" method="POST">
-				{% csrf_token %}
-				<input type="hidden" name="author" id="author" value="{{ author.id }}" />
-				<button type="submit">Remove Friend</button>
-			</form>
-		{% else %}
-			<form action="{{ author.id }}/send_request" method="POST">
-				{% csrf_token %}
-				<input type="hidden" name="receiver" id="author" value="{{ author.id }}" />
-				<button type="submit">Send Friend Request</button>
-			</form>
-		{% endif %}
+		<div class="container">
+			<div class="row justify-content-md-center">
+				{% if follow_status %}
+					
+						<div class="col col-lg-2">
+							<form action="{{ author.id }}/private_post" method="GET">
+								<input type="hidden" name="author" id="author" value="{{ author.id }}" />
+								<button type="submit" class="btn btn-outline-success">Send Inbox Post</button>
+							</form>
+						</div>
+					
+				{% endif %}
+				<!-- Check if author and current user are friends -->
+				<div class="col col-lg-2">
+					{% if friend_status  %}
+						<!-- Remove friend option -->
+						<form action="{{ author.id }}/remove_friend" method="POST">
+							{% csrf_token %}
+							<input type="hidden" name="author" id="author" value="{{ author.id }}" />
+							<button type="submit" class="btn btn-outline-danger">Remove Friend</button>
+						</form>
+					{% else %}
+						{%  if request.user.username != author.user.username %}
+							<form action="{{ author.id }}/send_request" method="POST">
+								{% csrf_token %}
+								<input type="hidden" name="receiver" id="author" value="{{ author.id }}" />
+								<button type="submit" class="btn btn-outline-success">Send Friend Request</button>
+							</form>
+						{% endif %}
+					{% endif %}
+				</div>
+			</div>
+		</div>
 		<p>Birth date: {{ author.birth_date }}</p>
 		<h3>Public Posts:</h3>
 		{% if posts %}
-			{% for post in posts %}
+			<!-- {% for post in posts %}
 				{% if post.visibility == 'PUBLIC' and post.unlisted == False %}
 					<li><a href="/author/{{author.id}}/view_post/{{post.id}}">{{post.title}}</a>: </li>
 				{% endif %}
-			{% endfor %}
+			{% endfor %} -->
+			<div class="row row-cols-1 row-cols-md-3 g-4">
+				{% for post in posts %}
+					{% if post.visibility == 'PUBLIC' and post.unlisted == False %}
+						<div class="col" style="padding-left: 0;">
+							<div class="card h-100">
+								<div class="card-body">
+									<h5 class="card-title"><a href="/author/{{author.id}}/view_post/{{post.id}}">{{post.title}}</a></h5>
+									<h6 class="card-subtitle mb-2 text-muted">Author: @{{post.author.user_name}}</h6>
+									<p class="card-text">{{post.content_html | safe}}</p>
+								</div>
+							</div>
+						</div>
+					{% endif %}
+				{% endfor %}
+			</div>
 		{% else %}
 			<p>{{author.user.get_full_name}} has no posts<p>
 		{% endif %}
+	</div>
 {% endblock %}

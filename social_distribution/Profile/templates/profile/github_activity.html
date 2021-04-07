@@ -3,27 +3,27 @@
 {% block content %}
 
 <div style="margin: 8px">
-<a href="/" class="btn btn-outline-success" role="button">Back</a>
+    <a href="/" class="btn btn-outline-success" role="button">Back</a>
 
-<h1>Github Activity Stream</h1>
-{% if github_activity %}
-    {% for activity in github_activity %}
-    <div class="col">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title"><a href="{{activity.url}}">{{activity.message}}</a></h5>
-                <p class="card-text" style="margin-bottom: 0 !important">EventType: {{activity.EventType}}</p>
-                <p class="card-text" style="margin-bottom: 0 !important">Timestamp: {{activity.timestamp}}</p>
-                <form action="{% url 'Profile:post_github' %}" method="GET">
-                  <input type="hidden" name="activity" id="activity" value="{{ activity }}" />
-                  <button type="submit">Share this!</button>
-                </form>
+    <h1>Github Activity Stream</h1>
+    {% if github_activity %}
+        {% for activity in github_activity %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><a href="{{activity.url}}">{{activity.message}}</a></h5>
+                    <p class="card-text" style="margin-bottom: 0 !important">EventType: {{activity.EventType}}</p>
+                    <p class="card-text" style="margin-bottom: 0 !important">Timestamp: {{activity.timestamp}}</p>
+                    <form action="{% url 'Profile:post_github' %}" method="GET">
+                    <input type="hidden" name="activity" id="activity" value="{{ activity }}" />
+                    <button type="submit">Share this!</button>
+                    </form>
+                </div>
             </div>
         </div>
-    </div>
-    {% endfor %}
-{% else %}
-    <h5 class="card-title" style="margin: 8px">No github username found</h5>
-{% endif %}
+        {% endfor %}
+    {% else %}
+        <h5 class="card-title" style="margin: 8px">No github username found</h5>
+    {% endif %}
 </div>
 {% endblock %}
