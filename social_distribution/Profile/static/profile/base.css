@@ -124,6 +124,8 @@ nav div div ul {
 
 .no-post {
     margin: 16px;
+    margin-left: 32px;
+    color: red;
 }
 
 .material-icons a {
@@ -155,6 +157,7 @@ nav div div ul {
 
 .form-group {
     display: inline-flex;
+    margin-bottom: 10px;
 }
 
 
@@ -166,4 +169,16 @@ nav div div ul {
 
 #clear_button {
     float: right;
+}
+
+.inbox-section {
+    margin-left: 16px;
+    margin-top: 16px;
+    margin-right: 5px;
+}
+
+.request-pending {
+    margin: 16px;
+    margin-left: 32px;
+    color: green;
 }

@@ -685,17 +685,24 @@ def inbox(request):
 	# Friends posts contain all the post from the people you follow
 	friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends)
 	posts = private_posts | friends_posts
+
+	friend_requests = FriendRequest.objects.filter(receiver=author)
+
 	if request.method == "GET":
 		inbox_option = request.GET.get("inbox_option")
 		if inbox_option == "All":
 			posts = posts.order_by('-timestamp')
 		elif inbox_option == "Cleared":
 			posts = author.posts_cleared.all().order_by('-timestamp')
+			friend_requests = author.friend_requests_cleared.all()
 		else:
 			posts = posts.difference(author.posts_cleared.all()).order_by('-timestamp')
-		return render(request, 'profile/posts.html', {'posts':posts, 'author':author, 'inbox':True})
+			friend_requests = friend_requests.difference(author.friend_requests_cleared.all())
+		return render(request, 'profile/posts.html', {'posts':posts, 'author':author, 'friend_requests': friend_requests, 'inbox':True})
 	elif request.method == "POST":
 		if "clear_signal" in request.POST:
 			author.posts_cleared.add(*posts)
+			author.friend_requests_cleared.add(*friend_requests)
 		posts = posts.difference(author.posts_cleared.all()).order_by('-timestamp')
-		return render(request, 'profile/posts.html', {'posts':posts, 'author':author, 'inbox':True})
+		friend_requests = friend_requests.difference(author.friend_requests_cleared.all())
+		return render(request, 'profile/posts.html', {'posts':posts, 'author':author, 'friend_requests': friend_requests, 'inbox':True})
