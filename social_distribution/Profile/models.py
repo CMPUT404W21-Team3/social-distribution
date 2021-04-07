@@ -26,6 +26,7 @@ class Author(models.Model):
     following = models.ManyToManyField('self', symmetrical=False, related_name="following_list")
     followers = models.ManyToManyField('self', symmetrical=False, related_name="follower_list")
     posts_cleared = models.ManyToManyField('Post', related_name="posts_cleared")
+    friend_requests_cleared = models.ManyToManyField('Search.FriendRequest', related_name="friend_requests_cleared")
     # Can't find an effective way of setting displayName for a remote author.
     # Because remote author doesn't have a "user" model linked.
     remote_host = models.CharField(max_length=50, blank=True)
