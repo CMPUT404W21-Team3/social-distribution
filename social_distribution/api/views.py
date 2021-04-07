@@ -12,6 +12,8 @@ from .serializers import AuthorSerializer, PostSerializer, CommentSerializer, Li
 from Profile.models import Author, Post, Comment, PostLike, CommentLike
 from Search.models import FriendRequest
 
+DEFAULT_HEADERS = {'Referer': 'https://team3-socialdistribution.herokuapp.com/', 'Mode': 'no-cors'}
+
 # https://www.django-rest-framework.org/tutorial/1-serialization/ - was consulted in writing code
 
 @api_view(['GET'])
@@ -311,7 +313,7 @@ def request(request, author_id, sender_id):
 				# GET the remote friend requests
 					for connection in Connection.objects.all():
 						url = connection.url + 'service/authors'
-						response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+						response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
 						for author9 in response.json()['items']:
 							if author9['id'] == sender_id:
 								request_url = f'{connection.url}service/author/{sender_id}/follow_remote_3/{author_id}/{our_host}'
