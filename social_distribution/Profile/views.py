@@ -25,6 +25,8 @@ from api.serializers import AuthorSerializer, PostSerializer
 
 from .helpers import timestamp_beautify
 
+DEFAULT_HEADERS = {'Referer': 'https://team3-socialdistribution.herokuapp.com/', 'Mode': 'no-cors'}
+
 # Create your views here.
 
 @login_required(login_url='/login/')
@@ -56,13 +58,13 @@ def home(request):
 	remote_posts = []
 	
 	for connection in Connection.objects.all():
-		url = connection.url + 'service/authors'
-		response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+		url = connection.url + 'service/authors/'
+		response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
 		if response.status_code == 200:
 			for author in response.json()['items']:
 				author_id = author['id']
 				new_url = f'{connection.url}service/author/{author_id}/posts/'
-				response = requests.get(new_url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+				response = requests.get(new_url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
 				if response.status_code == 200:
 					posts_remote = response.json()['posts']
 					if len(posts) > 0:
@@ -161,8 +163,8 @@ def list(request):
 	for connection in Connection.objects.all():
 		if friends_remote:
 			for i in range(len(friends_remote)):
-				url = f'{connection.url}/service/author/' + friends_remote[i]
-				response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+				url = f'{connection.url}/service/author/' + friends_remote[i] + '/'
+				response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
 
 				if response.status_code == 200:
 					friends_remote[i] = response.json()
@@ -171,8 +173,8 @@ def list(request):
 
 		if following_remote:
 			for i in range(len(following_remote)):
-				url = f'{connection.url}/service/author/' + following_remote[i]
-				response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+				url = f'{connection.url}/service/author/' + following_remote[i] + '/'
+				response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
 
 				if response.status_code == 200:
 					following_remote[i] = response.json()
@@ -281,8 +283,8 @@ def view_post(request, author_id, post_id):
 	except:
 		# Remote post
 		for connection in Connection.objects.all():
-			url = connection.url + 'service/author/' + author_id + '/posts/' + post_id
-			response = requests.get(url)
+			url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/'
+			response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
 			if response.status_code == 200:
 				post = response.json()
 				liked = False # TODO need to get like status
@@ -296,8 +298,9 @@ def view_post(request, author_id, post_id):
 				if post['contentType'] == Post.ContentType.MARKDOWN:
 					post['content'] = commonmark.commonmark(post['content'])
 
-				else:
-					return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
+				return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
+			else:
+				return redirect('Profile:home')
 
 	
 
@@ -308,7 +311,7 @@ class CreatePostView(generic.CreateView):
 
 	def form_valid(self, form):
 		author = self.request.user.author
-		self.success_url = '/author/' + str(author.id) + '/view_posts'
+		self.success_url = '/author/' + str(author.id) + '/view_posts/'
 		form.instance.author = author
 		return super().form_valid(form)
 
@@ -384,8 +387,8 @@ def share_post(request, post_id, author_id):
 	except:
 		# Sharing remote post
 		for connection in Connection.objects.all():
-			url = connection.url + 'service/author/' + author_id + '/posts/' + post_id
-			response = requests.get(url)
+			url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/'
+			response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
 			if response.status_code == 200:
 				post_j = response.json()
 				# author.save()
@@ -505,15 +508,15 @@ def view_profile(request, author_id):
 		# Remote author!
 		local = False
 		for connection in Connection.objects.all():
-			url = connection.url + 'service/authors'
-			response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+			url = connection.url + 'service/authors/'
+			response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
 			if response.status_code == 200:
 				for author in response.json()['items']:
 					# Found a match!
 					if author_id == author['id']:
 						# Grab posts
-						url = connection.url + 'service/author/' + author_id + '/posts'
-						response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+						url = connection.url + 'service/author/' + author_id + '/posts/'
+						response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
 						if response.status_code == 200:
 							posts = response.json()['posts']
 
@@ -543,8 +546,8 @@ def friend_request(request, author_id):
 	except:
 		local = False
 		for connection in Connection.objects.all():
-			url = connection.url + 'service/authors'
-			response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
+			url = connection.url + 'service/authors/'
+			response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
 			if response.status_code == 200:
 				for author in response.json()['items']:
 					# Found a match!
@@ -561,7 +564,7 @@ def friend_request(request, author_id):
 						# Send request to remote
 						url = connection.url + 'service/author/' + receiver['id'] + '/inbox/'
 						# print(url)
-						post_response = requests.post(url, json.dumps(post_data), auth=('CitrusNetwork', 'oranges'))
+						post_response = requests.post(url, json.dumps(post_data), headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
 						print(post_response.content)
 	
 	if local:
@@ -590,35 +593,68 @@ def remove_friend(request, author_id):
 
 def like_post(request, author_id, post_id):
 	current_user = request.user
-	post = get_object_or_404(Post, id=post_id, author__id=author_id)
-	liked = False
 
-	try:
-		obj = PostLike.objects.get(post_id=post, author__id=request.user.author.id)
-	except:
-		author = Author.objects.get(id=request.user.author.id)
-		like_instance = PostLike(post_id=post, author=author)
-		like_instance.save()
-		post.likes_count = post.likes_count + 1
-		post.save()
-		liked = True
-	else:
-		post.likes_count -= 1
-		post.save()
-		obj.delete()
+	post = Post.objects.filter(id=post_id, author__id=author_id)
+	if post:
+		# Local post
+		liked = False
 
-	if post.contentType == Post.ContentType.PLAIN:
-		content = post.content
-	if post.contentType == Post.ContentType.MARKDOWN:
-		content = commonmark.commonmark(post.content)
+		try:
+			obj = PostLike.objects.get(post_id=post, author__id=request.user.author.id)
+		except:
+			author = Author.objects.get(id=request.user.author.id)
+			like_instance = PostLike(post_id=post, author=author)
+			like_instance.save()
+			post.likes_count = post.likes_count + 1
+			post.save()
+			liked = True
+		else:
+			post.likes_count -= 1
+			post.save()
+			obj.delete()
+
+		if post.contentType == Post.ContentType.PLAIN:
+			content = post.content
+		if post.contentType == Post.ContentType.MARKDOWN:
+			content = commonmark.commonmark(post.content)
+		else:
+			content = 'Content type not supported yet'
+		if current_user.author.id == post.author.id or post.visibility == 'PUBLIC':
+			comments = post.comments
+		else:
+			comments = post.comments.filter(author__id=current_user.author.id)
+		comment_form = CommentForm()
+		return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user, 'liked': liked, 'comments':comments, 'comment_form':comment_form})
 	else:
-		content = 'Content type not supported yet'
-	if current_user.author.id == post.author.id or post.visibility == 'PUBLIC':
-		comments = post.comments
-	else:
-		comments = post.comments.filter(author__id=current_user.author.id)
-	comment_form = CommentForm()
-	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user, 'liked': liked, 'comments':comments, 'comment_form':comment_form})
+		# Remote post
+
+		# See if we have already liked this post
+		# host = None
+		# for connection in Connection.objects.all():
+		# 	url = connection.url() + f'/service/author/{author_id}/post/{post_id}/likes/'
+		# 	response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
+		# 	likes = response.json()
+		# 	print(likes)
+		# 	liked = False
+		# 	for like in likes['likes']:
+		# 		if like['author']['id'] == current_user.id:
+		# 			host = like['author']['host']
+		# 			liked = True
+		# 			break
+		
+		# if not liked:
+		# 	url = host + f'/service/author/{author_id}/inbox/'
+		# 	post_data = {}
+		# 	post_data['Summary'] = current_user.author.displayName + ' likes your post'
+		# 	post_data['type'] = 'Like'
+		# 	post_data['actor'] = AuthorSerializer(current_user.author).data
+		# 	post_data['object'] = host + f'/author/{author_id}/posts/{post_id}/'
+		# 	print(post_data)
+
+		return redirect('Profile:view_post', author_id, post_id)
+		
+
+
 
 def private_post(request, author_id):
 	author = request.user.author
