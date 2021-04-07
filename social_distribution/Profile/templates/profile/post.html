@@ -5,7 +5,7 @@
 <div class="container" style="margin-top: 10px;">
     <div class="row">
         <div class="col-sm-auto">
-            <span class="material-icons"><a href="/">arrow_back_ios</a></span>
+            <span class="material-icons"><a href="javascript:history.back()">arrow_back_ios</a></span>
         </div>
         <div class="col">
             <div class="card">
@@ -37,10 +37,14 @@
                     <!-- ================= Comments block ================= -->
                     {% if post.author.id != current_user.author.id %}
                     <p>Leave a Comment</p>
-                    <form method = "POST">
-                        {{ comment_form.as_p }} <!-- Comment text form -->
+                    <form method = "POST" style="margin: 0;">
+                        <!-- {{ comment_form.as_p }} Comment text form -->
                         {% csrf_token %}
-                        <button type="submit">Submit My Comment</button>
+                        <!-- <button type="submit">Submit My Comment</button> -->
+                        <div class="input-group mb-3">
+                            <input name="content" id="id_content" type="text" class="form-control" placeholder="Comment..." aria-label="Comment" aria-describedby="button-addon2">
+                            <button class="btn btn-outline-secondary" type="submit" id="button-addon2">send</button>
+                        </div>
                     </form>
                     {% endif %}
 
@@ -48,19 +52,20 @@
                     <!-- showing all comments -->
                     <ul>
                         {% for comment in comments.all %}
-                            <!--{% comment.author.id}-->
-                            <li>
+                            <!-- {% comment.author.id} -->
+                            <li style="list-style: none;">
                                 <div>
-                                    <!--Comment body-->
+                                    <!-- Comment body -->
                                     <p>@{{comment.author.user}} :
                                         {{comment.content}}</p>
 
-                                    <!--Comment time-->
-                                    <p>Comment at:{{comment.timestamp}}</p>
+                                    <!-- Comment time -->
+                                    <!-- <p>Comment at:{{comment.timestamp}}</p> -->
                                 </div>
                             </li>
                         {% endfor %}
                     </ul>
+
                     <!-- ================= End of Comments block ================= -->
 
                     {% if post.author.id == current_user.author.id %}

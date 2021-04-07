@@ -5,7 +5,7 @@
 <div class="container" style="margin-top: 10px;">
     <div class="row">
         <div class="col-sm-auto">
-            <span class="material-icons"><a href="/author/{{ user.author.id }}/view_posts">arrow_back_ios</a></span>
+            <span class="material-icons"><a href="javascript:history.back()">arrow_back_ios</a></span>
         </div>
         <div class="col">
             <form method="post" class="row g-3 profile-form">
@@ -24,7 +24,7 @@
                     <div class="col-md-4">
                         <div class="input-group">
                             <span class="input-group-text" id="id_source">Source</span>
-                            <input type="text" class="form-control"  aria-describedby="id_source" name="source" maxlength="200" value="{{form.source.value}}">
+                            <input type="text" class="form-control"  aria-describedby="id_source" name="source" maxlength="200">
                         </div>
                     </div>
                 </div>
@@ -81,7 +81,7 @@
                     <div class="col-md-4">
                         <div class="input-group">
                             <span class="input-group-text">Description</span>
-                            <textarea class="form-control" aria-label="Description" name="description" id="id_desciption">{{form.description.value}}</textarea>
+                            <textarea class="form-control" aria-label="Description" name="description" id="id_desciption"></textarea>
                         </div>
                     </div>
                 </div>
@@ -90,7 +90,7 @@
                     <div class="col-md-4">
                         <div class="input-group">
                             <span class="input-group-text">Content</span>
-                            <textarea class="form-control" aria-label="Content" name="content" id="id_content">{{form.content.value}}</textarea>
+                            <textarea class="form-control" aria-label="Content" name="content" id="id_content"></textarea>
                         </div>
                     </div>
                 </div>
