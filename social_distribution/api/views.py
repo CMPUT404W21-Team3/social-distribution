@@ -333,7 +333,6 @@ def request(request, author_id, sender_id):
 		# Add authentication here
 		data = request.data
 		if data['type'].lower() == 'follow' and data['sender']['id'] != None and data['receiver']['id'] == author_id: #remote
-			print("REACHES HERE")
 			receiver = Author.objects.get(id=author_id)
 			# Maybe a function to check if the sender exist on the remote node?
 			remote_sender = data["sender"]["id"]
@@ -503,6 +502,7 @@ def inbox(request, author_id):
 	GET: if authenticated get a list of posts sent to author_id from the inbox
 	"""
 	if request.method == 'GET':
+		# check if the one performing this request is the valid inbox's Author
 		if ('password' not in request.data) or ('username' not in request.data):
 			try:
 				if author_id != str(request.user.author.id):
@@ -541,46 +541,71 @@ def inbox(request, author_id):
 			return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 	elif request.method == 'POST':
-		if ('password' not in request.data) or ('username' not in request.data):
-			try:
-				if author_id != str(request.user.author.id):
-					return Response(status=status.HTTP_401_UNAUTHORIZED)
-			except AttributeError as e:
-				return Response(status=status.HTTP_401_UNAUTHORIZED)
+		# RETHINK THIS LOGIC
+
+		# Add authentication here
+		data = request.data
+		if data['type'].lower() == 'follow' and data['sender']['id'] != None and data['receiver']['id'] == author_id: #remote
+			receiver = Author.objects.get(id=author_id)
+			# Maybe a function to check if the sender exist on the remote node?
+			remote_sender = data["sender"]["id"]
+			remote_sender_username = data["sender"]["displayName"]
+			# Creating a FriendRequest object:
+			# - Receiver is local author object
+			# - Remote_sender is the remote author's UUID
+			instance = FriendRequest.objects.get_or_create(receiver=receiver, remote_sender=remote_sender, remote_username=remote_sender_username)
+			# Add to `remote_followers_uuid` list
+			if receiver.remote_followers_uuid != None and remote_sender not in receiver.remote_followers_uuid:
+				receiver.remote_followers_uuid += f' {remote_sender}'
 			else:
-				pass
-		if author_id == str(request.user.author.id):
-			author_sender = Author.objects.get(request.user.author.id)
-			author_receiver = Author.objects.get(id=author_id)
-			if author_sender in author_receiver.followers.all() or author_sender in author_receiver.friends.all():
-				instance = Post.objects.create(author=author_sender, to_author=author_receiver)
-				if request.data.get('visibility') == 'PUBLIC':
-					request.data['visibility'] = 'PRIVATE'
-				serializer = PostSerializer(instance, data=request.data)
-				if serializer.is_valid():
-					serializer.save()
-					return Response(serializer.data)
-			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+				receiver.remote_followers_uuid = remote_sender
+			# Send a following API to the remote author?
+			# TODO
+			receiver.save()
+			return Response({'message':'success'}, status=status.HTTP_200_OK)
+
 		else:
-			# Log in with those credentials
-			username = request.data['username']
-			password = request.data['password']
-			user = authenticate(username=username, password=password)
-			if user is not None:
-				author_sender = Author.objects.get(user__username=username)
-				author_receiver = Author.objects.get(id=author_id)
-				if author_sender in author_receiver.followers.all() or author_sender in author_receiver.friends.all():
-					instance = Post.objects.create(author=author_sender, to_author=author_receiver)
-					if request.data.get('visibility') == 'PUBLIC':
-						request.data['visibility'] = 'PRIVATE'
-					serializer = PostSerializer(instance, data=request.data)
-					if serializer.is_valid():
-						serializer.save()
-						return Response(serializer.data)
-				return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+			return Response(status=status.HTTP_400_BAD_REQUEST)
+
+		# if ('password' not in request.data) or ('username' not in request.data):
+		# 	try:
+		# 		if author_id != str(request.user.author.id):
+		# 			return Response(status=status.HTTP_401_UNAUTHORIZED)
+		# 	except AttributeError as e:
+		# 		return Response(status=status.HTTP_401_UNAUTHORIZED)
+		# 	else:
+		# 		pass
+		# if author_id == str(request.user.author.id):
+		# 	author_sender = Author.objects.get(request.user.author.id)
+		# 	author_receiver = Author.objects.get(id=author_id)
+		# 	if author_sender in author_receiver.followers.all() or author_sender in author_receiver.friends.all():
+		# 		instance = Post.objects.create(author=author_sender, to_author=author_receiver)
+		# 		if request.data.get('visibility') == 'PUBLIC':
+		# 			request.data['visibility'] = 'PRIVATE'
+		# 		serializer = PostSerializer(instance, data=request.data)
+		# 		if serializer.is_valid():
+		# 			serializer.save()
+		# 			return Response(serializer.data)
+		# 	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+		# else:
+		# 	# Log in with those credentials
+		# 	username = request.data['username']
+		# 	password = request.data['password']
+		# 	user = authenticate(username=username, password=password)
+		# 	if user is not None:
+		# 		author_sender = Author.objects.get(user__username=username)
+		# 		author_receiver = Author.objects.get(id=author_id)
+		# 		if author_sender in author_receiver.followers.all() or author_sender in author_receiver.friends.all():
+		# 			instance = Post.objects.create(author=author_sender, to_author=author_receiver)
+		# 			if request.data.get('visibility') == 'PUBLIC':
+		# 				request.data['visibility'] = 'PRIVATE'
+		# 			serializer = PostSerializer(instance, data=request.data)
+		# 			if serializer.is_valid():
+		# 				serializer.save()
+		# 				return Response(serializer.data)
+		# 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 	elif request.method == 'DELETE':
-		# This can only clear PRIVATE post...
 		if ('password' not in request.data) or ('username' not in request.data):
 			try:
 				if author_id != str(request.user.author.id):
@@ -595,7 +620,13 @@ def inbox(request, author_id):
 			friends = author.friends.all()
 			friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends)
 			posts = private_posts | friends_posts
+			friend_requests = FriendRequest.objects.filter(receiver=author)
+
+			author.posts_cleared.add(*posts)
+			author.friend_requests_cleared.add(*friend_requests)
 			posts = posts.difference(author.posts_cleared.all())
+			friend_requests = friend_requests.difference(author.friend_requests_cleared.all())
+
 			return Response(status=status.HTTP_204_NO_CONTENT)
 		else:
 			# Log in with those credentials
@@ -609,7 +640,13 @@ def inbox(request, author_id):
 					friends = author.friends.all()
 					friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends)
 					posts = private_posts | friends_posts
+					friend_requests = FriendRequest.objects.filter(receiver=author)
+
+					author.posts_cleared.add(*posts)
+					author.friend_requests_cleared.add(*friend_requests)
 					posts = posts.difference(author.posts_cleared.all())
+					friend_requests = friend_requests.difference(author.friend_requests_cleared.all())
+
 					return Response(status=status.HTTP_204_NO_CONTENT)
 				else:
 					return Response(status=status.HTTP_401_UNAUTHORIZED)
