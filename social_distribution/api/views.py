@@ -12,6 +12,8 @@ from .serializers import AuthorSerializer, PostSerializer, CommentSerializer, Li
 from Profile.models import Author, Post, Comment, PostLike, CommentLike
 from Search.models import FriendRequest
 
+import traceback
+
 DEFAULT_HEADERS = {'Referer': 'https://team3-socialdistribution.herokuapp.com/', 'Mode': 'no-cors'}
 
 # https://www.django-rest-framework.org/tutorial/1-serialization/ - was consulted in writing code
@@ -571,46 +573,53 @@ def inbox(request, author_id):
 			# check if the author is friend/follow you
 			receiver = Author.objects.get(id=author_id)
 			sender_id = data["author"]["id"]
-			valid_remote_senders = receiver.remote_followers_uuid.strip().split(" ") \
-							+ receiver.remote_friends_uuid.strip().split(" ")
+			try:
+				receiver_remote_friends = receiver.remote_friends_uuid.strip().split(" ")
+			except:
+				receiver_remote_friends = []
+
+			try:
+				receiver_remote_followers = receiver.remote_followers_uuid.strip().split(" ")
+			except:
+				receiver_remote_followers = []
+			valid_remote_senders = receiver_remote_followers + receiver_remote_friends
 			# REMOTE SENDER
 			if sender_id in valid_remote_senders:
 				try:
 					if data["visibility"].upper() in "FRIENDS" + "PRIVATE" and author_id == data["receiver"]:
-						instance = Post.objects.get_or_create(
+						instance = Post(
 							title = data["title"],
 							id = data["id"],
-							url = data["url"],
+							remote_url = data["remote_url"],
 							source = data["source"],
 							origin = data["origin"],
 							description = data["description"],
 							contentType = data["contentType"],
 							content = data["content"],
-							author = Author(
-								id = data["author"]["id"],
-								remote_username = data["author"]["displayName"]
-							),
+							remote_author_id = data["author"]["id"],
+							remote_author_displayName = data["author"]["displayName"],
 							to_author = receiver,
-							categories = data["categories"],
 							timestamp = data["timestamp"],
 							visibility = data["visibility"],
 							unlisted = data["unlisted"],
 						)
+						instance.categories.set(data["categories"])
+						instance.save()
 						return Response({'message':'success'}, status=status.HTTP_200_OK)
 					else:
 						return Response({"message": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
-				except Exception as e:
-					return Response({"message":e}, status=status.HTTP_400_BAD_REQUEST)
+				except Exception:
+					traceback.print_exc()
+					return Response({"message":"something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
 
 			# LOCAL SENDER
 			elif sender_id in [str(x) for x in receiver.friends.all().values('id')]:
 				sender_local = Author.objects.get(id=sender_id)
 				try:
 					if data["visibility"].upper() in "FRIENDS" + "PRIVATE" and author_id == data["receiver"]:
-						instance = Post.objects.get_or_create(
+						instance = Post(
 							title = data["title"],
 							id = data["id"],
-							url = data["url"],
 							source = data["source"],
 							origin = data["origin"],
 							description = data["description"],
@@ -618,11 +627,12 @@ def inbox(request, author_id):
 							content = data["content"],
 							author = sender_local,
 							to_author = receiver,
-							categories = data["categories"],
 							timestamp = data["timestamp"],
 							visibility = data["visibility"],
 							unlisted = data["unlisted"],
 						)
+						instance.categories.set(data["categories"])
+						instance.save()
 						return Response({'message':'success'}, status=status.HTTP_200_OK)
 					else:
 						return Response({"message": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
