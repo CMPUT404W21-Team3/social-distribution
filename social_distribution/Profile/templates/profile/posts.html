@@ -33,10 +33,12 @@
     </form>
     {% endif %}
 
+    {% if inbox %}
     <div class="form-group">
         <h4 class="inbox-section">Pending Requests</h4>
         <button id="inbox-requests-button" class="btn btn-secondary btn-sm" onclick="showRequests()">Show</button>    
     </div>
+    {% endif %}
     <!-- List pending friend requests -->
     {% if friend_requests %}
     <p class="request-pending h6">{{friend_requests.count}} requests pending</p>
@@ -93,7 +95,7 @@
         </div>
       {% endfor %}
     </div>
-    {% else %}
+    {% elif inbox %}
         <p class="no-post h6">No Requests<p>
     {% endif %}
     
