@@ -541,10 +541,11 @@ def inbox(request, author_id):
 			return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 	elif request.method == 'POST':
-		# RETHINK THIS LOGIC
-
 		# Add authentication here
 		data = request.data
+
+		# ------ FRIEND REQUEST ------ #
+
 		if data['type'].lower() == 'follow' and data['sender']['id'] != None and data['receiver']['id'] == author_id: #remote
 			receiver = Author.objects.get(id=author_id)
 			# Maybe a function to check if the sender exist on the remote node?
@@ -564,46 +565,75 @@ def inbox(request, author_id):
 			receiver.save()
 			return Response({'message':'success'}, status=status.HTTP_200_OK)
 
+		# ------ POST ------ #
+
+		elif data['type'].lower() == 'post':
+			# check if the author is friend/follow you
+			receiver = Author.objects.get(id=author_id)
+			sender_id = data["author"]["id"]
+			valid_remote_senders = receiver.remote_followers_uuid.strip().split(" ") \
+							+ receiver.remote_friends_uuid.strip().split(" ")
+			# REMOTE SENDER
+			if sender_id in valid_remote_senders:
+				try:
+					if data["visibility"].upper() in "FRIENDS" + "PRIVATE" and author_id == data["receiver"]:
+						instance = Post.objects.get_or_create(
+							title = data["title"],
+							id = data["id"],
+							url = data["url"],
+							source = data["source"],
+							origin = data["origin"],
+							description = data["description"],
+							contentType = data["contentType"],
+							content = data["content"],
+							author = Author(
+								id = data["author"]["id"],
+								remote_username = data["author"]["displayName"]
+							),
+							to_author = receiver,
+							categories = data["categories"],
+							timestamp = data["timestamp"],
+							visibility = data["visibility"],
+							unlisted = data["unlisted"],
+						)
+						return Response({'message':'success'}, status=status.HTTP_200_OK)
+					else:
+						return Response({"message": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
+				except Exception as e:
+					return Response({"message":e}, status=status.HTTP_400_BAD_REQUEST)
+
+			# LOCAL SENDER
+			elif sender_id in [str(x) for x in receiver.friends.all().values('id')]:
+				sender_local = Author.objects.get(id=sender_id)
+				try:
+					if data["visibility"].upper() in "FRIENDS" + "PRIVATE" and author_id == data["receiver"]:
+						instance = Post.objects.get_or_create(
+							title = data["title"],
+							id = data["id"],
+							url = data["url"],
+							source = data["source"],
+							origin = data["origin"],
+							description = data["description"],
+							contentType = data["contentType"],
+							content = data["content"],
+							author = sender_local,
+							to_author = receiver,
+							categories = data["categories"],
+							timestamp = data["timestamp"],
+							visibility = data["visibility"],
+							unlisted = data["unlisted"],
+						)
+						return Response({'message':'success'}, status=status.HTTP_200_OK)
+					else:
+						return Response({"message": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
+				except Exception as e:
+					return Response({"message":e}, status=status.HTTP_400_BAD_REQUEST)
+			# UNAUTHORIZED or SOMETHING WRONG
+			else:
+				return Response({"message": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
+
 		else:
 			return Response(status=status.HTTP_400_BAD_REQUEST)
-
-		# if ('password' not in request.data) or ('username' not in request.data):
-		# 	try:
-		# 		if author_id != str(request.user.author.id):
-		# 			return Response(status=status.HTTP_401_UNAUTHORIZED)
-		# 	except AttributeError as e:
-		# 		return Response(status=status.HTTP_401_UNAUTHORIZED)
-		# 	else:
-		# 		pass
-		# if author_id == str(request.user.author.id):
-		# 	author_sender = Author.objects.get(request.user.author.id)
-		# 	author_receiver = Author.objects.get(id=author_id)
-		# 	if author_sender in author_receiver.followers.all() or author_sender in author_receiver.friends.all():
-		# 		instance = Post.objects.create(author=author_sender, to_author=author_receiver)
-		# 		if request.data.get('visibility') == 'PUBLIC':
-		# 			request.data['visibility'] = 'PRIVATE'
-		# 		serializer = PostSerializer(instance, data=request.data)
-		# 		if serializer.is_valid():
-		# 			serializer.save()
-		# 			return Response(serializer.data)
-		# 	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-		# else:
-		# 	# Log in with those credentials
-		# 	username = request.data['username']
-		# 	password = request.data['password']
-		# 	user = authenticate(username=username, password=password)
-		# 	if user is not None:
-		# 		author_sender = Author.objects.get(user__username=username)
-		# 		author_receiver = Author.objects.get(id=author_id)
-		# 		if author_sender in author_receiver.followers.all() or author_sender in author_receiver.friends.all():
-		# 			instance = Post.objects.create(author=author_sender, to_author=author_receiver)
-		# 			if request.data.get('visibility') == 'PUBLIC':
-		# 				request.data['visibility'] = 'PRIVATE'
-		# 			serializer = PostSerializer(instance, data=request.data)
-		# 			if serializer.is_valid():
-		# 				serializer.save()
-		# 				return Response(serializer.data)
-		# 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 	elif request.method == 'DELETE':
 		if ('password' not in request.data) or ('username' not in request.data):
