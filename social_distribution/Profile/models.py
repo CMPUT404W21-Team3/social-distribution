@@ -87,6 +87,8 @@ class Post(models.Model):
     origin = models.CharField(max_length=200, blank=True)
     description = models.TextField(blank=True)
 
+    remote_url = models.CharField(max_length=200, blank=True, null=True)
+
     class ContentType(models.TextChoices):
         MARKDOWN = 'text/markdown' # common mark
         PLAIN = 'text/plain' # UTF-8
@@ -102,6 +104,9 @@ class Post(models.Model):
 
     content = models.TextField(blank=True)
     author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name="posts")
+
+    remote_author_id = models.CharField(max_length=200, blank=True, null=True)
+    remote_author_displayName = models.CharField(max_length=200, blank=True, null=True)
 
     categories = models.ManyToManyField('PostCategory', blank=True)
     #comments_count = models.IntegerField(default=0)
