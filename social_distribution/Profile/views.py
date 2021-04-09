@@ -655,9 +655,9 @@ def inbox(request):
 	author = Author.objects.get(id=request.user.author.id)
 	# Private means direct DM or from someone is not your friend (yet)
 	private_posts = Post.objects.filter(to_author=request.user.author.id)
-	friends = author.friends.all()
+	following = author.following.all()
 	# Friends posts contain all the post from the people you follow
-	friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends)
+	friend_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=following)
 	posts = private_posts | friends_posts
 
 	friend_requests = FriendRequest.objects.filter(receiver=author)
