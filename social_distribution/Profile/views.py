@@ -45,18 +45,18 @@ def home(request):
 	# Grab self posts
 	self_posts = Post.objects.filter(author=request.user.author, unlisted=False).order_by('-timestamp')
 
-	# Grab friend's posts
-	friends = Author.objects.get(user__username=request.user.username).friends.all()
-	friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+	# Grab posts from those who are following
+	following = Author.objects.get(user__username=request.user.username).following.all()
+	following_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=following).order_by('-timestamp')
 
 	# Merge posts, sort them
-	local_posts = public_posts | self_posts | friends_posts
-	
+	local_posts = public_posts | self_posts | following_posts
+
 	posts = []
 	posts.append(local_posts)
 
 	remote_posts = []
-	
+
 	for connection in Connection.objects.all():
 		url = connection.url + 'service/authors/'
 		response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
@@ -80,7 +80,7 @@ def home(request):
 									timestamp = item['published'],
 									title = item['title'],
 									content = item['content'],
-									contentType = item['contentType'].split(';')[0],						
+									contentType = item['contentType'].split(';')[0],
 								)
 								remote_posts.append(post)
 	posts.append(remote_posts)
@@ -142,13 +142,18 @@ def signup(request):
 
 def list(request):
 	user = Author.objects.get(user__username=request.user.username)
-	friend_requests = FriendRequest.objects.filter(receiver=user)
-	friends = user.friends.all()
+
+	following = user.following.all()
+	followers = user.followers.all()
+
+	# Grab friends
+	friends = following & followers
+
 	if user.remote_friends_uuid:
 		friends_remote = user.remote_friends_uuid.strip().split(" ")
 	else:
 		friends_remote = None
-	following = user.following.all()
+
 	if user.remote_following_uuid:
 		following_remote = user.remote_following_uuid.strip().split(" ")
 	else:
@@ -181,52 +186,8 @@ def list(request):
 				else:
 					following_remote.pop(i) #this guy doesn't exist!
 
-	return render(request, 'profile/list.html', {'friend_requests': friend_requests, 'friends': friends, 'friends_remote': friends_remote, 'following': following, 'following_remote': following_remote})
-
-def accept(request):
-	receiver = Author.objects.get(user__username=request.user.username)
-	if request.POST.get("remote") == None:
-		sender = Author.objects.get(user__username=request.POST.get('sender', ''))
-		# Delete that request
-		FriendRequest.objects.filter(receiver=receiver).filter(sender=sender).delete()
-
-		# Add to friends list
-		receiver.friends.add(sender)
-		receiver.followers.add(sender)
-	else:
-		# Get the remote sender's UUID
-		remote_sender = request.POST.get('sender')
-		# Delete that request
-		FriendRequest.objects.filter(receiver=receiver).filter(remote_sender=remote_sender).delete()
-
-		# Add to friend list
-		# Note we already add them to the follower list in the API
-		if receiver.remote_friends_uuid != None and remote_sender not in receiver.remote_friends_uuid:
-			receiver.remote_friends_uuid += f' {remote_sender}'
-		else:
-			receiver.remote_friends_uuid = remote_sender
-		# Add to your following list
-		if receiver.remote_following_uuid != None and remote_sender not in receiver.remote_following_uuid:
-			receiver.remote_following_uuid += f' {remote_sender}'
-		else:
-			receiver.remote_following_uuid = remote_sender
-		receiver.save()
-
-	return redirect('Profile:friends')
-
-def decline(request):
-	receiver = Author.objects.get(user__username=request.user.username)
-	if request.POST.get("remote") == None:
-		sender = Author.objects.get(user__username=request.POST.get('sender', ''))
-		# Delete that request
-		FriendRequest.objects.filter(receiver=receiver).filter(sender=sender).delete()
-	else:
-		# Get the remote sender's UUID
-		remote_sender = request.POST.get('sender')
-		# Delete that request
-		FriendRequest.objects.filter(receiver=receiver).filter(remote_sender=remote_sender).delete()
-
-	return redirect('Profile:friends')
+	return render(request, 'profile/list.html', {'friends': friends, 'friends_remote': friends_remote,
+				'following': following, 'following_remote': following_remote, 'followers': followers})
 
 def view_posts(request, author_id):
 	author = Author.objects.get(id=author_id)
@@ -236,7 +197,7 @@ def view_posts(request, author_id):
 	return render(request, 'profile/posts.html', {'posts':posts, 'author':author})
 
 def view_post(request, author_id, post_id):
-	
+
 	current_user = request.user
 	try:
 		post = Post.objects.get(id=post_id, author__id=author_id)
@@ -302,7 +263,7 @@ def view_post(request, author_id, post_id):
 			else:
 				return redirect('Profile:home')
 
-	
+
 
 class CreatePostView(generic.CreateView):
 	model = Post
@@ -383,7 +344,7 @@ def share_post(request, post_id, author_id):
 				return redirect('Profile:view_posts', author_share.id)
 			else:
 				print(form.errors)
-		
+
 	except:
 		# Sharing remote post
 		for connection in Connection.objects.all():
@@ -404,7 +365,7 @@ def share_post(request, post_id, author_id):
 				post.save()
 				return redirect('Profile:view_posts', request.user.author.id)
 
-		
+
 
 def view_github_activity(request):
 	#get the current user's github username if available
@@ -496,6 +457,7 @@ def post_github(request):
 
 
 def view_profile(request, author_id):
+
 	user = Author.objects.get(user__username=request.user.username)
 	local = True
 
@@ -526,18 +488,21 @@ def view_profile(request, author_id):
 
 	following_status = user.following.filter(id=author_id).exists()
 	follower_status = user.followers.filter(id=author_id).exists()
+
+
 	if following_status or follower_status:
 		follow_status = True
 	else:
 		follow_status = False
-	friend_status = user.friends.filter(id=author_id).exists()
+	# A and B are friends <=> A follows B and B follows A
+	friend_status = follower_status and following_status
 
 	if request.method == "GET":
-		return render(request, 'profile/view_profile.html', {'author': found_author, 'posts': posts, 'friend_status': friend_status, 'follow_status': follow_status, 'local': local})
+		return render(request, 'profile/view_profile.html', {'author': found_author, 'posts': posts, 'friend_status': friend_status, 'following_status': following_status,
+					'follower_status': follower_status, 'local': local})
 
-def friend_request(request, author_id):
+def follow(request, author_id):
 	# Create request object
-
 	sender = request.user.author
 
 	local = True
@@ -553,7 +518,7 @@ def friend_request(request, author_id):
 					# Found a match!
 					if author_id == author['id']:
 						receiver = author
-						
+
 						post_data = {}
 						post_data['type'] = 'follow'
 						post_data['summary'] = sender.displayName + ' wants to follow ' + receiver['displayName']
@@ -566,26 +531,35 @@ def friend_request(request, author_id):
 						# print(url)
 						post_response = requests.post(url, json.dumps(post_data), headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
 						print(post_response.content)
-	
+
 	if local:
-		# check if request has already been made
 
-		# print("Receiver = ", receiver.displayName)
-
+		# Create friend request
 		friend_request = FriendRequest(sender=sender, receiver=receiver)
 
 		# Add to database
 		friend_request.save()
+
+		# Send friend request object to database
+
+
 		# Add the receiver to the sender's following list
 		sender.following.add(receiver)
 		receiver.followers.add(sender)
 
 	return redirect('Profile:view_profile', author_id)
 
-def remove_friend(request, author_id):
+def unfollow(request, author_id):
 	user = Author.objects.get(user__username=request.user.username)
-	to_delete = Author.objects.get(id=author_id)
-	user.friends.remove(to_delete)
+	user_following = Author.objects.get(id=author_id)
+
+
+	# Remove connection
+
+	# ToDo: what other models must be updated? See email
+	user.following.remove(user_following)
+	user_following.followers.remove(user)
+
 
 	return redirect('Profile:view_profile', author_id)
 
@@ -641,7 +615,7 @@ def like_post(request, author_id, post_id):
 		# 			host = like['author']['host']
 		# 			liked = True
 		# 			break
-		
+
 		# if not liked:
 		# 	url = host + f'/service/author/{author_id}/inbox/'
 		# 	post_data = {}
@@ -652,7 +626,7 @@ def like_post(request, author_id, post_id):
 		# 	print(post_data)
 
 		return redirect('Profile:view_post', author_id, post_id)
-		
+
 
 
 

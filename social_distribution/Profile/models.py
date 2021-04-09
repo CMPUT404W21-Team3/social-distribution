@@ -22,9 +22,11 @@ class Author(models.Model):
     birth_date = models.DateField(null=True, blank=True)
     github = models.CharField(max_length=50, blank=True)
     url = models.CharField(max_length=300, default="http://localhost:8000/", null=True)
-    friends = models.ManyToManyField('self')
+
     following = models.ManyToManyField('self', symmetrical=False, related_name="following_list")
     followers = models.ManyToManyField('self', symmetrical=False, related_name="follower_list")
+
+
     posts_cleared = models.ManyToManyField('Post', related_name="posts_cleared")
     # Can't find an effective way of setting displayName for a remote author.
     # Because remote author doesn't have a "user" model linked.
@@ -33,7 +35,7 @@ class Author(models.Model):
 
     remote_friends_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True)
     remote_following_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True)
-    remote_followers_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True) 
+    remote_followers_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True)
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
@@ -71,7 +73,7 @@ class Author(models.Model):
             return self.remote_host
         else:
             return Site.objects.get_current().domain
-            
+
 
     @host.setter
     def host(self, value):
