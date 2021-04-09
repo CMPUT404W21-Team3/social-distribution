@@ -51,69 +51,17 @@
   {% for f_r in following_remote %}
     <!-- <li>{{ f_r.displayName }} </li><a href="">View Profile (Not Implemnted)</a> -->
     <li>{{ f_r }} </li><a href="">View Profile (Not Implemnted)</a>
-  {% endfor %}  
+  {% endfor %}
 
-  <h2>Pending Requests</h2>
-  <!-- List pending friend requests -->
-  {% if friend_requests %}
-  <div class="row row-cols-auto">
-    {% for request in friend_requests %}
-      <div class="col">
-          <div class="card h-100 text-center">
-            <div class="card-body">
-              {% if request.sender %}
-              <h3 class="card-title">{{request.sender.displayName}}</h3>
-              <div class="container">
-                <div class="row">
-                  <div class="col-md-auto">
-                    <form class="request" action="/accept" method="POST">
-                      {% csrf_token %}
-                      <input type="hidden" name="sender" id="sender" value="{{ request.sender.displayName }}" />
-                      <button class="btn btn-success btn-sm" type="submit">Accept</button>
-                    </form>
-                  </div>
-                  <div class="col-md-auto">
-                    <form class="request" action="/decline" method="POST">
-                      {% csrf_token %}
-                      <input type="hidden" name="sender" id="sender" value="{{ request.sender.displayName }}" />
-                      <button class="btn btn-success btn-sm" type="submit">Decline</button>
-                    </form>
-                  </div>
-                </div>
-              </div>
-              {% else %}
-              <h3 class="card-title">{{request.remote_username}}</h3>
-              <div class="container">
-                <div class="row">
-                  <div class="col-md-auto">
-                    <form class="request" action="/accept" method="POST">
-                      {% csrf_token %}
-                      <input type="hidden" name="remote" id="remote" value="remote"/>
-                      <input type="hidden" name="sender" id="sender" value="{{ request.remote_sender }}" />
-                      <button class="btn btn-success btn-sm" type="submit">Accept</button>
-                    </form>
-                  </div>
-                  <div class="col-md-auto">
-                    <form class="request" action="/decline" method="POST">
-                      {% csrf_token %}
-                      <input type="hidden" name="remote" id="remote" value="remote"/>
-                      <input type="hidden" name="sender" id="sender" value="{{ request.remote_sender }}" />
-                      <button class="btn btn-success btn-sm" type="submit">Decline</button>
-                    </form>
-                  </div>
-                </div>
-              </div>
-              {% endif %}
-            </div>
-          </div>
-      </div>
-    {% endfor %}
+  <h2>@{{user.username }} Followers</h2>
+
+  {% for f in followers %}
+    <li>{{ f.displayName }} </li><a href="{% url 'Profile:view_profile' author_id=f.id %}">View Profile</a>
+  {% endfor %}
+
+  <div>
+    <a href="/" class="btn btn-outline-success return">Return</a>
   </div>
-  {% else %}
-      <p>No requests</p>
-  {% endif %}
-
-  <a href="/" class="btn btn-outline-success return">Return</a>
 
 </div>
 {% endblock %}
