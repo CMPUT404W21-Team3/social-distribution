@@ -642,8 +642,8 @@ def inbox(request, author_id):
 				except Exception as e:
 					return Response({"message":e}, status=status.HTTP_400_BAD_REQUEST)
 			# UNAUTHORIZED or SOMETHING WRONG
-			else:
-				return Response({"message": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
+# 			else:
+# 				return Response({"message": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
 
 		else:
 			return Response(status=status.HTTP_400_BAD_REQUEST)
