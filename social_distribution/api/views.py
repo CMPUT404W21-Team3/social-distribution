@@ -181,7 +181,10 @@ def posts(request, author_id):
 def friends(request, author_id):
 	""" Retrieve friends for an author or create a new one """
 	if request.method == 'GET':
-		friends = Author.objects.get(id=author_id).friends.all()
+		following = Author.objects.get(id=author_id).following.all()
+		followers = Author.objects.get(id=author_id).followers.all()
+		friends = following & followers
+
 		serializer = AuthorSerializer(friends, many=True)
 		return Response(serializer.data)
 	else:
@@ -193,7 +196,7 @@ def friend(request, author_id, friend_id):
 
 	try:
 		author = Author.objects.get(id=author_id)
-		friend = Author.objects.get(id=author_id).friends.get(id=friend_id)
+		friend = Author.objects.get(id=author_id).following.get(id=friend_id)
 	except Author.DoesNotExist:
 		return HttpResponse(status=404)
 
@@ -517,8 +520,8 @@ def inbox(request, author_id):
 		if author_id == str(request.user.author.id):
 			author = Author.objects.get(id=author_id)
 			private_posts = Post.objects.filter(to_author=author_id)
-			friends = author.friends.all()
-			friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends)
+			following = author.following.all()
+			friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=following)
 			posts = private_posts | friends_posts
 			posts = posts.difference(author.posts_cleared.all()).order_by('-timestamp')
 			serializer = PostSerializer(posts, many=True)
@@ -532,8 +535,8 @@ def inbox(request, author_id):
 				if author_id == str(Author.objects.get(user__username=username).id):
 					author = Author.objects.get(id=author_id)
 					private_posts = Post.objects.filter(to_author=author_id)
-					friends = author.friends.all()
-					friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends)
+					following = author.following.all()
+					friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=following)
 					posts = private_posts | friends_posts
 					posts = posts.difference(author.posts_cleared.all()).order_by('-timestamp')
 					serializer = PostSerializer(posts, many=True)
@@ -613,7 +616,7 @@ def inbox(request, author_id):
 					return Response({"message":"something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
 
 			# LOCAL SENDER
-			elif sender_id in [str(x) for x in receiver.friends.all().values('id')]:
+		elif sender_id in [str(x) for x in receiver.following.all().values('id')]:
 				sender_local = Author.objects.get(id=sender_id)
 				try:
 					if data["visibility"].upper() in "FRIENDS" + "PRIVATE" and author_id == data["receiver"]:
@@ -657,8 +660,8 @@ def inbox(request, author_id):
 		if author_id == str(request.user.author.id):
 			author = Author.objects.get(id=author_id)
 			private_posts = Post.objects.filter(to_author=author_id)
-			friends = author.friends.all()
-			friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends)
+			following = author.following.all()
+			friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=following)
 			posts = private_posts | friends_posts
 			friend_requests = FriendRequest.objects.filter(receiver=author)
 
@@ -677,8 +680,8 @@ def inbox(request, author_id):
 				if follower_id == str(Author.objects.get(user__username=username).id):
 					author = Author.objects.get(id=author_id)
 					private_posts = Post.objects.filter(to_author=author_id)
-					friends = author.friends.all()
-					friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends)
+					following = author.following.all()
+					friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=following)
 					posts = private_posts | friends_posts
 					friend_requests = FriendRequest.objects.filter(receiver=author)
 
