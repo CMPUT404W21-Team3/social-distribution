@@ -7,7 +7,10 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('Search', '0001_initial'),
+        ('Profile', '0001_initial'),
+
     ]
 
     operations = [
