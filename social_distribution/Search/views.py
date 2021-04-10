@@ -21,7 +21,7 @@ def results(request):
 
     for connection in Connection.objects.all():
         url = connection.url + 'service/authors'
-        response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+        response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
         if response.status_code == 200:
             for author in response.json()['items']:
                 if query in author['displayName']:
