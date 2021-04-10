@@ -658,7 +658,7 @@ def inbox(request):
 	following = author.following.all()
 	# Friends posts contain all the post from the people you follow
 	friend_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=following)
-	posts = private_posts | friends_posts
+	posts = private_posts | friend_posts
 
 	friend_requests = FriendRequest.objects.filter(receiver=author)
 
