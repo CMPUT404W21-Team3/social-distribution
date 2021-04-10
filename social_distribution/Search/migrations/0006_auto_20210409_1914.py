@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('Profile', '0002_auto_20210409_1914'),
+        ('Profile', '0028_auto_20210409_1914'),
         ('Search', '0005_friendrequest_remote_username'),
     ]
 
