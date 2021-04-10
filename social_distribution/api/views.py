@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from .serializers import AuthorSerializer, PostSerializer, CommentSerializer, LikeSerializer, PostLikeSerializer, CommentLikeSerializer, FriendRequestSerializer
 from Profile.models import Author, Post, Comment, PostLike, CommentLike
 from Search.models import FriendRequest
+from .models import Connection
 
 import traceback
 
@@ -318,7 +319,7 @@ def request(request, author_id, sender_id):
 				# GET the remote friend requests
 					for connection in Connection.objects.all():
 						url = connection.url + 'service/authors'
-						response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
+						response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 						for author9 in response.json()['items']:
 							if author9['id'] == sender_id:
 								request_url = f'{connection.url}service/author/{sender_id}/follow_remote_3/{author_id}/{our_host}'
