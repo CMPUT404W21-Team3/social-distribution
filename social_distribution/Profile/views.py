@@ -59,12 +59,12 @@ def home(request):
 
 	for connection in Connection.objects.all():
 		url = connection.url + 'service/authors/'
-		response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
+		response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 		if response.status_code == 200:
 			for author in response.json()['items']:
 				author_id = author['id']
 				new_url = f'{connection.url}service/author/{author_id}/posts/'
-				response = requests.get(new_url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
+				response = requests.get(new_url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 				if response.status_code == 200:
 					posts_remote = response.json()['posts']
 					if len(posts) > 0:
@@ -169,7 +169,7 @@ def list(request):
 		if friends_remote:
 			for i in range(len(friends_remote)):
 				url = f'{connection.url}/service/author/' + friends_remote[i] + '/'
-				response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
+				response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 
 				if response.status_code == 200:
 					friends_remote[i] = response.json()
@@ -179,7 +179,7 @@ def list(request):
 		if following_remote:
 			for i in range(len(following_remote)):
 				url = f'{connection.url}/service/author/' + following_remote[i] + '/'
-				response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
+				response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 
 				if response.status_code == 200:
 					following_remote[i] = response.json()
@@ -245,7 +245,7 @@ def view_post(request, author_id, post_id):
 		# Remote post
 		for connection in Connection.objects.all():
 			url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/'
-			response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
+			response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 			if response.status_code == 200:
 				post = response.json()
 				liked = False # TODO need to get like status
@@ -349,7 +349,7 @@ def share_post(request, post_id, author_id):
 		# Sharing remote post
 		for connection in Connection.objects.all():
 			url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/'
-			response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
+			response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 			if response.status_code == 200:
 				post_j = response.json()
 				# author.save()
@@ -471,14 +471,14 @@ def view_profile(request, author_id):
 		local = False
 		for connection in Connection.objects.all():
 			url = connection.url + 'service/authors/'
-			response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
+			response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 			if response.status_code == 200:
 				for author in response.json()['items']:
 					# Found a match!
 					if author_id == author['id']:
 						# Grab posts
 						url = connection.url + 'service/author/' + author_id + '/posts/'
-						response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
+						response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 						if response.status_code == 200:
 							posts = response.json()['posts']
 
@@ -512,7 +512,7 @@ def follow(request, author_id):
 		local = False
 		for connection in Connection.objects.all():
 			url = connection.url + 'service/authors/'
-			response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
+			response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 			if response.status_code == 200:
 				for author in response.json()['items']:
 					# Found a match!
@@ -529,7 +529,7 @@ def follow(request, author_id):
 						# Send request to remote
 						url = connection.url + 'service/author/' + receiver['id'] + '/inbox/'
 						# print(url)
-						post_response = requests.post(url, json.dumps(post_data), headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
+						post_response = requests.post(url, json.dumps(post_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 						print(post_response.content)
 
 	if local:
@@ -606,7 +606,7 @@ def like_post(request, author_id, post_id):
 		# host = None
 		# for connection in Connection.objects.all():
 		# 	url = connection.url() + f'/service/author/{author_id}/post/{post_id}/likes/'
-		# 	response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
+		# 	response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 		# 	likes = response.json()
 		# 	print(likes)
 		# 	liked = False
