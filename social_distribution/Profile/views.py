@@ -253,7 +253,7 @@ def view_post(request, author_id, post_id):
 				comments = post['comments']
 
 				if post['contentType'] == Post.ContentType.PNG or post['contentType'] == Post.ContentType.JPEG:
-					post['content'] = post['content'][len(post['contentType']) + 6:] # remove "data:image/jpeg;base64," or "data:image/png;base64," from content to leave just b64 encoding
+					post['content'] = post['content'].split(',')[-1] # remove "data:image/jpeg;base64," or "data:image/png;base64," from content to leave just b64 encoding
 					return HttpResponse(b64decode(post['content']), content_type=post['contentType'])
 
 				if post['contentType'] == Post.ContentType.MARKDOWN:
