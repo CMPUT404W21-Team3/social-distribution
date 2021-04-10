@@ -8,27 +8,35 @@ from django.dispatch import receiver
 from django.utils import timezone
 from django.forms import ModelForm
 from django.urls import reverse
+from django.core.validators import int_list_validator
 
 
 # https://simpleisbetterthancomplex.com/tutorial/2016/07/22/how-to-extend-django-user-model.html#onetoone
 # https://stackoverflow.com/questions/16925129/generate-unique-id-in-django-from-a-model-field/30637668
 
 class Author(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='author')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='author', null=True)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     bio = models.TextField(max_length=500, blank=True)
     location = models.CharField(max_length=30, blank=True)
     birth_date = models.DateField(null=True, blank=True)
     github = models.CharField(max_length=50, blank=True)
     url = models.CharField(max_length=300, default="http://localhost:8000/", null=True)
-    friends = models.ManyToManyField('self')
+
     following = models.ManyToManyField('self', symmetrical=False, related_name="following_list")
     followers = models.ManyToManyField('self', symmetrical=False, related_name="follower_list")
+
+
     posts_cleared = models.ManyToManyField('Post', related_name="posts_cleared")
+    friend_requests_cleared = models.ManyToManyField('Search.FriendRequest', related_name="friend_requests_cleared")
     # Can't find an effective way of setting displayName for a remote author.
     # Because remote author doesn't have a "user" model linked.
     remote_host = models.CharField(max_length=50, blank=True)
     remote_username = models.CharField(max_length=50, blank=True)
+
+    remote_friends_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True)
+    remote_following_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True)
+    remote_followers_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True)
 
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
@@ -56,13 +64,17 @@ class Author(models.Model):
         # return Site.objects.get_current().domain + reverse('api:author', kwargs={'author_id':self.id})
         return self.host + 'author/' + str(self.id) + '/'
 
+    @url.setter
+    def url(self, value):
+        self.url = value
+
     @property
     def host(self):
         if self.remote_host:
             return self.remote_host
         else:
             return Site.objects.get_current().domain
-            
+
 
     @host.setter
     def host(self, value):
@@ -77,12 +89,14 @@ class Post(models.Model):
     origin = models.CharField(max_length=200, blank=True)
     description = models.TextField(blank=True)
 
+    remote_url = models.CharField(max_length=200, blank=True, null=True)
+
     class ContentType(models.TextChoices):
         MARKDOWN = 'text/markdown' # common mark
         PLAIN = 'text/plain' # UTF-8
         BASE64 = 'application/base64'
-        PNG = 'image/png' # embedded png
-        JPEG = 'image/jpeg' # embedded jpeg
+        PNG = 'image/png;base64' # embedded png
+        JPEG = 'image/jpeg;base64' # embedded jpeg
 
     contentType = models.CharField(
         max_length=40,
@@ -92,6 +106,9 @@ class Post(models.Model):
 
     content = models.TextField(blank=True)
     author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name="posts")
+
+    remote_author_id = models.CharField(max_length=200, blank=True, null=True)
+    remote_author_displayName = models.CharField(max_length=200, blank=True, null=True)
 
     categories = models.ManyToManyField('PostCategory', blank=True)
     #comments_count = models.IntegerField(default=0)

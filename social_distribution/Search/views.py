@@ -10,6 +10,8 @@ from .models import FriendRequest
 from Profile.models import Author
 from api.models import Connection
 
+DEFAULT_HEADERS = {'Referer': 'https://team3-socialdistribution.herokuapp.com/', 'Mode': 'no-cors'}
+
 # Create your views here.
 def results(request):
     query = request.POST.get('query', '')
@@ -19,10 +21,10 @@ def results(request):
 
     for connection in Connection.objects.all():
         url = connection.url + 'service/authors'
-        response = requests.get(url, headers={"mode":"no-cors"}, auth=('CitrusNetwork', 'oranges'))
-        for author in response.json()['items']:
-            print(author)
-            if query in author['displayName']:
-                authors.append(author)
+        response = requests.get(url, headers=DEFAULT_HEADERS, auth=('CitrusNetwork', 'oranges'))
+        if response.status_code == 200:
+            for author in response.json()['items']:
+                if query in author['displayName']:
+                    authors.append(author)
 
     return render(request, 'results.html', {'query': query, 'authors': authors})
