@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from Profile.models import Author, Post, Comment, PostLike, CommentLike
+from Profile.models import Author, Post, Comment, PostLike, CommentLike, Inbox
 from Search.models import FriendRequest
 
 from django.contrib.auth.models import User
@@ -52,6 +52,41 @@ class CommentSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
+        return data
+
+
+class InboxSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Inbox
+        fields = ( 'type', )
+
+    # https://stackoverflow.com/questions/41312558/django-rest-framework-post-nested-objects
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['type'] = "inbox"
+
+        author = Author.objects.get(inbox__id=instance.id)
+        data['author'] = author.url
+
+
+        # https://stackoverflow.com/questions/54793036/drf-serializer-for-heterogneous-list-of-related-models
+        items = []
+
+        for item in instance.follow_items.all():
+            items.append(FriendRequestSerializer(item).data)
+
+        for item in instance.post_items.all():
+            items.append(PostSerializer(item).data)
+
+        for item in instance.post_like_items.all():
+            items.append(PostLikeSerializer(item).data)
+
+
+
+        data['items'] = items
+
+
+
         return data
 
 

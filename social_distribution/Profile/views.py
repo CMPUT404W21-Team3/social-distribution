@@ -18,7 +18,7 @@ from django.http import HttpResponseRedirect
 
 from .forms import UserForm, AuthorForm, SignUpForm, PostForm, ImagePostForm, CommentForm
 
-from .models import Author, Post, CommentLike, PostLike
+from .models import Author, Post, CommentLike, PostLike, Inbox
 from Search.models import FriendRequest
 from api.models import Connection
 from api.serializers import AuthorSerializer, PostSerializer
@@ -133,6 +133,7 @@ def signup(request):
 			user.refresh_from_db()
 			user.is_active = False  # load the profile instance created by the signal
 			user.save()
+
 			messages.success(request, 'Your user was successfully created!')
 			return redirect('Profile:login')
 	else:
@@ -272,9 +273,16 @@ class CreatePostView(generic.CreateView):
 
 	def form_valid(self, form):
 		author = self.request.user.author
-		self.success_url = '/author/' + str(author.id) + '/view_posts/'
+		self.success_url = '/author/' + str(author.id) + '/view_posts'
 		form.instance.author = author
-		return super().form_valid(form)
+
+		# https://stackoverflow.com/questions/32998300/django-createview-how-to-perform-action-upon-save
+		response = super().form_valid(form)
+
+		for follower in author.followers.all():
+			follower.inbox.post_items.add(form.instance)
+
+		return response
 
 @login_required(login_url='/login/')
 def new_image_post(request):
@@ -288,6 +296,7 @@ def new_image_post(request):
 			image_post.author = request.user.author
 			image_post.unlisted = True
 			image_post.save()
+
 			form.save_m2m() # https://docs.djangoproject.com/en/3.1/topics/forms/modelforms/#the-save-method
 			return redirect('Profile:view_posts', author_id=request.user.author.id)
 
@@ -502,7 +511,6 @@ def view_profile(request, author_id):
 					'follower_status': follower_status, 'local': local})
 
 def follow(request, author_id):
-	# Create request object
 	sender = request.user.author
 
 	local = True
@@ -533,15 +541,14 @@ def follow(request, author_id):
 						print(post_response.content)
 
 	if local:
-
 		# Create friend request
 		friend_request = FriendRequest(sender=sender, receiver=receiver)
 
 		# Add to database
 		friend_request.save()
 
-		# Send friend request object to database
-
+		# Send friend request object to inbox
+		receiver.inbox.follow_items.add(friend_request)
 
 		# Add the receiver to the sender's following list
 		sender.following.add(receiver)
@@ -568,7 +575,7 @@ def unfollow(request, author_id):
 def like_post(request, author_id, post_id):
 	current_user = request.user
 
-	post = Post.objects.filter(id=post_id, author__id=author_id)
+	post = Post.objects.filter(id=post_id, author__id=author_id).get()
 	if post:
 		# Local post
 		liked = False
@@ -577,11 +584,17 @@ def like_post(request, author_id, post_id):
 			obj = PostLike.objects.get(post_id=post, author__id=request.user.author.id)
 		except:
 			author = Author.objects.get(id=request.user.author.id)
+
 			like_instance = PostLike(post_id=post, author=author)
 			like_instance.save()
 			post.likes_count = post.likes_count + 1
 			post.save()
 			liked = True
+
+			# Add to inbox
+			content_author = Author.objects.get(id=author_id)
+			content_author.inbox.post_like_items.add(like_instance)
+
 		else:
 			post.likes_count -= 1
 			post.save()
@@ -653,30 +666,45 @@ def private_post(request, author_id):
 
 def inbox(request):
 	author = Author.objects.get(id=request.user.author.id)
+
 	# Private means direct DM or from someone is not your friend (yet)
 	private_posts = Post.objects.filter(to_author=request.user.author.id)
 	following = author.following.all()
+
 	# Friends posts contain all the post from the people you follow
-	friend_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=following)
+	friend_posts = author.inbox.post_items.all()
 	posts = private_posts | friend_posts
 
-	friend_requests = FriendRequest.objects.filter(receiver=author)
+	# Grab friend requests from inbox
+	friend_requests = author.inbox.follow_items.all()
+
+	# Grab likes from inbox
+	likes = author.inbox.post_like_items.all()
+	print(likes)
 
 	if request.method == "GET":
 		inbox_option = request.GET.get("inbox_option")
 		if inbox_option == "All":
 			posts = posts.order_by('-timestamp')
 		elif inbox_option == "Cleared":
-			posts = author.posts_cleared.all().order_by('-timestamp')
-			friend_requests = author.friend_requests_cleared.all()
+			posts = author.inbox.post_items_cleared.all().order_by('-timestamp')
+			friend_requests = author.inbox.follow_items_cleared.all()
+			likes = author.inbox.post_like_items_cleared.all()
 		else:
-			posts = posts.difference(author.posts_cleared.all()).order_by('-timestamp')
-			friend_requests = friend_requests.difference(author.friend_requests_cleared.all())
-		return render(request, 'profile/posts.html', {'posts':posts, 'author':author, 'friend_requests': friend_requests, 'inbox':True})
+			posts = posts.difference(author.inbox.post_items_cleared.all()).order_by('-timestamp')
+			friend_requests = friend_requests.difference(author.inbox.follow_items_cleared.all())
+			likes = likes.difference(author.inbox.post_like_items_cleared.all())
+
+		print("Requests = ", friend_requests)
+		return render(request, 'profile/inbox.html', {'posts':posts, 'author':author, 'friend_requests': friend_requests, 'likes': likes})
 	elif request.method == "POST":
 		if "clear_signal" in request.POST:
-			author.posts_cleared.add(*posts)
-			author.friend_requests_cleared.add(*friend_requests)
-		posts = posts.difference(author.posts_cleared.all()).order_by('-timestamp')
-		friend_requests = friend_requests.difference(author.friend_requests_cleared.all())
-		return render(request, 'profile/posts.html', {'posts':posts, 'author':author, 'friend_requests': friend_requests, 'inbox':True})
+			author.inbox.post_items_cleared.add(*posts)
+			author.inbox.follow_items_cleared.add(*friend_requests)
+			author.inbox.post_like_items_cleared.add(*likes)
+
+		posts = posts.difference(author.inbox.post_items_cleared.all()).order_by('-timestamp')
+		friend_requests = friend_requests.difference(author.inbox.follow_items_cleared.all())
+		likes = likes.difference(author.inbox.post_like_items_cleared.all())
+
+		return render(request, 'profile/inbox.html', {'posts': posts, 'author': author, 'friend_requests': friend_requests, 'likes': likes})

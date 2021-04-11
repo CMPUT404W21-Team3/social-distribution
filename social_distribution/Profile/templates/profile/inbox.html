@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <a href="/" class="btn btn-outline-success post-button" role="button">Back</a>
+    <form action="{% url 'Profile:inbox' %}?inbox_option=New" method="POST">
+        {% csrf_token %}
+        <input type="hidden" id="clear_signal" name="clear_signal" value="clear_signal">
+        <button type="submit" class="btn btn-outline-danger post-button" id="clear_button">Clear</button>
+    </form>
+    <form class="form-inline" method="GET">
+        <div class="form-group">
+            <select class="form-select form-select-sm" id="inbox_option" name="inbox_option">
+                <option>New</option>
+                <option>Cleared</option>
+                <option>All</option>
+            </select>
+        <button type="submit" class="btn btn-secondary btn-sm">Go</button>
+        </div>
+    </form>
+
+    {% if friend_requests %}
+      <h2 class="inbox-section">Requests</h2>
+      <p class="request-pending h6">{{friend_requests.count}} new follows</p>
+      <div class="row row-cols-auto" id="inbox-requests-div">
+        {% for request in friend_requests %}
+          <div class="col-sm-3">
+              <div class="card h-100 text-center">
+                <div class="card-body">
+                  {% if request.sender %}
+                    <h4 class="card-title">{{request.sender.displayName}} is now following you</h4>
+                  {% else %}
+                    <h4 class="card-title">{{request.remote_username}} is now following you</h4>
+                  {% endif %}
+                </div>
+              </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+
+    {% if posts %}
+        <h2 class="inbox-section">New Posts</h2>
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            {% for post in posts %}
+                {% if post.visibility == 'PRIVATE' %}
+                    <div class="col">
+                        <div class="card h-100" style="border: 1px solid red">
+                            <div class="card-body">
+                                <h5 class="card-title"><a href="/author/{{post.author_id}}/view_post/{{post.id}}">{{post.title}}</a></h5>
+                                <h6 class="card-subtitle mb-2 text-muted">Author: @{{post.author.displayName}}</h6>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                  <div class="col">
+                      <div class="card h-100">
+                          <div class="card-body">
+                            {% if post.remote_url %}
+                            <h5 class="card-title"><a href="{{post.remote_url}}">{{post.title}}</a></h5>
+                            <h6 class="card-subtitle mb-2 text-muted">Author: @{{post.remote_author_displayName}}</h6>
+                            {% else %}
+                            <h5 class="card-title"><a href="/author/{{post.author_id}}/view_post/{{post.id}}">{{post.title}}</a></h5>
+                            <h6 class="card-subtitle mb-2 text-muted">Author: @{{post.author.displayName}}</h6>
+                            {% endif %}
+                          </div>
+                      </div>
+                  </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if likes %}
+        <h2 class="inbox-section">New Likes</h2>
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            {% for like in likes %}
+              <div class="col">
+                  <div class="card h-100" style="border: 1px solid red">
+                      <div class="card-body">
+                          <h5 class="card-title"><a href="/author/{{post.author_id}}/view_post/{{post.id}}">{{like.author.displayName}} has liked your post!</a></h5>
+                      </div>
+                  </div>
+              </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+
+{% endblock %}
