@@ -8,7 +8,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework import status
 from rest_framework.response import Response
 
-from .serializers import AuthorSerializer, PostSerializer, CommentSerializer, LikeSerializer, PostLikeSerializer, CommentLikeSerializer, FriendRequestSerializer
+from .serializers import AuthorSerializer, PostSerializer, CommentSerializer, LikeSerializer, PostLikeSerializer, CommentLikeSerializer, FriendRequestSerializer, InboxSerializer
 from Profile.models import Author, Post, Comment, PostLike, CommentLike
 from Search.models import FriendRequest
 from .models import Connection
@@ -519,14 +519,12 @@ def inbox(request, author_id):
 				pass
 		# user already authenticated on the web
 		if author_id == str(request.user.author.id):
-			author = Author.objects.get(id=author_id)
-			private_posts = Post.objects.filter(to_author=author_id)
-			following = author.following.all()
-			friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=following)
-			posts = private_posts | friends_posts
-			posts = posts.difference(author.posts_cleared.all()).order_by('-timestamp')
-			serializer = PostSerializer(posts, many=True)
-			return Response(serializer.data)
+
+			inbox = Author.objects.get(id=author_id).inbox
+			inbox_serializer = InboxSerializer(inbox)
+
+			return Response(inbox_serializer.data)
+
 		# for example autheticating via Curl
 		else:
 			username = request.data['username']
@@ -534,14 +532,12 @@ def inbox(request, author_id):
 			user = authenticate(username=username, password=password)
 			if user is not None:
 				if author_id == str(Author.objects.get(user__username=username).id):
-					author = Author.objects.get(id=author_id)
-					private_posts = Post.objects.filter(to_author=author_id)
-					following = author.following.all()
-					friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=following)
-					posts = private_posts | friends_posts
-					posts = posts.difference(author.posts_cleared.all()).order_by('-timestamp')
-					serializer = PostSerializer(posts, many=True)
-					return Response(serializer.data)
+
+					inbox = Author.objects.get(id=author_id).inbox
+					inbox_serializer = InboxSerializer(inbox)
+
+					return Response(inbox_serializer.data)
+
 				else:
 					return Response(status=status.HTTP_401_UNAUTHORIZED)
 			return Response(status=status.HTTP_401_UNAUTHORIZED)
@@ -609,6 +605,9 @@ def inbox(request, author_id):
 						)
 						instance.categories.set(data["categories"])
 						instance.save()
+
+
+
 						return Response({'message':'success'}, status=status.HTTP_200_OK)
 					else:
 						return Response({"message": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
@@ -616,7 +615,7 @@ def inbox(request, author_id):
 					traceback.print_exc()
 					return Response({"message":"something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
 
-			# LOCAL SENDER
+		# LOCAL SENDER
 		elif sender_id in [str(x) for x in receiver.following.all().values('id')]:
 				sender_local = Author.objects.get(id=sender_id)
 				try:
@@ -656,17 +655,16 @@ def inbox(request, author_id):
 			else:
 				pass
 		if author_id == str(request.user.author.id):
-			author = Author.objects.get(id=author_id)
-			private_posts = Post.objects.filter(to_author=author_id)
-			following = author.following.all()
-			friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=following)
-			posts = private_posts | friends_posts
-			friend_requests = FriendRequest.objects.filter(receiver=author)
 
-			author.posts_cleared.add(*posts)
-			author.friend_requests_cleared.add(*friend_requests)
-			posts = posts.difference(author.posts_cleared.all())
-			friend_requests = friend_requests.difference(author.friend_requests_cleared.all())
+			author = Author.objects.get(id=author_id)
+
+			posts = author.inbox.post_items
+			requests = author.inbox.follow_items
+			likes = author.inbox.post_like_items
+
+			author.inbox.post_items_cleared.add(*posts)
+			author.inbox.follow_items_cleared.add(*friend_requests)
+			author.inbox.post_like_items_cleared.add(*likes)
 
 			return Response(status=status.HTTP_204_NO_CONTENT)
 		else:
@@ -677,16 +675,14 @@ def inbox(request, author_id):
 			if user is not None:
 				if follower_id == str(Author.objects.get(user__username=username).id):
 					author = Author.objects.get(id=author_id)
-					private_posts = Post.objects.filter(to_author=author_id)
-					following = author.following.all()
-					friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=following)
-					posts = private_posts | friends_posts
-					friend_requests = FriendRequest.objects.filter(receiver=author)
 
-					author.posts_cleared.add(*posts)
-					author.friend_requests_cleared.add(*friend_requests)
-					posts = posts.difference(author.posts_cleared.all())
-					friend_requests = friend_requests.difference(author.friend_requests_cleared.all())
+					posts = author.inbox.post_items
+					requests = author.inbox.follow_items
+					likes = author.inbox.post_like_items
+
+					author.inbox.post_items_cleared.add(*posts)
+					author.inbox.follow_items_cleared.add(*friend_requests)
+					author.inbox.post_like_items_cleared.add(*likes)
 
 					return Response(status=status.HTTP_204_NO_CONTENT)
 				else:

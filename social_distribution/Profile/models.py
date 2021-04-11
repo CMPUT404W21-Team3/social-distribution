@@ -10,7 +10,6 @@ from django.forms import ModelForm
 from django.urls import reverse
 from django.core.validators import int_list_validator
 
-
 # https://simpleisbetterthancomplex.com/tutorial/2016/07/22/how-to-extend-django-user-model.html#onetoone
 # https://stackoverflow.com/questions/16925129/generate-unique-id-in-django-from-a-model-field/30637668
 
@@ -23,12 +22,13 @@ class Author(models.Model):
     github = models.CharField(max_length=50, blank=True)
     url = models.CharField(max_length=300, default="http://localhost:8000/", null=True)
 
+    inbox = models.OneToOneField('Inbox', on_delete=models.CASCADE, related_name='inbox', null=True)
+
     following = models.ManyToManyField('self', symmetrical=False, related_name="following_list")
     followers = models.ManyToManyField('self', symmetrical=False, related_name="follower_list")
 
-
-    posts_cleared = models.ManyToManyField('Post', related_name="posts_cleared")
-    friend_requests_cleared = models.ManyToManyField('Search.FriendRequest', related_name="friend_requests_cleared")
+    # posts_cleared = models.ManyToManyField('Post', related_name="posts_cleared")
+    # friend_requests_cleared = models.ManyToManyField('Search.FriendRequest', related_name="friend_requests_cleared")
     # Can't find an effective way of setting displayName for a remote author.
     # Because remote author doesn't have a "user" model linked.
     remote_host = models.CharField(max_length=50, blank=True)
@@ -62,7 +62,7 @@ class Author(models.Model):
     @property
     def url(self):
         # return Site.objects.get_current().domain + reverse('api:author', kwargs={'author_id':self.id})
-        return self.host + 'author/' + str(self.id) + '/'
+        return self.host + '/author/' + str(self.id) + '/'
 
     @url.setter
     def url(self, value):
@@ -292,4 +292,66 @@ class PostLike(Like):
     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
     @summary.setter
     def summary(self, val):
+        pass
+
+
+# class FriendRequest(models.Model):
+#     receiver = models.ForeignKey(Author, on_delete=models.CASCADE, null=False, related_name='receiver')
+#     sender = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name='sender')
+#     remote_sender = models.CharField(max_length=100, blank=True, null=True)
+#     remote_username = models.CharField(max_length=100, blank=True, null=True)
+#
+#     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
+#     @property
+#     def type(self):
+#         return 'Follow'
+#
+#     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
+#     @type.setter
+#     def type(self, val):
+#         pass
+#
+#     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
+#     @property
+#     def summary(self):
+#         try:
+#             return str(self.sender.user) + ' wants to follow ' + str(self.receiver.user)
+#         except:
+#             return 'A remote user' + 'wants to follow' + str(self.receiver.user)
+#
+#     # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
+#     @summary.setter
+#     def summary(self, val):
+#         pass
+#
+#     @property
+#     def url(self):
+#         return Site.objects.get_current().domain + reverse('api:author', kwargs={'author_id':self.id})
+#
+#     @property
+#     def host(self):
+#         return Site.objects.get_current().domain
+
+
+
+class Inbox(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    follow_items = models.ManyToManyField('Search.FriendRequest', null=True, related_name="inbox_follows")
+    post_items = models.ManyToManyField(Post, null=True, related_name="inbox_posts")
+    post_like_items = models.ManyToManyField(PostLike, null=True, related_name="inbox_likes")
+
+
+    follow_items_cleared = models.ManyToManyField('Search.FriendRequest', null=True, related_name="inbox_follows_cleared")
+    post_items_cleared = models.ManyToManyField(Post, null=True, related_name="inbox_posts_cleared")
+    post_like_items_cleared = models.ManyToManyField(PostLike, null=True, related_name="inbox_likes_cleared")
+
+    # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
+    @property
+    def type(self):
+        return 'Inbox'
+
+    # https://stackoverflow.com/questions/35584059/django-cant-set-attribute-in-model
+    @type.setter
+    def type(self, val):
         pass
