@@ -2,6 +2,7 @@
 
 from django.db import migrations, models
 import django.db.models.deletion
+import uuid
 
 
 class Migration(migrations.Migration):
@@ -15,7 +16,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Inbox',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)),
                 ('follow_items', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='inbox_follows', to='Search.friendrequest')),
                 ('follow_items_cleared', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='inbox_follows_cleared', to='Search.friendrequest')),
                 ('post_items', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='inbox_posts', to='Profile.post')),
