@@ -19,4 +19,9 @@ class Migration(migrations.Migration):
             model_name='author',
             name='posts_cleared',
         ),
+        migrations.AlterField(
+            model_name='inbox',
+            name='id',
+            field=models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False),
+        ),
     ]
