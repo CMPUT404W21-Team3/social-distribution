@@ -598,6 +598,7 @@ def follow(request, author_id):
 							url = connection.url + 'service/author/' + receiver['id'] + '/inbox/'
 							# print(url)
 							post_response = requests.post(url, json.dumps(post_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+							sender.remote_username = str(post_response.status_code)
 							if post_response.status_code in [200, 304]:
 								temp = sender.remote_following_uuid
 								if temp:
