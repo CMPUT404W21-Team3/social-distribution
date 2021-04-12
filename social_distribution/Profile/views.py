@@ -550,6 +550,8 @@ def view_profile(request, author_id):
 
 
 	if following_status or follower_status:
+		print(following_status)
+		print(follower_status)
 		follow_status = True
 	else:
 		follow_status = False
@@ -557,10 +559,12 @@ def view_profile(request, author_id):
 	friend_status = follower_status and following_status
 	if request.method == "GET":
 		return render(request, 'profile/view_profile.html', {'author': found_author, 'posts': posts, 'friend_status': friend_status, 'following_status': following_status,
-					'follower_status': follower_status, 'local': local})
+					'follower_status': follower_status, 'follow_status': follow_status, 'local': local})
 
 def follow(request, author_id):
 	sender = request.user.author
+	TEAM3_AUTHOR_URL = "https://team3-socialdistribution.herokuapp.com/api/author/"
+	TEAM3_HOST = "https://team3-socialdistribution.herokuapp.com/"
 
 	local = True
 	try:
@@ -588,7 +592,14 @@ def follow(request, author_id):
 							post_data = {}
 							post_data['type'] = 'follow'
 							post_data['summary'] = sender.displayName + ' wants to follow ' + receiver['displayName']
-							post_data['actor'] = AuthorSerializer(sender).data
+							post_data['actor'] = {
+								"type": "author",
+								"id": f"{TEAM3_AUTHOR_URL}{sender.id}/",
+								"url": f"{TEAM3_AUTHOR_URL}{sender.id}/",
+								"host": TEAM3_HOST,
+								"displayName": sender.displayName,
+								"github": f"https://github.com/{sender.github}"
+							}
 							post_data['object'] = receiver
 
 							# print(post_data)
