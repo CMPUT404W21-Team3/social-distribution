@@ -14,7 +14,7 @@ class Search(models.Model):
 
 class FriendRequest(models.Model):
     receiver = models.ForeignKey(Author, on_delete=models.CASCADE, null=False, related_name='receiver')
-    sender = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name='sender')
+    sender = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, blank=True, related_name='sender')
     remote_sender = models.CharField(max_length=100, blank=True, null=True)
     remote_username = models.CharField(max_length=100, blank=True, null=True)
 
