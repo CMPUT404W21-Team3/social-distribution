@@ -147,7 +147,7 @@ def signup(request):
 	return render(request, 'profile/signup.html', {'form': form})
 
 
-def list(request):
+def friends_list(request):
 	user = Author.objects.get(user__username=request.user.username)
 
 	following = user.following.all()
@@ -317,8 +317,14 @@ class CreatePostView(generic.CreateView):
 				friend.inbox.post_items.add(form.instance)
 
 		# REMOTE: TODO (same logic)
-		remote_following = author.remote_following_uuid.strip().split(" ")
-		remote_followers = author.remote_followers_uuid.strip().split(" ")
+		if author.remote_following_uuid:
+			remote_following = author.remote_following_uuid.strip().split(" ")
+		else:
+			remote_following = []
+		if author.remote_followers_uuid:
+			remote_followers = author.remote_followers_uuid.strip().split(" ")
+		else:
+			remote_followers = []
 		remote_friends = list(set(remote_following) & set(remote_followers))
 
 		if form.instance.visibility == "FRIENDS":
@@ -341,7 +347,7 @@ class CreatePostView(generic.CreateView):
 								"id": f"{TEAM3_URL}author/{author.id}",
 								"authorID": str(author.id),
 								"host": TEAM3_URL,
-								"displayName": sender.displayName,
+								"displayName": author.displayName,
 								"url": f"{TEAM3_URL}author/{author.id}",
 								"github": f"https://github.com/{author.github}/"
 							},
@@ -431,9 +437,6 @@ def share_post(request, post_id, author_id):
 	
 	if request.method == "GET":
 		form = PostForm(instance=post, initial={'title': f'{post.title} ---Shared from {author_original}'})
-												# 'origin': post.origin + f'http://localhost:8000/author/{author_original.id}/view_post/{post_id}', \
-												# 'visibility': post.visibility})
-
 		return render(request, "profile/share_post.html", {'form':form})
 	else:
 		form = PostForm(data=request.POST)
@@ -450,9 +453,15 @@ def share_post(request, post_id, author_id):
 				for friend in friends:
 					friend.inbox.post_items.add(form.instance)
 
-			# REMOTE: TODO (same logic)
-			remote_following = author.remote_following_uuid.strip().split(" ")
-			remote_followers = author.remote_followers_uuid.strip().split(" ")
+			# REMOTE:
+			if author.remote_following_uuid:
+				remote_following = author.remote_following_uuid.strip().split(" ")
+			else:
+				remote_following = []
+			if author.remote_followers_uuid:
+				remote_followers = author.remote_followers_uuid.strip().split(" ")
+			else:
+				remote_followers = []
 			remote_friends = list(set(remote_following) & set(remote_followers))
 
 			if form.instance.visibility == "FRIENDS":
@@ -475,7 +484,7 @@ def share_post(request, post_id, author_id):
 									"id": f"{TEAM3_URL}author/{author.id}",
 									"authorID": str(author.id),
 									"host": TEAM3_URL,
-									"displayName": sender.displayName,
+									"displayName": author.displayName,
 									"url": f"{TEAM3_URL}author/{author.id}",
 									"github": f"https://github.com/{author.github}/"
 								},
@@ -493,27 +502,6 @@ def share_post(request, post_id, author_id):
 			return redirect('Profile:view_posts', author.id)
 		else:
 			print(form.errors)
-
-	# except:
-	# 	# Sharing remote post
-	# 	for connection in Connection.objects.all():
-	# 		url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/'
-	# 		response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-	# 		if response.status_code == 200:
-	# 			post_j = response.json()
-	# 			# author.save()
-	# 			post_j['title'] += "-- Shared from " + post_j['author']['displayName']
-	# 			post_j['author'] = request.user.author
-	# 			post_j.pop('categories', None)
-	# 			post_j.pop('comments', None)
-	# 			post_j.pop('count', None)
-	# 			post_j.pop('published', None)
-	# 			post_j['unlisted'] = 'False'
-	# 			print(post_j)
-	# 			post = Post.objects.create(**post_j)
-	# 			post.save()
-	# 			return redirect('Profile:view_posts', request.user.author.id)
-
 
 
 def view_github_activity(request):
