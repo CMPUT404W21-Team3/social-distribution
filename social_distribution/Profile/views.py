@@ -26,6 +26,7 @@ from api.serializers import AuthorSerializer, PostSerializer
 from .helpers import timestamp_beautify
 
 DEFAULT_HEADERS = {'Referer': 'https://team3-socialdistribution.herokuapp.com/', 'Mode': 'no-cors'}
+TEAM3_URL = "https://team3-socialdistribution.herokuapp.com/"
 
 # Create your views here.
 
@@ -45,16 +46,18 @@ def home(request):
 	# Grab self posts
 	self_posts = Post.objects.filter(author=request.user.author, unlisted=False).order_by('-timestamp')
 
-	# Grab posts from those who are following
-	following = Author.objects.get(user__username=request.user.username).following.all()
-	following_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=following).order_by('-timestamp')
+	# Grab posts from those who are your friends
+	author = Author.objects.get(user__username=request.user.username)
+	friends = author.following.all() & author.followers.all()
+	friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
 
 	# Merge posts, sort them
-	local_posts = public_posts | self_posts | following_posts
+	local_posts = public_posts | self_posts | friends_posts
 
 	posts = []
 	posts.append(local_posts)
 
+	# TODO: Grabbing remote friends posts.
 	remote_posts = []
 
 	for connection in Connection.objects.all():
@@ -307,8 +310,50 @@ class CreatePostView(generic.CreateView):
 		# https://stackoverflow.com/questions/32998300/django-createview-how-to-perform-action-upon-save
 		response = super().form_valid(form)
 
-		for follower in author.followers.all():
-			follower.inbox.post_items.add(form.instance)
+		# LOCAL: only send to inbox of those who are your friends.
+		friends = author.followers.all() & author.following.all()
+		if form.instance.visibility == "FRIENDS":
+			for friend in friends:
+				friend.inbox.post_items.add(form.instance)
+
+		# REMOTE: TODO (same logic)
+		remote_following = author.remote_following_uuid.strip().split(" ")
+		remote_followers = author.remote_followers_uuid.strip().split(" ")
+		remote_friends = list(set(remote_following) & set(remote_followers))
+
+		if form.instance.visibility == "FRIENDS":
+			for connection in Connection.objects.all():
+				for uuid in remote_friends:
+					url = connection.url + 'service/author/' + str(uuid)
+					get_response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+					if get_response.status_code == 200:
+						# This is a valid author				
+						body = {
+							"type": "post",
+							"title": form.instance.title,
+							"id": f"{TEAM3_URL}author/{str(author.id)}/view_post/{form.instance.id}",
+							"source": form.instance.source,
+							"origin": form.instance.origin,
+							"description": form.instance.origin,
+							"contentType": form.instance.contentType,
+							"author": {
+								"type": "author",
+								"id": f"{TEAM3_URL}author/{author.id}",
+								"authorID": str(author.id),
+								"host": TEAM3_URL,
+								"displayName": sender.displayName,
+								"url": f"{TEAM3_URL}author/{author.id}",
+								"github": f"https://github.com/{author.github}/"
+							}
+							"categories": form.instance.categories,
+							"comments": f"{TEAM3_URL}author/{author.id}/posts/{form.instance.id}/comments",
+							"published": form.instance.timestamp,
+							"visibility": "FRIENDS",
+							"unlisted": False
+						}
+						inbox_url = connection.url + 'service/author/' + str(uuid) + '/inbox/'
+						post_response = requests.post(inbox_url, json.dumps(body), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+						print(post_response.status_code)
 
 		return response
 
@@ -561,7 +606,6 @@ def view_profile(request, author_id):
 
 def follow(request, author_id):
 	sender = request.user.author
-	TEAM3_URL = "https://team3-socialdistribution.herokuapp.com/"
 	local = True
 	try:
 		receiver = Author.objects.get(id=author_id)
