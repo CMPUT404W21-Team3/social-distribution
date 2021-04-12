@@ -344,7 +344,7 @@ class CreatePostView(generic.CreateView):
 								"displayName": sender.displayName,
 								"url": f"{TEAM3_URL}author/{author.id}",
 								"github": f"https://github.com/{author.github}/"
-							}
+							},
 							"categories": form.instance.categories,
 							"comments": f"{TEAM3_URL}author/{author.id}/posts/{form.instance.id}/comments",
 							"published": form.instance.timestamp,
