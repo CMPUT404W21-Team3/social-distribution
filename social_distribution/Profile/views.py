@@ -164,9 +164,10 @@ def list(request):
 		followers_remote = None
 
 	friends_remote = []
-	for f in following_remote:
-		if f in followers_remote:
-			friends_remote.append(f)
+	if following_remote and followers_remote:
+		for f in following_remote:
+			if f in followers_remote:
+				friends_remote.append(f)
 
 	# Remote friends + following
 	# Un-comment this for interaction with Citrus
@@ -744,7 +745,6 @@ def inbox(request):
 
 	# Grab likes from inbox
 	likes = author.inbox.post_like_items.all()
-	print(posts)
 
 	if request.method == "GET":
 		inbox_option = request.GET.get("inbox_option")
