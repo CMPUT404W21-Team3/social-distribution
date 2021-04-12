@@ -608,8 +608,6 @@ def inbox(request, author_id):
 						instance.categories.set(data["categories"])
 						instance.save()
 
-
-
 						return Response({'message':'success'}, status=status.HTTP_200_OK)
 					else:
 						return Response({"message": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
