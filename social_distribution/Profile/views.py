@@ -703,6 +703,7 @@ def like_post(request, author_id, post_id):
 		for connection in Connection.objects.all():
 			url = connection.url + 'service/author/' + author_id + '/post/' + post_id + '/likes'
 			response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+			print(response.status_code)
 			if response.status_code==200:
 				print('+++++++++++++++++++++++++')
 				print('200 OK!!!\n')
@@ -713,10 +714,6 @@ def like_post(request, author_id, post_id):
 						host = like['author']['host']
 						liked = True
 						break
-			# print('+++++++++++++++++++++++++')
-			# print(response.status_code)
-
-
 			else:
 				host = "https://team3-socialdistribution.herokuapp.com/"
 				url = connection.url + 'author/' + author_id + '/posts/' + post_id
@@ -734,7 +731,7 @@ def like_post(request, author_id, post_id):
 				json_data['object'] = host + '/author/'+'author_id'+'/posts/'+post_id+'/'
 				json_data['postID'] = post_id
 				print('+++++xxxxxxxxxxxxx++++++++')
-				
+
 				url = connection.url+'service/author/'+author_id+'/inbox/'
 				response = requests.post(url,data = json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 
