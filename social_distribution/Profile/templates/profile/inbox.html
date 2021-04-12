@@ -53,6 +53,15 @@
                             </div>
                         </div>
                     </div>
+                {% elif post.visibility == 'FRIENDS' %}
+                  <div class="col">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title"><a href="/author/{{post.author_id}}/view_post/{{post.id}}">{{post.title}}</a></h5>
+                            <h6 class="card-subtitle mb-2 text-muted">Author: @{{post.author.displayName}}</h6>
+                        </div>
+                    </div>
+                  </div>
                 {% else %}
                   <div class="col">
                       <div class="card h-100">
@@ -86,6 +95,15 @@
             {% endfor %}
         </div>
     {% endif %}
-
+  <script>
+    window.onload = function() {
+      filter();
+    }
+    function filter() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const myParam = urlParams.get('inbox_option');
+      document.getElementById("inbox_option").value = myParam
+    }
+  </script>
 
 {% endblock %}

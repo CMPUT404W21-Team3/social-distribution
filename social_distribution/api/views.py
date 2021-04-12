@@ -549,23 +549,25 @@ def inbox(request, author_id):
 		# ------ FRIEND REQUEST ------ #
 
 		if data['type'].lower() == 'follow' and data['sender']['id'] != None and data['receiver']['id'] == author_id: #remote
-			receiver = Author.objects.get(id=author_id)
-			# Maybe a function to check if the sender exist on the remote node?
-			remote_sender = data["sender"]["id"]
-			remote_sender_username = data["sender"]["displayName"]
-			# Creating a FriendRequest object:
-			# - Receiver is local author object
-			# - Remote_sender is the remote author's UUID
-			instance = FriendRequest.objects.get_or_create(receiver=receiver, remote_sender=remote_sender, remote_username=remote_sender_username)
-			# Add to `remote_followers_uuid` list
-			if receiver.remote_followers_uuid != None and remote_sender not in receiver.remote_followers_uuid:
-				receiver.remote_followers_uuid += f' {remote_sender}'
-			else:
-				receiver.remote_followers_uuid = remote_sender
-			# Send a following API to the remote author?
-			# TODO
-			receiver.save()
-			return Response({'message':'success'}, status=status.HTTP_200_OK)
+			try:
+				receiver = Author.objects.get(id=author_id)
+				# Maybe a function to check if the sender exist on the remote node?
+				remote_sender = data["sender"]["id"]
+				remote_sender_username = data["sender"]["displayName"]
+				# Creating a FriendRequest object:
+				# - Receiver is local author object
+				# - Remote_sender is the remote author's UUID
+				instance, _ = FriendRequest.objects.get_or_create(receiver=receiver, remote_sender=remote_sender, remote_username=remote_sender_username)
+				receiver.inbox.follow_items.add(instance)
+				# Add to `remote_followers_uuid` list
+				if receiver.remote_followers_uuid != None and remote_sender not in receiver.remote_followers_uuid:
+					receiver.remote_followers_uuid += f' {remote_sender}'
+				else:
+					receiver.remote_followers_uuid = remote_sender
+				receiver.save()
+				return Response({'message':'success'}, status=status.HTTP_200_OK)
+			except:
+				traceback.print_exc()
 
 		# ------ POST ------ #
 

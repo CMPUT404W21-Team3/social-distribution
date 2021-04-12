@@ -58,31 +58,34 @@ def home(request):
 	remote_posts = []
 
 	for connection in Connection.objects.all():
-		url = connection.url + 'service/authors/'
-		response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-		if response.status_code == 200:
-			for author in response.json()['items']:
-				author_id = author['id']
-				new_url = f'{connection.url}service/author/{author_id}/posts/'
-				response = requests.get(new_url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-				if response.status_code == 200:
-					posts_remote = response.json()['posts']
-					if len(posts) > 0:
-						for item in posts_remote:
-							if item['visibility'] == 'PUBLIC':
-								post_id = item['id']
-								post = Post(
-									id = item['id'],
-									author = Author(
-										id = item['author']['id'],
-										remote_username = item['author']['displayName'],
-									),
-									timestamp = item['published'],
-									title = item['title'],
-									content = item['content'],
-									contentType = item['contentType'].split(';')[0],
-								)
-								remote_posts.append(post)
+		if connection.name == 'localhost':
+			pass
+		else:
+			url = connection.url + 'service/authors/'
+			response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+			if response.status_code == 200:
+				for author in response.json()['items']:
+					author_id = author['id']
+					new_url = f'{connection.url}service/author/{author_id}/posts/'
+					response = requests.get(new_url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+					if response.status_code == 200:
+						posts_remote = response.json()['posts']
+						if len(posts) > 0:
+							for item in posts_remote:
+								if item['visibility'] == 'PUBLIC':
+									post_id = item['id']
+									post = Post(
+										id = item['id'],
+										author = Author(
+											id = item['author']['id'],
+											remote_username = item['author']['displayName'],
+										),
+										timestamp = item['published'],
+										title = item['title'],
+										content = item['content'],
+										contentType = item['contentType'].split(';')[0],
+									)
+									remote_posts.append(post)
 	posts.append(remote_posts)
 
 	return render(request, 'profile/home.html', {'posts': posts})
@@ -160,12 +163,17 @@ def list(request):
 	else:
 		following_remote = None
 
+	if user.remote_followers_uuid:
+		followers_remote = user.remote_followers_uuid.strip().split(" ")
+	else:
+		followers_remote = None
 
 	# Remote friends + following
 	# Un-comment this for interaction with Citrus
 	# Un-comment line 32+52 in list.html as well
 	# For local testing sake, i'll just use the uuid string.
 
+	# replacing every uuid as an author object.
 	for connection in Connection.objects.all():
 		if friends_remote:
 			for i in range(len(friends_remote)):
@@ -188,7 +196,7 @@ def list(request):
 					following_remote.pop(i) #this guy doesn't exist!
 
 	return render(request, 'profile/list.html', {'friends': friends, 'friends_remote': friends_remote,
-				'following': following, 'following_remote': following_remote, 'followers': followers})
+				'following': following, 'following_remote': following_remote, 'followers': followers, 'followers_remote': followers_remote})
 
 def view_posts(request, author_id):
 	author = Author.objects.get(id=author_id)
@@ -474,29 +482,42 @@ def view_profile(request, author_id):
 	try:
 		found_author = Author.objects.get(id=author_id)
 		posts = found_author.posts.all()
-
+		following_status = user.following.filter(id=author_id).exists()
+		follower_status = user.followers.filter(id=author_id).exists()
 	except:
 		# Remote author!
 		local = False
 		for connection in Connection.objects.all():
-			url = connection.url + 'service/authors/'
-			response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-			if response.status_code == 200:
-				for author in response.json()['items']:
-					# Found a match!
-					if author_id == author['id']:
-						# Grab posts
-						url = connection.url + 'service/author/' + author_id + '/posts/'
-						response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-						if response.status_code == 200:
-							posts = response.json()['posts']
+			if connection.name == "localhost":
+				found_author = Author(
+					id=author_id,
+					remote_username='Local Tester'
+				)
+				posts = None
+				try:
+					following_status = True if author_id in user.remote_following_uuid else False
+				except:
+					following_status = False
+				
+				try:
+					follower_status = True if author_id in user.remote_followers_uuid else False
+				except:
+					follower_status = False
+			else:
+				url = connection.url + 'service/authors/'
+				response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+				if response.status_code == 200:
+					for author in response.json()['items']:
+						# Found a match!
+						if author_id == author['id']:
+							# Grab posts
+							url = connection.url + 'service/author/' + author_id + '/posts/'
+							response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+							if response.status_code == 200:
+								posts = response.json()['posts']
 
-							# Set correct author
-							found_author = author
-
-
-	following_status = user.following.filter(id=author_id).exists()
-	follower_status = user.followers.filter(id=author_id).exists()
+								# Set correct author
+								found_author = author
 
 
 	if following_status or follower_status:
@@ -505,7 +526,6 @@ def view_profile(request, author_id):
 		follow_status = False
 	# A and B are friends <=> A follows B and B follows A
 	friend_status = follower_status and following_status
-
 	if request.method == "GET":
 		return render(request, 'profile/view_profile.html', {'author': found_author, 'posts': posts, 'friend_status': friend_status, 'following_status': following_status,
 					'follower_status': follower_status, 'local': local})
@@ -519,26 +539,43 @@ def follow(request, author_id):
 	except:
 		local = False
 		for connection in Connection.objects.all():
-			url = connection.url + 'service/authors/'
-			response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-			if response.status_code == 200:
-				for author in response.json()['items']:
-					# Found a match!
-					if author_id == author['id']:
-						receiver = author
+			if connection.name == "localhost":
+				temp = sender.remote_following_uuid
+				if temp:
+					if author_id not in temp:
+						sender.remote_following_uuid += f' {author_id}'
+				else:
+					sender.remote_following_uuid = author_id
+				sender.save()
+			else:
+				url = connection.url + 'service/authors/'
+				response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+				if response.status_code == 200:
+					for author in response.json()['items']:
+						# Found a match!
+						if author_id == author['id']:
+							receiver = author
 
-						post_data = {}
-						post_data['type'] = 'follow'
-						post_data['summary'] = sender.displayName + ' wants to follow ' + receiver['displayName']
-						post_data['actor'] = AuthorSerializer(sender).data
-						post_data['object'] = receiver
+							post_data = {}
+							post_data['type'] = 'follow'
+							post_data['summary'] = sender.displayName + ' wants to follow ' + receiver['displayName']
+							post_data['actor'] = AuthorSerializer(sender).data
+							post_data['object'] = receiver
 
-						# print(post_data)
-						# Send request to remote
-						url = connection.url + 'service/author/' + receiver['id'] + '/inbox/'
-						# print(url)
-						post_response = requests.post(url, json.dumps(post_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-						print(post_response.content)
+							# print(post_data)
+							# Send request to remote
+							url = connection.url + 'service/author/' + receiver['id'] + '/inbox/'
+							# print(url)
+							post_response = requests.post(url, json.dumps(post_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+							if post_response.status_code == 200:
+								temp = sender.remote_following_uuid
+								if temp:
+									if author_id not in temp:
+										sender.remote_following_uuid += f' {author_id}'
+								else:
+									sender.remote_following_uuid = author_id
+								sender.save()
+							print(post_response.content)
 
 	if local:
 		# Create friend request
@@ -558,15 +595,23 @@ def follow(request, author_id):
 
 def unfollow(request, author_id):
 	user = Author.objects.get(user__username=request.user.username)
-	user_following = Author.objects.get(id=author_id)
+	try:
+		# Local
+		user_following = Author.objects.get(id=author_id)
 
 
-	# Remove connection
+		# Remove connection
 
-	# ToDo: what other models must be updated? See email
-	user.following.remove(user_following)
-	user_following.followers.remove(user)
-
+		# ToDo: what other models must be updated? See email
+		user.following.remove(user_following)
+		user_following.followers.remove(user)
+	
+	except:
+		# Remote
+		remote_following_list = user.remote_following_uuid.strip().split(" ")
+		remote_following_list.remove(author_id)
+		user.remote_following_uuid = " ".join(remote_following_list)
+		user.save()
 
 	return redirect('Profile:view_profile', author_id)
 
@@ -680,7 +725,7 @@ def inbox(request):
 
 	# Grab likes from inbox
 	likes = author.inbox.post_like_items.all()
-	print(likes)
+	print(posts)
 
 	if request.method == "GET":
 		inbox_option = request.GET.get("inbox_option")
@@ -695,7 +740,6 @@ def inbox(request):
 			friend_requests = friend_requests.difference(author.inbox.follow_items_cleared.all())
 			likes = likes.difference(author.inbox.post_like_items_cleared.all())
 
-		print("Requests = ", friend_requests)
 		return render(request, 'profile/inbox.html', {'posts':posts, 'author':author, 'friend_requests': friend_requests, 'likes': likes})
 	elif request.method == "POST":
 		if "clear_signal" in request.POST:

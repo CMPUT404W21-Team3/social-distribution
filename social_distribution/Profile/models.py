@@ -34,7 +34,7 @@ class Author(models.Model):
     remote_host = models.CharField(max_length=50, blank=True)
     remote_username = models.CharField(max_length=50, blank=True)
 
-    remote_friends_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True)
+    #remote_friends_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True)
     remote_following_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True)
     remote_followers_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True)
 
