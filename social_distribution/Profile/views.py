@@ -653,9 +653,12 @@ def unfollow(request, author_id):
 
 def like_post(request, author_id, post_id):
 	current_user = request.user
-
-	post = Post.objects.filter(id=post_id, author__id=author_id).get()
-	if post:
+	try:
+		post = Post.objects.filter(id=post_id, author__id=author_id).get()
+		found = True
+	except:
+		found = False
+	if found:
 		# Local post
 		liked = False
 
@@ -695,27 +698,45 @@ def like_post(request, author_id, post_id):
 		# Remote post
 
 		# See if we have already liked this post
-		# host = None
-		# for connection in Connection.objects.all():
-		# 	url = connection.url() + f'/service/author/{author_id}/post/{post_id}/likes/'
-		# 	response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-		# 	likes = response.json()
-		# 	print(likes)
-		# 	liked = False
-		# 	for like in likes['likes']:
-		# 		if like['author']['id'] == current_user.id:
-		# 			host = like['author']['host']
-		# 			liked = True
-		# 			break
+		host = None
+		liked = False
+		for connection in Connection.objects.all():
+			url = connection.url + 'service/author/' + author_id + '/post/' + post_id + '/likes'
+			response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+			if response.status_code==200:
+				print('+++++++++++++++++++++++++')
+				print('200 OK!!!\n')
+				print(response.json())
+				likes = response.json()
+				for like in likes['likes']:
+					if like['author']['id'] == current_user.id:
+						host = like['author']['host']
+						liked = True
+						break
+			# print('+++++++++++++++++++++++++')
+			# print(response.status_code)
 
-		# if not liked:
-		# 	url = host + f'/service/author/{author_id}/inbox/'
-		# 	post_data = {}
-		# 	post_data['Summary'] = current_user.author.displayName + ' likes your post'
-		# 	post_data['type'] = 'Like'
-		# 	post_data['actor'] = AuthorSerializer(current_user.author).data
-		# 	post_data['object'] = host + f'/author/{author_id}/posts/{post_id}/'
-		# 	print(post_data)
+
+			else:
+				host = "https://team3-socialdistribution.herokuapp.com/"
+				url = connection.url + 'author/' + author_id + '/posts/' + post_id
+				json_data = {}
+
+				author_object = AuthorSerializer(current_user.author).data
+				author_object['authorID']=author_object['id']
+				author_object['id'] = host+author_object['id']
+				author_object['host']=host
+				author_object['url']=url
+
+				json_data['summary'] = current_user.author.displayName + ' likes your post'
+				json_data['type'] = 'Like'
+				json_data['author'] = author_object
+				json_data['object'] = host + '/author/'+'author_id'+'/posts/'+post_id+'/'
+				json_data['postID'] = post_id
+				print('+++++xxxxxxxxxxxxx++++++++')
+				
+				url = connection.url+'service/author/'+author_id+'/inbox/'
+				response = requests.post(url,data = json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 
 		return redirect('Profile:view_post', author_id, post_id)
 
