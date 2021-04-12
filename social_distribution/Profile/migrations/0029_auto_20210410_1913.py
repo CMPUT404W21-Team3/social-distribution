@@ -16,7 +16,6 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Inbox',
             fields=[
-                ('id', models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)),
                 ('follow_items', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='inbox_follows', to='Search.friendrequest')),
                 ('follow_items_cleared', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='inbox_follows_cleared', to='Search.friendrequest')),
                 ('post_items', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='inbox_posts', to='Profile.post')),
