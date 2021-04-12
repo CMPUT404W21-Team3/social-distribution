@@ -36,7 +36,6 @@ urlpatterns = [
     path('api/author/<str:author_id>/posts/<str:post_id>/likes', views.post_likes),
     path('api/author/<str:author_id>/posts/<str:post_id>/comments/<str:comment_id>/likes', views.comment_likes),
     path('api/author/<str:author_id>/liked', views.liked),
-    path('api/author/<str:author_id>/inbox', views.inbox),
     path('api/authors', views.authors),
     path('api/authors/search?q=<str:query>', views.author_search),
     path('api/authors/search/<str:query>', views.author_search),

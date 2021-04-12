@@ -538,6 +538,15 @@ def view_profile(request, author_id):
 
 								# Set correct author
 								found_author = author
+								try:
+									following_status = True if author_id in user.remote_following_uuid else False
+								except:
+									following_status = False
+								
+								try:
+									follower_status = True if author_id in user.remote_followers_uuid else False
+								except:
+									follower_status = False
 
 
 	if following_status or follower_status:

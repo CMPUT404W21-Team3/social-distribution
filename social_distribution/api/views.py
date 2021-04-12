@@ -615,32 +615,32 @@ def inbox(request, author_id):
 					traceback.print_exc()
 					return Response({"message":"something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
 
-		# LOCAL SENDER
-		elif sender_id in [str(x) for x in receiver.following.all().values('id')]:
-				sender_local = Author.objects.get(id=sender_id)
-				try:
-					if data["visibility"].upper() in "FRIENDS" + "PRIVATE" and author_id == data["receiver"]:
-						instance = Post(
-							title = data["title"],
-							id = data["id"],
-							source = data["source"],
-							origin = data["origin"],
-							description = data["description"],
-							contentType = data["contentType"],
-							content = data["content"],
-							author = sender_local,
-							to_author = receiver,
-							timestamp = data["timestamp"],
-							visibility = data["visibility"],
-							unlisted = data["unlisted"],
-						)
-						instance.categories.set(data["categories"])
-						instance.save()
-						return Response({'message':'success'}, status=status.HTTP_200_OK)
-					else:
-						return Response({"message": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
-				except Exception as e:
-					return Response({"message":e}, status=status.HTTP_400_BAD_REQUEST)
+			# LOCAL SENDER
+			elif sender_id in [str(x) for x in receiver.following.all().values('id')]:
+					sender_local = Author.objects.get(id=sender_id)
+					try:
+						if data["visibility"].upper() in "FRIENDS" + "PRIVATE" and author_id == data["receiver"]:
+							instance = Post(
+								title = data["title"],
+								id = data["id"],
+								source = data["source"],
+								origin = data["origin"],
+								description = data["description"],
+								contentType = data["contentType"],
+								content = data["content"],
+								author = sender_local,
+								to_author = receiver,
+								timestamp = data["timestamp"],
+								visibility = data["visibility"],
+								unlisted = data["unlisted"],
+							)
+							instance.categories.set(data["categories"])
+							instance.save()
+							return Response({'message':'success'}, status=status.HTTP_200_OK)
+						else:
+							return Response({"message": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
+					except Exception as e:
+						return Response({"message":e}, status=status.HTTP_400_BAD_REQUEST)
 
 		else:
 			return Response(status=status.HTTP_400_BAD_REQUEST)
