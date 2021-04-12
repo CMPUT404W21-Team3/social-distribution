@@ -62,7 +62,7 @@ class Author(models.Model):
     @property
     def url(self):
         # return Site.objects.get_current().domain + reverse('api:author', kwargs={'author_id':self.id})
-        return self.host + '/author/' + str(self.id) + '/'
+        return self.host + 'author/' + str(self.id)
 
     @url.setter
     def url(self, value):
@@ -157,7 +157,8 @@ class Post(models.Model):
 
     @property
     def url(self):
-        return Site.objects.get_current().domain + reverse('api:post', kwargs={'author_id':self.author.id, 'post_id':self.id})
+        # return Site.objects.get_current().domain + reverse('api:post', kwargs={'author_id':self.author.id, 'post_id':self.id})
+        return self.host + 'author/' + str(self.author.id) + '/posts/' + str(self.id)
 
     @property
     def host(self):
