@@ -335,8 +335,6 @@ class PostLike(Like):
 
 
 class Inbox(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-
     follow_items = models.ManyToManyField('Search.FriendRequest', null=True, related_name="inbox_follows")
     post_items = models.ManyToManyField(Post, null=True, related_name="inbox_posts")
     post_like_items = models.ManyToManyField(PostLike, null=True, related_name="inbox_likes")
