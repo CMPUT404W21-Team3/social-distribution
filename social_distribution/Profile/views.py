@@ -563,7 +563,7 @@ def view_profile(request, author_id):
 
 def follow(request, author_id):
 	sender = request.user.author
-
+	TEAM3_URL = "https://team3-socialdistribution.herokuapp.com/"
 	local = True
 	try:
 		receiver = Author.objects.get(id=author_id)
@@ -590,7 +590,13 @@ def follow(request, author_id):
 							post_data = {}
 							post_data['type'] = 'follow'
 							post_data['summary'] = sender.displayName + ' wants to follow ' + receiver['displayName']
-							post_data['actor'] = AuthorSerializer(sender).data
+							post_data['actor'] = {
+								'type': 'author',
+								'id': f"{TEAM3_URL}author/sender.id",
+								'host': TEAM3_URL,
+								'displayName': sender.displayName,
+								'github': f"https://github.com/{sender.github}/"
+							}
 							post_data['object'] = receiver
 
 							# print(post_data)
@@ -598,8 +604,7 @@ def follow(request, author_id):
 							url = connection.url + 'service/author/' + receiver['id'] + '/inbox/'
 							# print(url)
 							post_response = requests.post(url, json.dumps(post_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-							sender.remote_username = str(post_response.status_code)
-							if post_response.status_code in [200, 304]:
+							if post_response.status_code in [200, 304, '', None]:
 								temp = sender.remote_following_uuid
 								if temp:
 									if author_id not in temp:
