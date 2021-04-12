@@ -550,8 +550,6 @@ def view_profile(request, author_id):
 
 
 	if following_status or follower_status:
-		print(following_status)
-		print(follower_status)
 		follow_status = True
 	else:
 		follow_status = False
@@ -590,20 +588,18 @@ def follow(request, author_id):
 							post_data = {}
 							post_data['type'] = 'follow'
 							post_data['summary'] = sender.displayName + ' wants to follow ' + receiver['displayName']
-							post_data['actor'] = json.dumps({
-								'type': 'author',
-								'id': f"{TEAM3_URL}author/sender.id",
-								'host': TEAM3_URL,
-								'displayName': sender.displayName,
-								'github': f"https://github.com/{sender.github}/"
-							})
+							post_data['actor'] = {
+								'type': 'author',\
+								'id': f"{TEAM3_URL}author/{sender.id}",\
+								'authorID': str(sender.id),\
+								'host': TEAM3_URL,\
+								'displayName': sender.displayName,\
+								'github': f"https://github.com/{sender.github}/"\
+							}
 							post_data['object'] = receiver
 
-							# print(post_data)
 							# Send request to remote
 							url = connection.url + 'service/author/' + receiver['id'] + '/inbox/'
-							sender.remote_username = str(json.dumps(post_data))
-							# print(url)
 							post_response = requests.post(url, json.dumps(post_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 							if post_response.status_code in [200, 304, '', None]:
 								temp = sender.remote_following_uuid
@@ -613,7 +609,7 @@ def follow(request, author_id):
 								else:
 									sender.remote_following_uuid = author_id
 								sender.save()
-							print(post_response.content)
+							print(post_response.status_code)
 
 	if local:
 		# Create friend request
