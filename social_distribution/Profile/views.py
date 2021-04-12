@@ -153,11 +153,6 @@ def list(request):
 	# Grab friends
 	friends = following & followers
 
-	if user.remote_friends_uuid:
-		friends_remote = user.remote_friends_uuid.strip().split(" ")
-	else:
-		friends_remote = None
-
 	if user.remote_following_uuid:
 		following_remote = user.remote_following_uuid.strip().split(" ")
 	else:
@@ -168,6 +163,11 @@ def list(request):
 	else:
 		followers_remote = None
 
+	friends_remote = []
+	for f in following_remote:
+		if f in followers_remote:
+			friends_remote.append(f)
+
 	# Remote friends + following
 	# Un-comment this for interaction with Citrus
 	# Un-comment line 32+52 in list.html as well
@@ -176,24 +176,43 @@ def list(request):
 	# replacing every uuid as an author object.
 	for connection in Connection.objects.all():
 		if friends_remote:
-			for i in range(len(friends_remote)):
-				url = f'{connection.url}/service/author/' + friends_remote[i] + '/'
-				response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+			try:
+				for i in range(len(friends_remote)):
+					url = f'{connection.url}/service/author/' + friends_remote[i] + '/'
+					response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 
-				if response.status_code == 200:
-					friends_remote[i] = response.json()
-				else:
-					friends_remote.pop(i) #this guy doesn't exist!
+					if response.status_code == 200:
+						friends_remote[i] = response.json()
+					else:
+						pass #this guy doesn't exist!
+			except:
+				pass
 
 		if following_remote:
-			for i in range(len(following_remote)):
-				url = f'{connection.url}/service/author/' + following_remote[i] + '/'
-				response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+			try:
+				for i in range(len(following_remote)):
+					url = f'{connection.url}/service/author/' + following_remote[i] + '/'
+					response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 
-				if response.status_code == 200:
-					following_remote[i] = response.json()
-				else:
-					following_remote.pop(i) #this guy doesn't exist!
+					if response.status_code == 200:
+						following_remote[i] = response.json()
+					else:
+						pass #this guy doesn't exist!
+			except:
+				pass
+
+		if followers_remote:
+			try:
+				for i in range(len(followers_remote)):
+					url = f'{connection.url}/service/author/' + followers_remote[i] + '/'
+					response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+
+					if response.status_code == 200:
+						followers_remote[i] = response.json()
+					else:
+						pass #this guy doesn't exist!
+			except:
+				pass
 
 	return render(request, 'profile/list.html', {'friends': friends, 'friends_remote': friends_remote,
 				'following': following, 'following_remote': following_remote, 'followers': followers, 'followers_remote': followers_remote})

@@ -30,7 +30,8 @@
           <div class="card h-100">
             <div class="card-body">
               <h3 class="card-title">{{friend}}</h3>
-              <a href="" class="btn btn-primary">View Profile</a>
+              <!-- Remove when demo with team 9 because we don't need this. -->
+              <a href="{% url 'Profile:view_profile' author_id=friend %}" class="btn btn-primary">View Profile</a>
             </div>
           </div>
       </div>
@@ -48,8 +49,9 @@
     <li>{{ f.displayName }} </li><a href="{% url 'Profile:view_profile' author_id=f.id %}">View Profile</a>
   {% endfor %}
   {% for f_r in following_remote %}
-    <!-- <li>{{ f_r.displayName }} </li><a href="">View Profile (Not Implemnted)</a> -->
-    <li>{{ f_r }} </li><a href="">View Profile (Not Implemnted)</a>
+  <!-- TESTING, REMOVE IN PRODUCTION -->
+  <li>{{ f_r }} </li><a href="{% url 'Profile:view_profile' author_id=f_r %}">View Profile</a>
+  <!-- <li>{{ f_r }} </li><a href="">View Profile (Not Implemnted)</a> -->
   {% endfor %}
 
   <h2>@{{user.username }} Followers</h2>
