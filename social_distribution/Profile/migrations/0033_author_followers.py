@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('Profile', '0032_remove_author_followers'),
+        ('Profile', '0032_remove_author_remote_friends_uuid'),
     ]
 
     operations = [
