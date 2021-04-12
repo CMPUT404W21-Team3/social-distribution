@@ -10,9 +10,4 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='author',
-            name='followers',
-            field=models.ManyToManyField(related_name='follower_list', to='Profile.Author'),
-        ),
     ]
