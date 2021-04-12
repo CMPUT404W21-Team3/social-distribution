@@ -15,8 +15,8 @@ DEFAULT_HEADERS = {'Referer': 'https://team3-socialdistribution.herokuapp.com/',
 # Create your views here.
 def results(request):
     query = request.POST.get('query', '')
-    authors = Author.objects.filter(user__username__contains=query)
-
+    # authors = Author.objects.filter(user__username__contains=query)
+    authors = Author.objects.all()
     authors = list(authors)
 
     for connection in Connection.objects.all():
@@ -24,7 +24,9 @@ def results(request):
         response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
         if response.status_code == 200:
             for author in response.json()['items']:
-                if query in author['displayName']:
-                    authors.append(author)
+                authors.append(author)
+                # if query in author['displayName']:
+                    # authors.append(author)
+    
 
     return render(request, 'results.html', {'query': query, 'authors': authors})
