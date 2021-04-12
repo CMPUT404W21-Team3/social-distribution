@@ -24,8 +24,8 @@ class Author(models.Model):
 
     inbox = models.OneToOneField('Inbox', on_delete=models.CASCADE, related_name='inbox', null=True)
 
-    following = models.ManyToManyField('self', symmetrical=False, related_name="following_list")
-    followers = models.ManyToManyField('self', symmetrical=False, related_name="follower_list")
+    following = models.ManyToManyField('self', symmetrical=False, related_name="following_list", null=True, blank=True)
+    followers = models.ManyToManyField('self', symmetrical=False, related_name="follower_list", null=True, blank=True)
 
     # posts_cleared = models.ManyToManyField('Post', related_name="posts_cleared")
     # friend_requests_cleared = models.ManyToManyField('Search.FriendRequest', related_name="friend_requests_cleared")
