@@ -3,9 +3,11 @@
 
 {% block content %}
 
+<div style="margin: 8px;">
+<h2> Search results for: {{ query }}</h2>
 <ul id="search_list"></ul>
-
-<a href="javascript:history.back()">Return</a>
+<a href="javascript:history.back()" class="btn btn-outline-success btn-sm" role="button">Return</a>
+</div>
 
 <script>
 
@@ -28,6 +30,8 @@
       if (author['displayName'].includes(query)) {
         var li = document.createElement('li');
         var link = document.createElement('a');
+        li.style.listStyle = "none";
+        link.style.textDecoration = "none";
         link.href = `view_profile/${author.id}`;
         link.text = author.displayName;
         li.appendChild(link)
