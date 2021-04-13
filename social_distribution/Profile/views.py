@@ -367,7 +367,7 @@ class CreatePostView(generic.CreateView):
 								"url": f"{TEAM3_URL}author/{author.id}",
 								"github": f"https://github.com/{author.github}/"
 							},
-							"categories": form.instance.categories,
+							"categories": [category.name for category in form.instance.categories.all()],
 							"comments": f"{TEAM3_URL}author/{author.id}/posts/{form.instance.id}/comments",
 							"published": form.instance.timestamp,
 							"visibility": "PRIVATE_TO_FRIENDS",
