@@ -27,9 +27,8 @@
   {% endif %}
 
   <h2>@{{user.username }} Following</h2>
-
-
   <div class="row row-cols-auto">
+    {% if following %}
     {% for f in following %}
       <div class="col">
           <div class="card h-100" style="width: fit-content;">
@@ -39,6 +38,7 @@
           </div>
       </div>
     {% endfor %}
+    {% endif %}
   </div>
 
   <h2>@{{user.username }} Followers</h2>
@@ -54,7 +54,7 @@
             </div>
         </div>
       {% endfor %}
-    {%  endif %}
+    {% endif %}
   </div>
   <div>
     <a href="/" class="btn btn-outline-success return">Return</a>
