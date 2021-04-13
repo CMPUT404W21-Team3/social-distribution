@@ -741,8 +741,7 @@ def like_post(request, author_id, post_id):
 
 			url = target+'service/author/'+author_id+'/inbox/'
 			response = requests.post(url, data=json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-			if response.status_code == 200:
-				liked = True
+			liked = True
 
 ############################################################
 			# Comment Block #
