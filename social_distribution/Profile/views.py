@@ -917,6 +917,7 @@ def private_post(request, author_id):
 						print(post_response.status_code)
 						post = form.save(commit=False)
 						post.save()
+						return redirect('Profile:view_posts', author.id)
 			else:
 				print(form.errors)
 

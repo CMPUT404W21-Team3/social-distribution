@@ -93,7 +93,11 @@
     function filter() {
       const urlParams = new URLSearchParams(window.location.search);
       const myParam = urlParams.get('inbox_option');
-      document.getElementById("inbox_option").value = myParam
+      if (myParam) {
+        document.getElementById("inbox_option").value = myParam;
+      } else {
+        document.getElementById("inbox_option").value = "New";
+      }
     }
   </script>
 

@@ -93,7 +93,7 @@
         <div class="col">
             <div class="card h-100" style="width: fit-content;">
               <div class="card-body" style="padding: 6px 8px 0 8px;">
-                <h4 class="card-title"><a href="{% url 'Profile:view_profile' author_id=f_r %}" style="text-decoration: none; color: #198754;">{{ f_r }}</a></h4>
+                <h4 class="card-title"><a href="{% url 'Profile:view_profile' author_id=f_r %}" style="text-decoration: none; color: #198754;">{{ f_r.displayName }}</a></h4>
               </div>
             </div>
         </div>
