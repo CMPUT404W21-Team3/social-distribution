@@ -740,19 +740,20 @@ def like_post(request, author_id, post_id):
 			json_data['postID'] = post_id
 
 			url = target+'service/author/'+author_id+'/inbox/'
-			response = requests.post(url, data=json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-			if response.status_code == 200:
-				liked = True
+			#response = requests.post(url, data=json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+			#if response.status_code == 200:
+			liked = True
 
 ############################################################
 			# Comment Block #
-
+			comments,post = remote_comments(request,author_id,post_id)
+			comment_form = CommentForm()
 
 			# End of Comment Block #
 
-			return render(request, 'profile/post.html',
-						  {'post': post, 'content': content, 'current_user': current_user, 'liked': liked,
-						   'comments': comments, 'comment_form': comment_form})
+			return render(None, 'profile/post.html',
+						  {'post': post, 'current_user': current_user, 'liked': liked, 'comments': comments,
+						   'comment_form': comment_form, 'remote': True})
 
 		return redirect('Profile:view_post', author_id, post_id)
 
@@ -843,15 +844,24 @@ def handle_remote_likes(current_user, author_id, post_id):
 	return liked, target_url, target_con
 
 
-def remote_comment_box(post,current_user,author_id,post_id):
+def remote_comments(request,author_id,post_id):
 	for connection in Connection.objects.all():
 		url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/'
 		response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 		if response.status_code == 200:
 			post = response.json()
+
+			# if request.method == 'POST':
+			# 	comment_form = CommentForm(data=request.POST)
+			# 	if comment_form.is_valid():
+			# 		json_data = {}
+			# 		json_data['comment'] = request.POST.get('content')
+			# 		comment_url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/comment/'
+			# 		response = requests.post(comment_url, data=json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+
+
 			if post['visibility'] == 'PUBLIC':
 				comments = post['comments']
-				print(type(comments))
 			else:
-				comments = post.comments.filter(author__id=current_user.author.id)
-			comment_form = CommentForm()
+				comments = []
+			return comments,post
