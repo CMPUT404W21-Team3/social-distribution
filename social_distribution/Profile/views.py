@@ -747,7 +747,7 @@ def like_post(request, author_id, post_id):
 ############################################################
 			# Comment Block #
 			comments,post = remote_comments(request,author_id,post_id)
-			#comment_form = CommentForm()
+			comment_form = CommentForm()
 
 			# End of Comment Block #
 
