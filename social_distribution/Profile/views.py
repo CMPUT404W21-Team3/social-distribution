@@ -858,7 +858,7 @@ def remote_comments(request,author_id,post_id):
 					json_data['comment'] = request.POST.get('content')
 					comment_url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/comment/'
 					response = requests.post(comment_url, data=json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-					comment_form = CommentForm()
+
 			if post['visibility'] == 'PUBLIC':
 				comments = post['comments']
 			else:
