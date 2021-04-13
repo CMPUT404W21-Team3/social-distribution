@@ -30,12 +30,12 @@
                                 <button type="submit" style="background-color: Transparent;border: none;padding-left:0;"><i class="bi bi-hand-thumbs-up"></i></button>
                                 {% endif %}
                             </form>
-                            <!--{% if remote %}-->
-                            <!--<p>{{post.count}}</p>-->
-                            <!--{% else %}-->
-                            <!--<p>{{post.likes_count}}</p>-->
-                            <!--{% endif %}-->
+                            {% if remote %}
+                            <p>{{like_count}}</p>
+                            {% else %}
                             <p>{{post.likes_count}}</p>
+                            {% endif %}
+                            <!--<p>{{post.likes_count}}</p>-->
                         </div>
                     {% endif %}
 
