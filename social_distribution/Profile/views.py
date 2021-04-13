@@ -369,7 +369,7 @@ class CreatePostView(generic.CreateView):
 							},
 							"categories": [category.name for category in form.instance.categories.all()],
 							"comments": f"{TEAM3_URL}author/{author.id}/posts/{form.instance.id}/comments",
-							"published": form.instance.timestamp,
+							"published": str(form.instance.timestamp),
 							"visibility": "PRIVATE_TO_FRIENDS",
 							"unlisted": False
 						}
@@ -506,7 +506,7 @@ def share_post(request, post_id, author_id):
 								},
 								"categories": [category.name for category in form.instance.categories.all()],
 								"comments": f"{TEAM3_URL}author/{author.id}/posts/{form.instance.id}/comments",
-								"published": form.instance.timestamp,
+								"published": str(form.instance.timestamp),
 								"visibility": "PRIVATE_TO_FRIENDS",
 								"unlisted": False
 							}
@@ -908,7 +908,7 @@ def private_post(request, author_id):
 							},
 							"categories": [category.name for category in form.instance.categories.all()],
 							"comments": f"{TEAM3_URL}author/{author.id}/posts/{form.instance.id}/comments",
-							"published": form.instance.timestamp,
+							"published": str(form.instance.timestamp),
 							"visibility": "PRIVATE_TO_AUTHOR",
 							"unlisted": False
 						}
