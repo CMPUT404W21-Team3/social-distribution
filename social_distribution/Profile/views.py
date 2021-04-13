@@ -507,7 +507,7 @@ def share_post(request, post_id, author_id):
 								"categories": [category.name for category in form.instance.categories.all()],
 								"comments": f"{TEAM3_URL}author/{author.id}/posts/{form.instance.id}/comments",
 								"published": form.instance.timestamp,
-								"visibility": "FRIENDS",
+								"visibility": "PRIVATE_TO_FRIENDS",
 								"unlisted": False
 							}
 							inbox_url = connection.url + 'service/author/' + str(uuid) + '/inbox/'
@@ -906,7 +906,7 @@ def private_post(request, author_id):
 								"url": f"{TEAM3_URL}author/{author.id}",
 								"github": f"https://github.com/{author.github}/"
 							},
-							"categories": form.instance.categories,
+							"categories": [category.name for category in form.instance.categories.all()],
 							"comments": f"{TEAM3_URL}author/{author.id}/posts/{form.instance.id}/comments",
 							"published": form.instance.timestamp,
 							"visibility": "PRIVATE_TO_AUTHOR",
