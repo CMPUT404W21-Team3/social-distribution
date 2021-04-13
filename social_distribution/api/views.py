@@ -126,8 +126,6 @@ def post(request, author_id, post_id):
 		return HttpResponse(status=404)
 
 	if request.method == 'GET':
-		if post.visibility != 'PUBLIC':
-			return Response(status=status.HTTP_401_UNAUTHORIZED)
 		serializer = PostSerializer(post)
 		return Response(serializer.data)
 
