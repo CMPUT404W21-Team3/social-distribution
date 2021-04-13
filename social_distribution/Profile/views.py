@@ -159,12 +159,12 @@ def friends_list(request):
 	if user.remote_following_uuid:
 		following_remote = user.remote_following_uuid.strip().split(" ")
 	else:
-		following_remote = None
+		following_remote = []
 
 	if user.remote_followers_uuid:
 		followers_remote = user.remote_followers_uuid.strip().split(" ")
 	else:
-		followers_remote = None
+		followers_remote = []
 
 	friends_remote = []
 	if following_remote and followers_remote:
