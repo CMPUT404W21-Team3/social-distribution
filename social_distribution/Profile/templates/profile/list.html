@@ -3,10 +3,6 @@
 {% block content %}
 <div class="friend-list">
   <h2 class="fst-italic">@{{user.username }} Friends</h2>
-  <!-- List friends -->
-  <!-- {% for f in friends %}
-    <li>{{ f.user }} </li><a href="{% url 'Profile:view_profile' author_id=f.user.id %}">View Profile</a>
-  {% endfor %} -->
 
   <div class="row row-cols-auto">
     {% if friends %}
@@ -29,7 +25,7 @@
   <h2>@{{user.username }} Following</h2>
   <div class="row row-cols-auto">
     {% if following %}
-    {% for f in following %}
+      {% for f in following %}
       <div class="col">
           <div class="card h-100" style="width: fit-content;">
             <div class="card-body" style="padding: 6px 8px 0 8px;">
@@ -37,7 +33,7 @@
             </div>
           </div>
       </div>
-    {% endfor %}
+      {% endfor %}
     {% endif %}
   </div>
 
@@ -45,17 +41,18 @@
 
   <div class="row row-cols-auto">
     {% if followers %}
-      {% for f in followers %}
+      {% for fr in followers %}
         <div class="col">
             <div class="card h-100" style="width: fit-content;">
               <div class="card-body" style="padding: 6px 8px 0 8px;">
-                <h4 class="card-title"><a href="{% url 'Profile:view_profile' author_id=f.id %}" style="text-decoration: none; color: #198754;">{{ f.displayName }}</a></h4>
+                <h4 class="card-title"><a href="{% url 'Profile:view_profile' author_id=fr.id %}" style="text-decoration: none; color: #198754;">{{ fr.displayName }}</a></h4>
               </div>
             </div>
         </div>
       {% endfor %}
     {% endif %}
   </div>
+
   <div>
     <a href="/" class="btn btn-outline-success return">Return</a>
   </div>

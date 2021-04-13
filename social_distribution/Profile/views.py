@@ -201,6 +201,8 @@ def friends_list(request):
 	following = list(following) + following_remote
 	followers = list(followers) + followers_remote
 
+	print(friends)
+
 	return render(request, 'profile/list.html', {'friends': friends, 'following': following, 'followers': followers})
 
 def view_posts(request, author_id):
