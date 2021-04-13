@@ -740,18 +740,18 @@ def like_post(request, author_id, post_id):
 			json_data['postID'] = post_id
 
 			url = target+'service/author/'+author_id+'/inbox/'
-			#response = requests.post(url, data=json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-			#if response.status_code == 200:
-			liked = True
+			response = requests.post(url, data=json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+			if response.status_code == 200:
+				liked = True
 
 ############################################################
 			# Comment Block #
 			comments,post = remote_comments(request,author_id,post_id)
-			comment_form = CommentForm()
+			#comment_form = CommentForm()
 
 			# End of Comment Block #
 
-			return render(None, 'profile/post.html',
+			return render(request, 'profile/post.html',
 						  {'post': post, 'current_user': current_user, 'liked': liked, 'comments': comments,
 						   'comment_form': comment_form, 'remote': True})
 
@@ -851,15 +851,14 @@ def remote_comments(request,author_id,post_id):
 		if response.status_code == 200:
 			post = response.json()
 
-			# if request.method == 'POST':
-			# 	comment_form = CommentForm(data=request.POST)
-			# 	if comment_form.is_valid():
-			# 		json_data = {}
-			# 		json_data['comment'] = request.POST.get('content')
-			# 		comment_url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/comment/'
-			# 		response = requests.post(comment_url, data=json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-
-
+			if request.method == 'POST' and request.POST.get('content')!=None:
+				comment_form = CommentForm(data=request.POST)
+				if comment_form.is_valid():
+					json_data = {}
+					json_data['comment'] = request.POST.get('content')
+					comment_url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/comment/'
+					response = requests.post(comment_url, data=json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+					comment_form = CommentForm()
 			if post['visibility'] == 'PUBLIC':
 				comments = post['comments']
 			else:
