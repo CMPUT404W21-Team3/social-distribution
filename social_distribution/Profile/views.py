@@ -280,7 +280,7 @@ def view_post(request, author_id, post_id):
 			response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 			if response.status_code == 200:
 				post = response.json()
-				liked,_,_ = handle_remote_likes(current_user,author_id,post_id) # TODO need to get like status
+				liked,_,_,count = handle_remote_likes(current_user,author_id,post_id) # TODO need to get like status
 
 				# Comment Block #
 				comment_form = CommentForm() # TODO Need to make this work for remote
@@ -313,7 +313,7 @@ def view_post(request, author_id, post_id):
 				if post['contentType'] == Post.ContentType.MARKDOWN:
 					post['content'] = commonmark.commonmark(post['content'])
 
-				return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form,'remote':True})
+				return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form,'remote':True,'like_count':count})
 			else:
 				return redirect('Profile:home')
 
@@ -819,7 +819,7 @@ def like_post(request, author_id, post_id):
 
 		# See if we have already liked this post
 		host = None
-		liked, target,connection = handle_remote_likes(current_user,author_id,post_id)
+		liked, target,connection,count = handle_remote_likes(current_user,author_id,post_id)
 
 		if not liked:
 			host = "https://team3-socialdistribution.herokuapp.com/"
@@ -852,7 +852,7 @@ def like_post(request, author_id, post_id):
 
 			return render(request, 'profile/post.html',
 						  {'post': post, 'current_user': current_user, 'liked': liked, 'comments': comments,
-						   'comment_form': comment_form, 'remote': True})
+						   'comment_form': comment_form, 'remote': True,'like_count':count})
 
 		return redirect('Profile:view_post', author_id, post_id)
 
@@ -927,6 +927,7 @@ def handle_remote_likes(current_user, author_id, post_id):
 	liked = False
 	target_url = None
 	target_con = None
+	count = None
 	for connection in Connection.objects.all():
 		url = connection.url + 'service/author/' + author_id + '/post/' + post_id + '/likes'
 		response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
@@ -935,12 +936,13 @@ def handle_remote_likes(current_user, author_id, post_id):
 		print(response.status_code,'\n')
 		if response.status_code == 200:
 			likes = response.json()
+			count = len(likes)
 			for like in likes['likes']:
 				if like['author']['id'] == current_user.id:
 					liked = True
 					break
 
-	return liked, target_url, target_con
+	return liked, target_url, target_con, count
 
 
 def remote_comments(request,author_id,post_id):
