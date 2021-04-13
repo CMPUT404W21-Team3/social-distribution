@@ -750,9 +750,9 @@ def like_post(request, author_id, post_id):
 
 			# End of Comment Block #
 
-			return render(request, 'profile/post.html',
-						  {'post': post, 'current_user': current_user, 'liked': liked, 'comments': comments,
-						   'comment_form': comment_form, 'remote': True,'like_count':count})
+		return render(request, 'profile/post.html',
+					  {'post': post, 'current_user': current_user, 'liked': liked, 'comments': comments,
+					   'comment_form': comment_form, 'remote': True,'like_count':count})
 
 		return redirect('Profile:view_post', author_id, post_id)
 
