@@ -30,6 +30,11 @@
                                 <button type="submit" style="background-color: Transparent;border: none;padding-left:0;"><i class="bi bi-hand-thumbs-up"></i></button>
                                 {% endif %}
                             </form>
+                            <!--{% if remote %}-->
+                            <!--<p>{{post.count}}</p>-->
+                            <!--{% else %}-->
+                            <!--<p>{{post.likes_count}}</p>-->
+                            <!--{% endif %}-->
                             <p>{{post.likes_count}}</p>
                         </div>
                     {% endif %}
@@ -60,22 +65,40 @@
                     {% endif %}
                     <br>
                     <p>Comments:</p>
-                    <!-- showing all comments -->
-                    <ul>
-                        {% for comment in comments.all %}
-                            <!--{% comment.author.id}-->
-                            <li>
-                                <div>
-                                    <!--Comment body-->
-                                    <p>@{{comment.author.user}} :
-                                        {{comment.content}}</p>
 
-                                    <!--Comment time-->
-                                    <p>Comment at: {{ comment.timestamp }}</p>
-                                </div>
-                            </li>
-                        {% endfor %}
-                    </ul>
+                    <!-- showing all comments -->
+                    {% if remote %}
+                        <ul>
+                            {% for comment in comments %}
+                                <li>
+                                    <div>
+                                        <!--Comment body-->
+                                        <p>@{{comment.author.displayName}} :
+                                            {{comment.comment}}</p>
+
+                                        <!--Comment time-->
+                                        <p>Comment at: {{ comment.published }}</p>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <ul>
+                            {% for comment in comments.all %}
+                                <!--{% comment.author.id}-->
+                                <li>
+                                    <div>
+                                        <!--Comment body-->
+                                        <p>@{{comment.author.user}} :
+                                            {{comment.content}}</p>
+
+                                        <!--Comment time-->
+                                        <p>Comment at: {{ comment.timestamp }}</p>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
                     <!-- ================= End of Comments block ================= -->
 
                     {% if post.author.id == current_user.author.id %}
