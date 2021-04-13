@@ -8,8 +8,8 @@
     <li>{{ f.user }} </li><a href="{% url 'Profile:view_profile' author_id=f.user.id %}">View Profile</a>
   {% endfor %} -->
 
-  {% if friends %}
-    <div class="row row-cols-1 row-cols-md-3 g-4">
+  <div class="row row-cols-auto">
+    {% if friends %}
       {% for friend in friends %}
         <div class="col">
             <div class="card h-100" style="width: fit-content;">
@@ -19,11 +19,9 @@
             </div>
         </div>
       {% endfor %}
-    </div>
-  {% endif %}
+    {% endif %}
 
-  {% if friends_remote %}
-    <div class="row row-cols-1 row-cols-md-3 g-4">
+    {% if friends_remote %}
       {% for friend in friends_remote %}
         <div class="col">
           <div class="card h-100" style="width: fit-content;">
@@ -34,8 +32,8 @@
             </div>
         </div>
       {% endfor %}
-    </div>
-  {% endif %}
+    {% endif %}
+  </div>
 
   {% if not friends and not friends_remote %}
     <p>No friends</p>
@@ -44,7 +42,7 @@
   <h2>@{{user.username }} Following</h2>
 
 
-  <div class="row row-cols-1 row-cols-md-3 g-4">
+  <div class="row row-cols-auto">
     {% for f in following %}
       <div class="col">
           <div class="card h-100" style="width: fit-content;">
@@ -77,8 +75,8 @@
 
   <h2>@{{user.username }} Followers</h2>
 
-  {% if followers %}
-    <div class="row row-cols-1 row-cols-md-3 g-4">
+  <div class="row row-cols-auto">
+    {% if followers %}
       {% for f in followers %}
         <div class="col">
             <div class="card h-100" style="width: fit-content;">
@@ -88,7 +86,9 @@
             </div>
         </div>
       {% endfor %}
+    {%  endif %}
 
+    {% if followers_remote %}
       {% for f_r in followers_remote %}
         <div class="col">
             <div class="card h-100" style="width: fit-content;">
@@ -98,8 +98,8 @@
             </div>
         </div>
       {% endfor %}
-    </div>
-  {%  endif %}
+    {% endif %}
+  </div>
 
   <!-- {% for f in followers %}
     <li>{{ f.displayName }} </li><a href="{% url 'Profile:view_profile' author_id=f.id %}">View Profile</a>
