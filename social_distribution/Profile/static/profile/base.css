@@ -83,6 +83,11 @@ nav div div ul {
     color: #198754;
 }
 
+.card-body h3 a {
+    text-decoration: none;
+    color: #198754;
+}
+
 .container-fluid {
     background-color: mediumseagreen;
 }
