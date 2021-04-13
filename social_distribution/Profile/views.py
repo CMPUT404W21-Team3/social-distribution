@@ -280,9 +280,31 @@ def view_post(request, author_id, post_id):
 			response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 			if response.status_code == 200:
 				post = response.json()
-				liked = False # TODO need to get like status
+				liked,_,_ = handle_remote_likes(current_user,author_id,post_id) # TODO need to get like status
+
+				# Comment Block #
 				comment_form = CommentForm() # TODO Need to make this work for remote
-				comments = post['comments']
+				if request.method == 'POST':
+					comment_form = CommentForm(data=request.POST)
+					if comment_form.is_valid():
+						json_data = {}
+						json_data['comment'] = request.POST.get('content')
+						comment_url = connection.url+'service/author/'+author_id+'/posts/'+post_id+ '/comment/'
+						response = requests.post(comment_url,data=json.dumps(json_data),headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+						if response != 200:
+							print(response.status_code)
+							return redirect('Profile:view_post', author_id, post_id)
+						comment_form = CommentForm()
+
+				if post['visibility'] == 'PUBLIC':
+					comments = post['comments']
+				# elif post['visibility'] == 'PRIVATE_TO_FRIENDS'
+				# 	for comment in comments:
+				#
+				else:
+					comments = []
+
+
 
 				if post['contentType'] == Post.ContentType.PNG or post['contentType'] == Post.ContentType.JPEG:
 					post['content'] = post['content'].split(',')[-1] # remove "data:image/jpeg;base64," or "data:image/png;base64," from content to leave just b64 encoding
@@ -291,7 +313,7 @@ def view_post(request, author_id, post_id):
 				if post['contentType'] == Post.ContentType.MARKDOWN:
 					post['content'] = commonmark.commonmark(post['content'])
 
-				return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
+				return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form,'remote':True})
 			else:
 				return redirect('Profile:home')
 
@@ -752,12 +774,14 @@ def unfollow(request, author_id):
 
 def like_post(request, author_id, post_id):
 	current_user = request.user
-
-	post = Post.objects.filter(id=post_id, author__id=author_id).get()
-	if post:
+	try:
+		post = Post.objects.filter(id=post_id, author__id=author_id).get()
+		found = True
+	except:
+		found = False
+	if found:
 		# Local post
 		liked = False
-
 		try:
 			obj = PostLike.objects.get(post_id=post, author__id=request.user.author.id)
 		except:
@@ -794,27 +818,41 @@ def like_post(request, author_id, post_id):
 		# Remote post
 
 		# See if we have already liked this post
-		# host = None
-		# for connection in Connection.objects.all():
-		# 	url = connection.url() + f'/service/author/{author_id}/post/{post_id}/likes/'
-		# 	response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-		# 	likes = response.json()
-		# 	print(likes)
-		# 	liked = False
-		# 	for like in likes['likes']:
-		# 		if like['author']['id'] == current_user.id:
-		# 			host = like['author']['host']
-		# 			liked = True
-		# 			break
+		host = None
+		liked, target,connection = handle_remote_likes(current_user,author_id,post_id)
 
-		# if not liked:
-		# 	url = host + f'/service/author/{author_id}/inbox/'
-		# 	post_data = {}
-		# 	post_data['Summary'] = current_user.author.displayName + ' likes your post'
-		# 	post_data['type'] = 'Like'
-		# 	post_data['actor'] = AuthorSerializer(current_user.author).data
-		# 	post_data['object'] = host + f'/author/{author_id}/posts/{post_id}/'
-		# 	print(post_data)
+		if not liked:
+			host = "https://team3-socialdistribution.herokuapp.com/"
+			# url = target + 'author/' + author_id + '/posts/' + post_id
+			json_data = {}
+
+			# revise some part of author json data
+			author_object = AuthorSerializer(current_user.author).data
+			author_object['authorID'] = author_object['id']
+			author_object['id'] = host+author_object['id']
+			author_object['host'] = host
+			author_object['url'] = host+'author/'+author_object['authorID']
+			json_data['summary'] = current_user.author.displayName + ' likes your post'
+			json_data['type'] = 'Like'
+			json_data['author'] = author_object
+			json_data['object'] = target + 'service/author/' + author_id +'/posts/'+post_id
+			json_data['postID'] = post_id
+
+			url = target+'service/author/'+author_id+'/inbox/'
+			response = requests.post(url, data=json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+			if response.status_code == 200:
+				liked = True
+
+############################################################
+			# Comment Block #
+			comments,post = remote_comments(request,author_id,post_id)
+			comment_form = CommentForm()
+
+			# End of Comment Block #
+
+			return render(request, 'profile/post.html',
+						  {'post': post, 'current_user': current_user, 'liked': liked, 'comments': comments,
+						   'comment_form': comment_form, 'remote': True})
 
 		return redirect('Profile:view_post', author_id, post_id)
 
@@ -884,3 +922,44 @@ def inbox(request):
 		likes = likes.difference(author.inbox.post_like_items_cleared.all())
 
 		return render(request, 'profile/inbox.html', {'posts': posts, 'author': author, 'friend_requests': friend_requests, 'likes': likes})
+
+def handle_remote_likes(current_user, author_id, post_id):
+	liked = False
+	target_url = None
+	target_con = None
+	for connection in Connection.objects.all():
+		url = connection.url + 'service/author/' + author_id + '/post/' + post_id + '/likes'
+		response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+		target_url = connection.url
+		target_con = connection
+		print(response.status_code,'\n')
+		if response.status_code == 200:
+			likes = response.json()
+			for like in likes['likes']:
+				if like['author']['id'] == current_user.id:
+					liked = True
+					break
+
+	return liked, target_url, target_con
+
+
+def remote_comments(request,author_id,post_id):
+	for connection in Connection.objects.all():
+		url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/'
+		response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+		if response.status_code == 200:
+			post = response.json()
+
+			if request.method == 'POST' and request.POST.get('content')!=None:
+				comment_form = CommentForm(data=request.POST)
+				if comment_form.is_valid():
+					json_data = {}
+					json_data['comment'] = request.POST.get('content')
+					comment_url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/comment/'
+					response = requests.post(comment_url, data=json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+
+			if post['visibility'] == 'PUBLIC':
+				comments = post['comments']
+			else:
+				comments = []
+			return comments,post
