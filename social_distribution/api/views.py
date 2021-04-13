@@ -576,15 +576,10 @@ def inbox(request, author_id):
 			receiver = Author.objects.get(id=author_id)
 			sender_id = data["author"]["id"]
 			try:
-				receiver_remote_friends = receiver.remote_friends_uuid.strip().split(" ")
+				receiver_remote_following = receiver.remote_following_uuid.strip().split(" ")
 			except:
-				receiver_remote_friends = []
-
-			try:
-				receiver_remote_followers = receiver.remote_followers_uuid.strip().split(" ")
-			except:
-				receiver_remote_followers = []
-			valid_remote_senders = receiver_remote_followers + receiver_remote_friends
+				receiver_remote_following = []
+			valid_remote_senders = receiver_remote_following
 			# REMOTE SENDER
 			if sender_id in valid_remote_senders:
 				try:
