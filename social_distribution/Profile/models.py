@@ -130,6 +130,7 @@ class Post(models.Model):
     )
 
     to_author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, blank=True, related_name="to_author")
+    to_remote_author_id = models.CharField(max_length=100, blank=True, null=True)
 
     unlisted = models.BooleanField(default=False) # used for images so that they don't show up in timelines
 

@@ -172,12 +172,6 @@ def friends_list(request):
 			if f in followers_remote:
 				friends_remote.append(f)
 
-	# Remote friends + following
-	# Un-comment this for interaction with Citrus
-	# Un-comment line 32+52 in list.html as well
-	# For local testing sake, i'll just use the uuid string.
-
-	# replacing every uuid as an author object.
 	for connection in Connection.objects.all():
 		if friends_remote:
 			try:
@@ -351,7 +345,7 @@ class CreatePostView(generic.CreateView):
 
 		if form.instance.visibility == "FRIENDS":
 			for connection in Connection.objects.all():
-				for uuid in remote_friends:
+				for uuid in remote_following:
 					url = connection.url + 'service/author/' + str(uuid)
 					get_response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 					if get_response.status_code == 200:
@@ -376,7 +370,7 @@ class CreatePostView(generic.CreateView):
 							"categories": form.instance.categories,
 							"comments": f"{TEAM3_URL}author/{author.id}/posts/{form.instance.id}/comments",
 							"published": form.instance.timestamp,
-							"visibility": "FRIENDS",
+							"visibility": "PRIVATE_TO_FRIENDS",
 							"unlisted": False
 						}
 						inbox_url = connection.url + 'service/author/' + str(uuid) + '/inbox/'
@@ -771,7 +765,6 @@ def unfollow(request, author_id):
 	return redirect('Profile:view_profile', author_id)
 
 
-
 def like_post(request, author_id, post_id):
 	current_user = request.user
 	try:
@@ -856,35 +849,82 @@ def like_post(request, author_id, post_id):
 		return redirect('Profile:view_post', author_id, post_id)
 
 
-
-
 def private_post(request, author_id):
 	author = request.user.author
-	to_author = Author.objects.get(id=author_id)
-	if request.method == "GET":
-		form = PostForm(initial={'title': f'Private DM from @{author.displayName} --',\
-								 'origin': f'http://localhost:8000/view_profile/{author.id}',\
-								 'visibility': 'PRIVATE',\
-								 'to_author_id': to_author})
+	try:
+		# LOCAL
+		to_author = Author.objects.get(id=author_id)
+		if request.method == "GET":
+			form = PostForm(initial={'title': f'Private DM from @{author.displayName} --',\
+									'origin': f'{TEAM3_URL}view_profile/{author.id}',\
+									'visibility': 'PRIVATE',\
+									'to_author_id': to_author})
 
-		return render(request, "profile/private_post.html", {'form':form})
-	elif request.method == "POST":
-		form = PostForm(data=request.POST)
-		form.instance.author = author
-		form.instance.to_author = to_author
-		if form.is_valid():
-			post_share = form.save(commit=False)
-			post_share.save()
-			return redirect('Profile:view_posts', author.id)
-		else:
-			print(form.errors)
+			return render(request, "profile/private_post.html", {'form':form})
+		elif request.method == "POST":
+			form = PostForm(data=request.POST)
+			form.instance.author = author
+			form.instance.to_author = to_author
+			if form.is_valid():
+				post = form.save(commit=False)
+				post.save()
+				return redirect('Profile:view_posts', author.id)
+			else:
+				print(form.errors)
+	except:
+		# REMOTE
+		if request.method == "GET":
+			form = PostForm(initial={'title': f'Private DM from @{author.displayName} --',\
+									'origin': f'{TEAM3_URL}view_profile/{author.id}',\
+									'visibility': 'PRIVATE'})
+
+			return render(request, "profile/private_post.html", {'form':form})
+		elif request.method == "POST":
+			form = PostForm(data=request.POST)
+			form.instance.author = author
+			form.instance.to_remote_author_id = author_id
+			if form.is_valid():
+				for connection in Connection.objects.all():
+					url = connection.url + 'service/author/' + str(author_id)
+					get_response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+					if get_response.status_code == 200:
+						# This guys exist
+						body = {
+							"type": "post",
+							"title": form.instance.title,
+							"id": f"{TEAM3_URL}author/{str(author.id)}/view_post/{form.instance.id}",
+							"source": form.instance.source,
+							"origin": form.instance.origin,
+							"description": form.instance.origin,
+							"contentType": form.instance.contentType,
+							"author": {
+								"type": "author",
+								"id": f"{TEAM3_URL}author/{author.id}",
+								"authorID": str(author.id),
+								"host": TEAM3_URL,
+								"displayName": author.displayName,
+								"url": f"{TEAM3_URL}author/{author.id}",
+								"github": f"https://github.com/{author.github}/"
+							},
+							"categories": form.instance.categories,
+							"comments": f"{TEAM3_URL}author/{author.id}/posts/{form.instance.id}/comments",
+							"published": form.instance.timestamp,
+							"visibility": "PRIVATE_TO_AUTHOR",
+							"unlisted": False
+						}
+						inbox_url = connection.url + 'service/author/' + str(author_id) + '/inbox/'
+						post_response = requests.post(inbox_url, json.dumps(body), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+						print(post_response.status_code)
+						post = form.save(commit=False)
+						post.save()
+			else:
+				print(form.errors)
 
 def inbox(request):
 	author = Author.objects.get(id=request.user.author.id)
 
 	# Private means direct DM or from someone is not your friend (yet)
 	private_posts = Post.objects.filter(to_author=request.user.author.id)
-	following = author.following.all()
 
 	# Friends posts contain all the post from the people you follow
 	friend_posts = author.inbox.post_items.all()
