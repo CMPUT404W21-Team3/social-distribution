@@ -174,46 +174,34 @@ def friends_list(request):
 
 	for connection in Connection.objects.all():
 		if friends_remote:
-			try:
-				for i in range(len(friends_remote)):
-					url = f'{connection.url}/service/author/' + friends_remote[i] + '/'
+			for i in range(len(friends_remote)):
+				if type(friends_remote[i]) == str:
+					url = f'{connection.url}service/author/' + friends_remote[i] + '/'
 					response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-
 					if response.status_code == 200:
 						friends_remote[i] = response.json()
-					else:
-						pass #this guy doesn't exist!
-			except:
-				pass
 
 		if following_remote:
-			try:
-				for i in range(len(following_remote)):
-					url = f'{connection.url}/service/author/' + following_remote[i] + '/'
+			for i in range(len(following_remote)):
+				if type(following_remote[i]) == str:
+					url = f'{connection.url}service/author/' + following_remote[i] + '/'
 					response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-
 					if response.status_code == 200:
 						following_remote[i] = response.json()
-					else:
-						pass #this guy doesn't exist!
-			except:
-				pass
 
 		if followers_remote:
-			try:
-				for i in range(len(followers_remote)):
-					url = f'{connection.url}/service/author/' + followers_remote[i] + '/'
+			for i in range(len(followers_remote)):
+				if type(followers_remote[i]) == str:
+					url = f'{connection.url}service/author/' + followers_remote[i] + '/'
 					response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-
 					if response.status_code == 200:
 						followers_remote[i] = response.json()
-					else:
-						pass #this guy doesn't exist!
-			except:
-				pass
 
-	return render(request, 'profile/list.html', {'friends': friends, 'friends_remote': friends_remote,
-				'following': following, 'following_remote': following_remote, 'followers': followers, 'followers_remote': followers_remote})
+	friends = list(friends) + friends_remote
+	following = list(following) + following_remote
+	followers = list(followers) + followers_remote
+
+	return render(request, 'profile/list.html', {'friends': friends, 'following': following, 'followers': followers})
 
 def view_posts(request, author_id):
 	author = Author.objects.get(id=author_id)
