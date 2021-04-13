@@ -15,36 +15,147 @@
     <a href="/author/new_post" class="btn btn-outline-success post-button" role="button">New Post</a>
     <a href="/author/new_image_post" class="btn btn-outline-success post-button" role="button">New Image Post</a>
     <a href="/" class="btn btn-outline-success post-button" role="button">Back</a>
-    <!-- <button type="button" class="btn btn-primary">New Post</button> -->
+    {% if inbox %}
+    <form action="{% url 'Profile:inbox' %}?inbox_option=New" method="POST">
+        {% csrf_token %}
+        <input type="hidden" id="clear_signal" name="clear_signal" value="clear_signal">
+        <button type="submit" class="btn btn-outline-danger post-button" id="clear_button">Clear</button>
+    </form>
+    <form class="form-inline" method="GET">
+        <div class="form-group">
+            <select class="form-select form-select-sm" id="inbox_option" name="inbox_option">
+                <option>New</option>
+                <option>Cleared</option>
+                <option>All</option>
+            </select>
+        <button type="submit" class="btn btn-secondary btn-sm">Go</button>
+        </div>
+    </form>
+    {% endif %}
+
+    {% if inbox %}
+    <div class="form-group">
+        <h4 class="inbox-section">Pending Requests</h4>
+        <button id="inbox-requests-button" class="btn btn-secondary btn-sm" onclick="showRequests()">Show</button>    
+    </div>
+    {% endif %}
+    <!-- List pending friend requests -->
+    {% if friend_requests %}
+    <p class="request-pending h6">{{friend_requests.count}} requests pending</p>
+    <div class="row row-cols-auto" id="inbox-requests-div" style="display:none">
+      {% for request in friend_requests %}
+        <div class="col-sm-3">
+            <div class="card h-100 text-center">
+              <div class="card-body">
+                {% if request.sender %}
+                <h3 class="card-title">{{request.sender.displayName}}</h3>
+                <div class="container">
+                  <div class="row">
+                    <div class="col-md-auto">
+                      <form class="request" action="/accept" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="sender" id="sender" value="{{ request.sender.displayName }}" />
+                        <button class="btn btn-success btn-sm" type="submit">Accept</button>
+                      </form>
+                    </div>
+                    <div class="col-md-auto">
+                      <form class="request" action="/decline" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="sender" id="sender" value="{{ request.sender.displayName }}" />
+                        <button class="btn btn-success btn-sm" type="submit">Decline</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+                {% else %}
+                <h3 class="card-title">{{request.remote_username}}</h3>
+                <div class="container">
+                  <div class="row">
+                    <div class="col-md-auto">
+                      <form class="request" action="/accept" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="remote" id="remote" value="remote"/>
+                        <input type="hidden" name="sender" id="sender" value="{{ request.remote_sender }}" />
+                        <button class="btn btn-success btn-sm" type="submit">Accept</button>
+                      </form>
+                    </div>
+                    <div class="col-md-auto">
+                      <form class="request" action="/decline" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="remote" id="remote" value="remote"/>
+                        <input type="hidden" name="sender" id="sender" value="{{ request.remote_sender }}" />
+                        <button class="btn btn-success btn-sm" type="submit">Decline</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+        </div>
+      {% endfor %}
+    </div>
+    {% elif inbox %}
+        <p class="no-post h6">No Requests<p>
+    {% endif %}
+    
+    <h4 class="inbox-section">Posts</h4>
     {% if posts %}
         <div class="row row-cols-1 row-cols-md-3 g-4">
             {% for post in posts %}
-                <!-- <li><a href="/author/{{author.id}}/posts/{{post.id}}">{{post.title}}</a>: </li> -->
                 {% if post.visibility == 'PRIVATE' %}
                     <div class="col">
                         <div class="card h-100" style="border: 1px solid red">
                             <div class="card-body">
                                 <h5 class="card-title"><a href="/author/{{post.author_id}}/view_post/{{post.id}}">{{post.title}}</a></h5>
-                                <h6 class="card-subtitle mb-2 text-muted">Author: @{{post.author.user_name}}</h6>
+                                <h6 class="card-subtitle mb-2 text-muted">Author: @{{post.author.displayName}}</h6>
                                 <p class="card-text">{{post.content}}</p>
                             </div>
                         </div>
                     </div>
                 {% else %}
-                <div class="col">
-                    <div class="card h-100">
-                        <div class="card-body">
+                  <div class="col">
+                      <div class="card h-100">
+                          <div class="card-body">
+                            {% if post.remote_url %}
+                            <h5 class="card-title"><a href="{{post.remote_url}}">{{post.title}}</a></h5>
+                            <h6 class="card-subtitle mb-2 text-muted">Author: @{{post.remote_author_displayName}}</h6>
+                            {% else %}
                             <h5 class="card-title"><a href="/author/{{post.author_id}}/view_post/{{post.id}}">{{post.title}}</a></h5>
-                            <h6 class="card-subtitle mb-2 text-muted">Author: @{{post.author.user_name}}</h6>
+                            <h6 class="card-subtitle mb-2 text-muted">Author: @{{post.author.displayName}}</h6>
+                            {% endif %}
                             <p class="card-text">{{post.content_html | safe}}</p>
-                        </div>
-                    </div>
-                </div>
+                          </div>
+                      </div>
+                  </div>
                 {% endif %}
             {% endfor %}
         </div>
     {% else %}
-        <p class="no-post h5">No Posts<p>
+        <p class="no-post h6">No Posts<p>
     {% endif %}
+
+<script>
+  window.onload = function() {
+    filter();
+  }
+  function filter() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const myParam = urlParams.get('inbox_option');
+    document.getElementById("inbox_option").value = myParam
+  }
+	function showRequests() {
+		var x = document.getElementById("inbox-requests-div");
+        var button = document.getElementById("inbox-requests-button");
+		if (x.style.display == "none") {
+			x.style.display = "block";
+            button.innerText = "Hide"
+		} else {
+			x.style.display = "none";
+            button.innerText = "Show"
+		}
+	}
+</script>
+
 
 {% endblock %}

@@ -18,11 +18,15 @@ from django.http import HttpResponseRedirect
 
 from .forms import UserForm, AuthorForm, SignUpForm, PostForm, ImagePostForm, CommentForm
 
-from .models import Author, Post, CommentLike, PostLike
+from .models import Author, Post, CommentLike, PostLike, Inbox
 from Search.models import FriendRequest
 from api.models import Connection
+from api.serializers import AuthorSerializer, PostSerializer
 
 from .helpers import timestamp_beautify
+
+DEFAULT_HEADERS = {'Referer': 'https://team3-socialdistribution.herokuapp.com/', 'Mode': 'no-cors'}
+TEAM3_URL = "https://team3-socialdistribution.herokuapp.com/"
 
 # Create your views here.
 
@@ -42,16 +46,52 @@ def home(request):
 	# Grab self posts
 	self_posts = Post.objects.filter(author=request.user.author, unlisted=False).order_by('-timestamp')
 
-	# Grab friend's posts
-	friends = Author.objects.get(user__username=request.user.username).friends.all()
+	# Grab posts from those who are your friends
+	author = Author.objects.get(user__username=request.user.username)
+	friends = author.following.all() & author.followers.all()
 	friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
 
 	# Merge posts, sort them
-	posts = public_posts | self_posts | friends_posts
+	local_posts = public_posts | self_posts | friends_posts
 
-	connections = serialize('json', Connection.objects.all())
+	posts = []
+	posts.append(local_posts)
 
-	return render(request, 'profile/home.html', {'posts': posts, 'connections': connections})
+	# TODO: Grabbing remote friends posts.
+	remote_posts = []
+
+	for connection in Connection.objects.all():
+		if connection.name == 'localhost':
+			pass
+		else:
+			url = connection.url + 'service/authors/'
+			response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+			if response.status_code == 200:
+				for author in response.json()['items']:
+					author_id = author['id']
+					new_url = f'{connection.url}service/author/{author_id}/posts/'
+					response = requests.get(new_url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+					if response.status_code == 200:
+						posts_remote = response.json()['posts']
+						if len(posts) > 0:
+							for item in posts_remote:
+								if item['visibility'] == 'PUBLIC':
+									post_id = item['id']
+									post = Post(
+										id = item['id'],
+										author = Author(
+											id = item['author']['id'],
+											remote_username = item['author']['displayName'],
+										),
+										timestamp = item['published'],
+										title = item['title'],
+										content = item['content'],
+										contentType = item['contentType'].split(';')[0],
+									)
+									remote_posts.append(post)
+	posts.append(remote_posts)
+
+	return render(request, 'profile/home.html', {'posts': posts})
 
 @login_required(login_url='/login/')
 def update_profile(request):
@@ -99,6 +139,7 @@ def signup(request):
 			user.refresh_from_db()
 			user.is_active = False  # load the profile instance created by the signal
 			user.save()
+
 			messages.success(request, 'Your user was successfully created!')
 			return redirect('Profile:login')
 	else:
@@ -106,32 +147,73 @@ def signup(request):
 	return render(request, 'profile/signup.html', {'form': form})
 
 
-def list(request):
-	# Fetch friend requests, friends and following
+def friends_list(request):
 	user = Author.objects.get(user__username=request.user.username)
-	friend_requests = FriendRequest.objects.filter(receiver=user)
-	friends = user.friends.all()
+
 	following = user.following.all()
+	followers = user.followers.all()
 
-	return render(request, 'profile/list.html', {'friend_requests': friend_requests, 'friends': friends, 'following': following})
+	# Grab friends
+	friends = following & followers
 
-def accept(request):
-	receiver = Author.objects.get(user__username=request.user.username)
-	sender = Author.objects.get(user__username=request.POST.get('sender', ''))
-	# Delete that request
-	FriendRequest.objects.filter(receiver=receiver).filter(sender=sender).delete()
+	if user.remote_following_uuid:
+		following_remote = user.remote_following_uuid.strip().split(" ")
+	else:
+		following_remote = None
 
-	# Add to friends list
-	receiver.friends.add(sender)
+	if user.remote_followers_uuid:
+		followers_remote = user.remote_followers_uuid.strip().split(" ")
+	else:
+		followers_remote = None
 
-	return redirect('Profile:friends')
+	friends_remote = []
+	if following_remote and followers_remote:
+		for f in following_remote:
+			if f in followers_remote:
+				friends_remote.append(f)
 
-def decline(request):
-	receiver = Author.objects.get(user__username=request.user.username)
-	sender = Author.objects.get(user__username=request.POST.get('sender', ''))
-	# Delete that request
-	FriendRequest.objects.filter(receiver=receiver).filter(sender=sender).delete()
-	return redirect('Profile:friends')
+	for connection in Connection.objects.all():
+		if friends_remote:
+			try:
+				for i in range(len(friends_remote)):
+					url = f'{connection.url}/service/author/' + friends_remote[i] + '/'
+					response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+
+					if response.status_code == 200:
+						friends_remote[i] = response.json()
+					else:
+						pass #this guy doesn't exist!
+			except:
+				pass
+
+		if following_remote:
+			try:
+				for i in range(len(following_remote)):
+					url = f'{connection.url}/service/author/' + following_remote[i] + '/'
+					response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+
+					if response.status_code == 200:
+						following_remote[i] = response.json()
+					else:
+						pass #this guy doesn't exist!
+			except:
+				pass
+
+		if followers_remote:
+			try:
+				for i in range(len(followers_remote)):
+					url = f'{connection.url}/service/author/' + followers_remote[i] + '/'
+					response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+
+					if response.status_code == 200:
+						followers_remote[i] = response.json()
+					else:
+						pass #this guy doesn't exist!
+			except:
+				pass
+
+	return render(request, 'profile/list.html', {'friends': friends, 'friends_remote': friends_remote,
+				'following': following, 'following_remote': following_remote, 'followers': followers, 'followers_remote': followers_remote})
 
 def view_posts(request, author_id):
 	author = Author.objects.get(id=author_id)
@@ -141,55 +223,161 @@ def view_posts(request, author_id):
 	return render(request, 'profile/posts.html', {'posts':posts, 'author':author})
 
 def view_post(request, author_id, post_id):
+
 	current_user = request.user
-	post = get_object_or_404(Post, id=post_id, author__id=author_id)
-	liked = False
-
-	#--- Comments Block ---#
-	# https://djangocentral.com/creating-comments-system-with-django/
-	if current_user.author.id == post.author.id or post.visibility=='PUBLIC':
-		comments = post.comments
-	else:
-		comments = post.comments.filter(author__id=current_user.author.id)
-	new_comment = None
-	if request.method == 'POST':
-		comment_form = CommentForm(data=request.POST)
-		if comment_form.is_valid():
-			new_comment = comment_form.save(commit=False)
-			new_comment.post = post
-			new_comment.author = request.user.author
-			new_comment.save()
-			# new_comment = CommentForm()
-			# ref: https://stackoverflow.com/questions/5773408/how-to-clear-form-fields-after-a-submit-in-django
-			# Bugged
-			# return HttpResponseRedirect('')
-			comment_form = CommentForm()
-	else:
-		comment_form = CommentForm()
-	#--- end of Comments Block ---#
-
 	try:
-		obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
-	except:
-		liked = False
-	else:
-		liked = True
+		post = Post.objects.get(id=post_id, author__id=author_id)
 
-	if post.content_type == Post.ContentType.PNG or post.content_type == Post.ContentType.JPEG:
-		return HttpResponse(b64decode(post.content), content_type=post.content_type)
-	else:
-		return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
+		liked = False
+
+		#--- Comments Block ---#
+		# https://djangocentral.com/creating-comments-system-with-django/
+		if current_user.author.id == post.author.id or post.visibility=='PUBLIC':
+			comments = post.comments
+		else:
+			comments = post.comments.filter(author__id=current_user.author.id)
+		new_comment = None
+		if request.method == 'POST':
+			comment_form = CommentForm(data=request.POST)
+			if comment_form.is_valid():
+				new_comment = comment_form.save(commit=False)
+				new_comment.post = post
+				new_comment.author = request.user.author
+				new_comment.save()
+				# new_comment = CommentForm()
+				# ref: https://stackoverflow.com/questions/5773408/how-to-clear-form-fields-after-a-submit-in-django
+				# Bugged
+				# return HttpResponseRedirect('')
+				comment_form = CommentForm()
+		else:
+			comment_form = CommentForm()
+		#--- end of Comments Block ---#
+
+		try:
+			obj = PostLike.objects.get(post_id=post, author__id=request.user.author.id)
+		except:
+			liked = False
+		else:
+			liked = True
+
+		if post.contentType == Post.ContentType.MARKDOWN:
+			post.content = commonmark.commonmark(post.content)
+		if post.contentType == Post.ContentType.PNG or post.contentType == Post.ContentType.JPEG:
+			post.content = post.content[len(post.contentType) + 6:] # remove "data:image/jpeg;base64," or "data:image/png;base64," from content to leave just b64 encoding
+			return HttpResponse(b64decode(post.content), content_type=post.contentType)
+		else:
+			return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
+	except:
+		# Remote post
+		for connection in Connection.objects.all():
+			url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/'
+			response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+			if response.status_code == 200:
+				post = response.json()
+				liked,_,_,count = handle_remote_likes(current_user,author_id,post_id) # TODO need to get like status
+
+				# Comment Block #
+				comment_form = CommentForm() # TODO Need to make this work for remote
+				if request.method == 'POST':
+					comment_form = CommentForm(data=request.POST)
+					if comment_form.is_valid():
+						json_data = {}
+						json_data['comment'] = request.POST.get('content')
+						comment_url = connection.url+'service/author/'+author_id+'/posts/'+post_id+ '/comment/'
+						response = requests.post(comment_url,data=json.dumps(json_data),headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+						if response != 200:
+							print(response.status_code)
+							return redirect('Profile:view_post', author_id, post_id)
+						comment_form = CommentForm()
+
+				if post['visibility'] == 'PUBLIC':
+					comments = post['comments']
+				# elif post['visibility'] == 'PRIVATE_TO_FRIENDS'
+				# 	for comment in comments:
+				#
+				else:
+					comments = []
+
+
+
+				if post['contentType'] == Post.ContentType.PNG or post['contentType'] == Post.ContentType.JPEG:
+					post['content'] = post['content'].split(',')[-1] # remove "data:image/jpeg;base64," or "data:image/png;base64," from content to leave just b64 encoding
+					return HttpResponse(b64decode(post['content']), content_type=post['contentType'])
+
+				if post['contentType'] == Post.ContentType.MARKDOWN:
+					post['content'] = commonmark.commonmark(post['content'])
+
+				return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form,'remote':True,'like_count':count})
+			else:
+				return redirect('Profile:home')
+
+
 
 class CreatePostView(generic.CreateView):
 	model = Post
 	template_name = 'profile/create_post.html'
-	fields = ['title', 'source', 'origin', 'content_type', 'description', 'content', 'categories', 'visibility', 'unlisted']
+	fields = ['title', 'source', 'origin', 'contentType', 'description', 'content', 'categories', 'visibility', 'unlisted']
 
 	def form_valid(self, form):
 		author = self.request.user.author
 		self.success_url = '/author/' + str(author.id) + '/view_posts'
 		form.instance.author = author
-		return super().form_valid(form)
+
+		# https://stackoverflow.com/questions/32998300/django-createview-how-to-perform-action-upon-save
+		response = super().form_valid(form)
+
+		# LOCAL: only send to inbox of those who are your friends.
+		friends = author.followers.all() & author.following.all()
+		if form.instance.visibility == "FRIENDS":
+			for friend in friends:
+				friend.inbox.post_items.add(form.instance)
+
+		# REMOTE: TODO (same logic)
+		if author.remote_following_uuid:
+			remote_following = author.remote_following_uuid.strip().split(" ")
+		else:
+			remote_following = []
+		if author.remote_followers_uuid:
+			remote_followers = author.remote_followers_uuid.strip().split(" ")
+		else:
+			remote_followers = []
+		remote_friends = list(set(remote_following) & set(remote_followers))
+
+		if form.instance.visibility == "FRIENDS":
+			for connection in Connection.objects.all():
+				for uuid in remote_following:
+					url = connection.url + 'service/author/' + str(uuid)
+					get_response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+					if get_response.status_code == 200:
+						# This is a valid author				
+						body = {
+							"type": "post",
+							"title": form.instance.title,
+							"id": f"{TEAM3_URL}author/{str(author.id)}/view_post/{form.instance.id}",
+							"source": form.instance.source,
+							"origin": form.instance.origin,
+							"description": form.instance.origin,
+							"contentType": form.instance.contentType,
+							"author": {
+								"type": "author",
+								"id": f"{TEAM3_URL}author/{author.id}",
+								"authorID": str(author.id),
+								"host": TEAM3_URL,
+								"displayName": author.displayName,
+								"url": f"{TEAM3_URL}author/{author.id}",
+								"github": f"https://github.com/{author.github}/"
+							},
+							"categories": [category.name for category in form.instance.categories.all()],
+							"comments": f"{TEAM3_URL}author/{author.id}/posts/{form.instance.id}/comments",
+							"published": form.instance.timestamp,
+							"visibility": "PRIVATE_TO_FRIENDS",
+							"unlisted": False
+						}
+						inbox_url = connection.url + 'service/author/' + str(uuid) + '/inbox/'
+						post_response = requests.post(inbox_url, json.dumps(body), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+						print(post_response.status_code)
+
+		return response
 
 @login_required(login_url='/login/')
 def new_image_post(request):
@@ -198,10 +386,12 @@ def new_image_post(request):
 		if form.is_valid():
 			image_post = form.save(commit=False)
 			image_post.content = b64encode(request.FILES['image'].read()).decode('ascii') # https://stackoverflow.com/a/45151058
-			image_post.content_type = request.FILES['image'].content_type
+			image_post.contentType = request.FILES['image'].content_type + ';base64'
+			image_post.content = 'data:' + image_post.contentType + ',' + image_post.content
 			image_post.author = request.user.author
 			image_post.unlisted = True
 			image_post.save()
+
 			form.save_m2m() # https://docs.djangoproject.com/en/3.1/topics/forms/modelforms/#the-save-method
 			return redirect('Profile:view_posts', author_id=request.user.author.id)
 
@@ -236,25 +426,99 @@ def delete_post(request, post_id):
 		post.delete()
 		return redirect('Profile:view_posts', author_id=request.user.author.id)
 
-def share_post(request, post_id):
-	post = Post.objects.get(id=post_id)
-	author_original = post.author
-	author_share = request.user.author
-	if request.method == "GET":
-		form = PostForm(instance=post, initial={'title': post.title + f'---Shared from {str(author_original.user_name)}',\
-												'origin': post.origin + f'http://localhost:8000/author/{author_original.id}/view_post/{post_id}', \
-												'visibility': post.visibility})
+def share_post(request, post_id, author_id):
 
+	post = Post.objects.filter(id=post_id).first()
+
+	if not post:
+		# Remote post
+		for connection in Connection.objects.all():
+			url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/'
+			response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+			if response.status_code == 200:
+				post_j = response.json()
+				post = Post(
+					title = post_j['title'],
+					source = post_j['source'],
+					origin = post_j['origin'],
+					description = post_j['description'],
+					contentType = post_j['contentType'],
+					content = post_j['content'],
+				)
+				author_original = post_j['author']['displayName']
+	else:
+		author_original = post.author.displayName
+
+	author = request.user.author
+	
+	if request.method == "GET":
+		form = PostForm(instance=post, initial={'title': f'{post.title} ---Shared from {author_original}'})
 		return render(request, "profile/share_post.html", {'form':form})
 	else:
 		form = PostForm(data=request.POST)
-		form.instance.author = author_share
+		form.instance.author = author
 		if form.is_valid():
-			post_share = form.save(commit=False)
-			post_share.save()
-			return redirect('Profile:view_posts', author_share.id)
+			# post_share = form.save(commit=False)
+			# post_share.save()
+
+			form.save()
+
+			# LOCAL: only send to inbox of those who are your friends.
+			friends = author.followers.all() & author.following.all()
+			if form.instance.visibility == "FRIENDS":
+				for friend in friends:
+					friend.inbox.post_items.add(form.instance)
+
+			# REMOTE:
+			if author.remote_following_uuid:
+				remote_following = author.remote_following_uuid.strip().split(" ")
+			else:
+				remote_following = []
+			if author.remote_followers_uuid:
+				remote_followers = author.remote_followers_uuid.strip().split(" ")
+			else:
+				remote_followers = []
+			remote_friends = list(set(remote_following) & set(remote_followers))
+
+			if form.instance.visibility == "FRIENDS":
+				for connection in Connection.objects.all():
+					for uuid in remote_friends:
+						url = connection.url + 'service/author/' + str(uuid)
+						get_response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+						if get_response.status_code == 200:
+							# This is a valid author				
+							body = {
+								"type": "post",
+								"title": form.instance.title,
+								"id": f"{TEAM3_URL}author/{str(author.id)}/view_post/{form.instance.id}",
+								"source": form.instance.source,
+								"origin": form.instance.origin,
+								"description": form.instance.origin,
+								"contentType": form.instance.contentType,
+								"author": {
+									"type": "author",
+									"id": f"{TEAM3_URL}author/{author.id}",
+									"authorID": str(author.id),
+									"host": TEAM3_URL,
+									"displayName": author.displayName,
+									"url": f"{TEAM3_URL}author/{author.id}",
+									"github": f"https://github.com/{author.github}/"
+								},
+								"categories": [category.name for category in form.instance.categories.all()],
+								"comments": f"{TEAM3_URL}author/{author.id}/posts/{form.instance.id}/comments",
+								"published": form.instance.timestamp,
+								"visibility": "FRIENDS",
+								"unlisted": False
+							}
+							inbox_url = connection.url + 'service/author/' + str(uuid) + '/inbox/'
+							post_response = requests.post(inbox_url, json.dumps(body), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+							print(post_response.status_code)
+
+
+			return redirect('Profile:view_posts', author.id)
 		else:
 			print(form.errors)
+
 
 def view_github_activity(request):
 	#get the current user's github username if available
@@ -346,99 +610,397 @@ def post_github(request):
 
 
 def view_profile(request, author_id):
+
 	user = Author.objects.get(user__username=request.user.username)
-	author = Author.objects.get(id=author_id)
-	following_status = user.following.filter(id=author_id).exists()
-	follower_status = user.followers.filter(id=author_id).exists()
+	local = True
+
+	# Try to grab from local server
+	try:
+		found_author = Author.objects.get(id=author_id)
+		posts = found_author.posts.all()
+		following_status = user.following.filter(id=author_id).exists()
+		follower_status = user.followers.filter(id=author_id).exists()
+	except:
+		# Remote author!
+		local = False
+		for connection in Connection.objects.all():
+			if connection.name == "localhost":
+				found_author = Author(
+					id=author_id,
+					remote_username='Local Tester'
+				)
+				posts = None
+				try:
+					following_status = True if author_id in user.remote_following_uuid else False
+				except:
+					following_status = False
+				
+				try:
+					follower_status = True if author_id in user.remote_followers_uuid else False
+				except:
+					follower_status = False
+			else:
+				url = connection.url + 'service/authors/'
+				response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+				if response.status_code == 200:
+					for author in response.json()['items']:
+						# Found a match!
+						if author_id == author['id']:
+							# Grab posts
+							url = connection.url + 'service/author/' + author_id + '/posts/'
+							response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+							if response.status_code == 200:
+								posts = response.json()['posts']
+
+								# Set correct author
+								found_author = author
+								try:
+									following_status = True if author_id in user.remote_following_uuid else False
+								except:
+									following_status = False
+								
+								try:
+									follower_status = True if author_id in user.remote_followers_uuid else False
+								except:
+									follower_status = False
+
+
 	if following_status or follower_status:
 		follow_status = True
 	else:
 		follow_status = False
-	friend_status = user.friends.filter(id=author_id).exists()
-	friend_posts = author.posts.all()
-
+	# A and B are friends <=> A follows B and B follows A
+	friend_status = follower_status and following_status
 	if request.method == "GET":
-		return render(request, 'profile/view_profile.html', {'author': author, 'posts': friend_posts, 'friend_status': friend_status, 'follow_status': follow_status})
+		return render(request, 'profile/view_profile.html', {'author': found_author, 'posts': posts, 'friend_status': friend_status, 'following_status': following_status,
+					'follower_status': follower_status, 'follow_status': follow_status, 'local': local})
 
-# TODO: check if request has already been made
-def friend_request(request, author_id):
-	# Create request object
-	receiver = Author.objects.get(id=author_id)
-	sender = Author.objects.get(user__username=request.user.username)
-	friend_request = FriendRequest(sender=sender, receiver=receiver)
+def follow(request, author_id):
+	sender = request.user.author
+	local = True
+	try:
+		receiver = Author.objects.get(id=author_id)
+	except:
+		local = False
+		for connection in Connection.objects.all():
+			if connection.name == "localhost":
+				temp = sender.remote_following_uuid
+				if temp:
+					if author_id not in temp:
+						sender.remote_following_uuid += f' {author_id}'
+				else:
+					sender.remote_following_uuid = author_id
+				sender.save()
+			else:
+				url = connection.url + 'service/authors/'
+				response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+				if response.status_code == 200:
+					for author in response.json()['items']:
+						# Found a match!
+						if author_id == author['id']:
+							receiver = author
 
-	# Add to database
-	friend_request.save()
+							post_data = {}
+							post_data['type'] = 'follow'
+							post_data['summary'] = sender.displayName + ' wants to follow ' + receiver['displayName']
+							post_data['actor'] = {
+								'type': 'author',\
+								'id': f"{TEAM3_URL}author/{sender.id}",\
+								'authorID': str(sender.id),\
+								'host': TEAM3_URL,\
+								'displayName': sender.displayName,\
+								'github': f"https://github.com/{sender.github}/"\
+							}
+							post_data['object'] = receiver
 
-	# Add the receiver to the sender's following list
-	sender.following.add(receiver)
-	receiver.followers.add(sender)
+							# Send request to remote
+							url = connection.url + 'service/author/' + receiver['id'] + '/inbox/'
+							post_response = requests.post(url, json.dumps(post_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+							if post_response == None or post_response.status_code in [200, 304]:
+								temp = sender.remote_following_uuid
+								if temp:
+									if author_id not in temp:
+										sender.remote_following_uuid += f' {author_id}'
+								else:
+									sender.remote_following_uuid = author_id
+								sender.save()
+							
+
+	if local:
+		# Create friend request
+		friend_request = FriendRequest(sender=sender, receiver=receiver)
+
+		# Add to database
+		friend_request.save()
+
+		# Send friend request object to inbox
+		receiver.inbox.follow_items.add(friend_request)
+
+		# Add the receiver to the sender's following list
+		sender.following.add(receiver)
+		receiver.followers.add(sender)
 
 	return redirect('Profile:view_profile', author_id)
 
-def remove_friend(request, author_id):
+def unfollow(request, author_id):
 	user = Author.objects.get(user__username=request.user.username)
-	to_delete = Author.objects.get(id=author_id)
-	user.friends.remove(to_delete)
+	try:
+		# Local
+		user_following = Author.objects.get(id=author_id)
+
+
+		# Remove connection
+
+		# ToDo: what other models must be updated? See email
+		user.following.remove(user_following)
+		user_following.followers.remove(user)
+	
+	except:
+		# Remote
+		remote_following_list = user.remote_following_uuid.strip().split(" ")
+		remote_following_list.remove(author_id)
+		user.remote_following_uuid = " ".join(remote_following_list)
+		user.save()
 
 	return redirect('Profile:view_profile', author_id)
-
 
 
 def like_post(request, author_id, post_id):
 	current_user = request.user
-	post = get_object_or_404(Post, id=post_id, author__id=author_id)
-	liked = False
-
 	try:
-		obj = PostLike.objects.get(post_id=post, author__id=request.user.id)
+		post = Post.objects.filter(id=post_id, author__id=author_id).get()
+		found = True
 	except:
-		author = Author.objects.get(id=author_id)
-		like_instance = PostLike(post_id=post, author=author)
-		like_instance.save()
-		post.likes_count = post.likes_count + 1
-		post.save()
-		liked = True
-	else:
-		post.likes_count -= 1
-		post.save()
-		obj.delete()
+		found = False
+	if found:
+		# Local post
+		liked = False
+		try:
+			obj = PostLike.objects.get(post_id=post, author__id=request.user.author.id)
+		except:
+			author = Author.objects.get(id=request.user.author.id)
 
-	if post.content_type == Post.ContentType.PLAIN:
-		content = post.content
-	if post.content_type == Post.ContentType.MARKDOWN:
-		content = commonmark.commonmark(post.content)
+			like_instance = PostLike(post_id=post, author=author)
+			like_instance.save()
+			post.likes_count = post.likes_count + 1
+			post.save()
+			liked = True
+
+			# Add to inbox
+			content_author = Author.objects.get(id=author_id)
+			content_author.inbox.post_like_items.add(like_instance)
+
+		else:
+			post.likes_count -= 1
+			post.save()
+			obj.delete()
+
+		if post.contentType == Post.ContentType.PLAIN:
+			content = post.content
+		if post.contentType == Post.ContentType.MARKDOWN:
+			content = commonmark.commonmark(post.content)
+		else:
+			content = 'Content type not supported yet'
+		if current_user.author.id == post.author.id or post.visibility == 'PUBLIC':
+			comments = post.comments
+		else:
+			comments = post.comments.filter(author__id=current_user.author.id)
+		comment_form = CommentForm()
+		return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user, 'liked': liked, 'comments':comments, 'comment_form':comment_form})
 	else:
-		content = 'Content type not supported yet'
-	return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user, 'liked': liked})
+		# Remote post
+
+		# See if we have already liked this post
+		host = None
+		liked, target,connection,count = handle_remote_likes(current_user,author_id,post_id)
+
+		if not liked:
+			host = "https://team3-socialdistribution.herokuapp.com/"
+			# url = target + 'author/' + author_id + '/posts/' + post_id
+			json_data = {}
+
+			# revise some part of author json data
+			author_object = AuthorSerializer(current_user.author).data
+			author_object['authorID'] = author_object['id']
+			author_object['id'] = host+author_object['id']
+			author_object['host'] = host
+			author_object['url'] = host+'author/'+author_object['authorID']
+			json_data['summary'] = current_user.author.displayName + ' likes your post'
+			json_data['type'] = 'Like'
+			json_data['author'] = author_object
+			json_data['object'] = target + 'service/author/' + author_id +'/posts/'+post_id
+			json_data['postID'] = post_id
+
+			url = target+'service/author/'+author_id+'/inbox/'
+			response = requests.post(url, data=json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+			liked = True
+
+############################################################
+			# Comment Block #
+			comments,post = remote_comments(request,author_id,post_id)
+			comment_form = CommentForm()
+
+			# End of Comment Block #
+
+		return render(request, 'profile/post.html',
+					  {'post': post, 'current_user': current_user, 'liked': liked, 'comments': comments,
+					   'comment_form': comment_form, 'remote': True,'like_count':count})
+
+		return redirect('Profile:view_post', author_id, post_id)
+
 
 def private_post(request, author_id):
 	author = request.user.author
-	to_author = Author.objects.get(id=author_id)
-	if request.method == "GET":
-		form = PostForm(initial={'title': f'Private DM from @{author.user_name} --',\
-								 'origin': f'http://localhost:8000/view_profile/{author.id}',\
-								 'visibility': 'PRIVATE',\
-								 'to_author_id': to_author})
+	try:
+		# LOCAL
+		to_author = Author.objects.get(id=author_id)
+		if request.method == "GET":
+			form = PostForm(initial={'title': f'Private DM from @{author.displayName} --',\
+									'origin': f'{TEAM3_URL}view_profile/{author.id}',\
+									'visibility': 'PRIVATE',\
+									'to_author_id': to_author})
 
-		return render(request, "profile/private_post.html", {'form':form})
-	elif request.method == "POST":
-		form = PostForm(data=request.POST)
-		form.instance.author = author
-		form.instance.to_author = to_author
-		if form.is_valid():
-			post_share = form.save(commit=False)
-			post_share.save()
-			return redirect('Profile:view_posts', author.id)
-		else:
-			print(form.errors)
+			return render(request, "profile/private_post.html", {'form':form})
+		elif request.method == "POST":
+			form = PostForm(data=request.POST)
+			form.instance.author = author
+			form.instance.to_author = to_author
+			if form.is_valid():
+				post = form.save(commit=False)
+				post.save()
+				return redirect('Profile:view_posts', author.id)
+			else:
+				print(form.errors)
+	except:
+		# REMOTE
+		if request.method == "GET":
+			form = PostForm(initial={'title': f'Private DM from @{author.displayName} --',\
+									'origin': f'{TEAM3_URL}view_profile/{author.id}',\
+									'visibility': 'PRIVATE'})
+
+			return render(request, "profile/private_post.html", {'form':form})
+		elif request.method == "POST":
+			form = PostForm(data=request.POST)
+			form.instance.author = author
+			form.instance.to_remote_author_id = author_id
+			if form.is_valid():
+				for connection in Connection.objects.all():
+					url = connection.url + 'service/author/' + str(author_id)
+					get_response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+					if get_response.status_code == 200:
+						# This guys exist
+						body = {
+							"type": "post",
+							"title": form.instance.title,
+							"id": f"{TEAM3_URL}author/{str(author.id)}/view_post/{form.instance.id}",
+							"source": form.instance.source,
+							"origin": form.instance.origin,
+							"description": form.instance.origin,
+							"contentType": form.instance.contentType,
+							"author": {
+								"type": "author",
+								"id": f"{TEAM3_URL}author/{author.id}",
+								"authorID": str(author.id),
+								"host": TEAM3_URL,
+								"displayName": author.displayName,
+								"url": f"{TEAM3_URL}author/{author.id}",
+								"github": f"https://github.com/{author.github}/"
+							},
+							"categories": form.instance.categories,
+							"comments": f"{TEAM3_URL}author/{author.id}/posts/{form.instance.id}/comments",
+							"published": form.instance.timestamp,
+							"visibility": "PRIVATE_TO_AUTHOR",
+							"unlisted": False
+						}
+						inbox_url = connection.url + 'service/author/' + str(author_id) + '/inbox/'
+						post_response = requests.post(inbox_url, json.dumps(body), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+						print(post_response.status_code)
+						post = form.save(commit=False)
+						post.save()
+			else:
+				print(form.errors)
 
 def inbox(request):
 	author = Author.objects.get(id=request.user.author.id)
+
 	# Private means direct DM or from someone is not your friend (yet)
-	private_posts = Post.objects.filter(to_author=request.user.author.id).order_by('-timestamp')
-	friends = author.friends.all()
+	private_posts = Post.objects.filter(to_author=request.user.author.id)
+
 	# Friends posts contain all the post from the people you follow
-	friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
-	posts = private_posts | friends_posts
-	return render(request, 'profile/posts.html', {'posts':posts, 'author':author})
+	friend_posts = author.inbox.post_items.all()
+	posts = private_posts | friend_posts
+
+	# Grab friend requests from inbox
+	friend_requests = author.inbox.follow_items.all()
+
+	# Grab likes from inbox
+	likes = author.inbox.post_like_items.all()
+
+	if request.method == "GET":
+		inbox_option = request.GET.get("inbox_option")
+		if inbox_option == "All":
+			posts = posts.order_by('-timestamp')
+		elif inbox_option == "Cleared":
+			posts = author.inbox.post_items_cleared.all().order_by('-timestamp')
+			friend_requests = author.inbox.follow_items_cleared.all()
+			likes = author.inbox.post_like_items_cleared.all()
+		else:
+			posts = posts.difference(author.inbox.post_items_cleared.all()).order_by('-timestamp')
+			friend_requests = friend_requests.difference(author.inbox.follow_items_cleared.all())
+			likes = likes.difference(author.inbox.post_like_items_cleared.all())
+
+		return render(request, 'profile/inbox.html', {'posts':posts, 'author':author, 'friend_requests': friend_requests, 'likes': likes})
+	elif request.method == "POST":
+		if "clear_signal" in request.POST:
+			author.inbox.post_items_cleared.add(*posts)
+			author.inbox.follow_items_cleared.add(*friend_requests)
+			author.inbox.post_like_items_cleared.add(*likes)
+
+		posts = posts.difference(author.inbox.post_items_cleared.all()).order_by('-timestamp')
+		friend_requests = friend_requests.difference(author.inbox.follow_items_cleared.all())
+		likes = likes.difference(author.inbox.post_like_items_cleared.all())
+
+		return render(request, 'profile/inbox.html', {'posts': posts, 'author': author, 'friend_requests': friend_requests, 'likes': likes})
+
+def handle_remote_likes(current_user, author_id, post_id):
+	liked = False
+	target_url = None
+	target_con = None
+	count = None
+	for connection in Connection.objects.all():
+		url = connection.url + 'service/author/' + author_id + '/post/' + post_id + '/likes'
+		response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+		target_url = connection.url
+		target_con = connection
+		print(response.status_code,'\n')
+		if response.status_code == 200:
+			likes = response.json()
+			count = len(likes)
+			for like in likes['likes']:
+				if like['author']['id'] == current_user.id:
+					liked = True
+					break
+
+	return liked, target_url, target_con, count
+
+
+def remote_comments(request,author_id,post_id):
+	for connection in Connection.objects.all():
+		url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/'
+		response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+		if response.status_code == 200:
+			post = response.json()
+
+			if request.method == 'POST' and request.POST.get('content')!=None:
+				comment_form = CommentForm(data=request.POST)
+				if comment_form.is_valid():
+					json_data = {}
+					json_data['comment'] = request.POST.get('content')
+					comment_url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/comment/'
+					response = requests.post(comment_url, data=json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
+
+			if post['visibility'] == 'PUBLIC':
+				comments = post['comments']
+			else:
+				comments = []
+			return comments,post

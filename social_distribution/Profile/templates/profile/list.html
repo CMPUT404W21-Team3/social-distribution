@@ -14,69 +14,105 @@
         <div class="col">
             <div class="card h-100" style="width: fit-content;">
               <div class="card-body" style="padding: 6px 8px 0 8px;">
-                <h4 class="card-title"><a href="{% url 'Profile:view_profile' author_id=friend.id %}" style="text-decoration: none; color: #198754;">{{friend.user}}</a></h4>
-                <!-- <a href="{% url 'Profile:view_profile' author_id=friend.id %}" class="btn btn-primary">View Profile</a> -->
+                <h4 class="card-title"><a href="{% url 'Profile:view_profile' author_id=friend.id %}" style="text-decoration: none; color: #198754;">{{friend.displayName}}</a></h4>
               </div>
             </div>
         </div>
       {% endfor %}
-        <!-- <div class="col">
-          <div class="card h-100">
-            <div class="card-body">
-              <h5 class="card-title">Special title treatment</h5>
-              <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
-              <a href="#" class="btn btn-primary">Go somewhere</a>
-            </div>
-          </div>
-        </div> -->
     </div>
-    {% else %}
-        <p>No friends<p>
-    {% endif %}
+  {% endif %}
+
+  {% if friends_remote %}
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+      {% for friend in friends_remote %}
+        <div class="col">
+          <div class="card h-100" style="width: fit-content;">
+            <div class="card-body" style="padding: 6px 8px 0 8px;">
+                <h4 class="card-title"><a href="{% url 'Profile:view_profile' author_id=friend %}" style="text-decoration: none; color: #198754;">{{friend}}</a></h4>
+                <!-- Remove when demo with team 9 because we don't need this. -->
+              </div>
+            </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if not friends and not friends_remote %}
+    <p>No friends</p>
+  {% endif %}
 
   <h2>@{{user.username }} Following</h2>
 
-  {% for f in following %}
-    <li>{{ f.user }} </li><a href="{% url 'Profile:view_profile' author_id=f.id %}">View Profile</a>
-  {% endfor %}
 
-  <h2>Pending Requests</h2>
-  <!-- List pending friend requests -->
-  {% if friend_requests %}
-  <div class="row row-cols-auto">
-    {% for request in friend_requests %}
+  <div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for f in following %}
       <div class="col">
-          <div class="card h-100 text-center">
-            <div class="card-body">
-              <h3 class="card-title"><a href="{% url 'Profile:view_profile' author_id=request.sender.id %}" style="text-decoration: none; color: #198754;">{{request.sender.user_name}}</a></h3>
-              <div class="container">
-                <div class="row">
-                  <div class="col-md-auto">
-                    <form class="request" action="/accept" method="POST">
-                      {% csrf_token %}
-                      <input type="hidden" name="sender" id="sender" value="{{ request.sender.user_name }}" />
-                      <button class="btn btn-success btn-sm" type="submit">Accept</button>
-                    </form>
-                  </div>
-                  <div class="col-md-auto">
-                    <form class="request" action="/decline" method="POST">
-                      {% csrf_token %}
-                      <input type="hidden" name="sender" id="sender" value="{{ request.sender.user_name }}" />
-                      <button class="btn btn-success btn-sm" type="submit">Decline</button>
-                    </form>
-                  </div>
-                </div>
-              </div>
+          <div class="card h-100" style="width: fit-content;">
+            <div class="card-body" style="padding: 6px 8px 0 8px;">
+              <h4 class="card-title"><a href="{% url 'Profile:view_profile' author_id=f.id %}" style="text-decoration: none; color: #198754;">{{ f.displayName }}</a></h4>
+            </div>
+          </div>
+      </div>
+    {% endfor %}
+
+    {% for f_r in following_remote %}
+      <div class="col">
+          <div class="card h-100" style="width: fit-content;">
+            <div class="card-body" style="padding: 6px 8px 0 8px;">
+              <h4 class="card-title"><a href="{% url 'Profile:view_profile' author_id=f_r %}" style="text-decoration: none; color: #198754;">{{ f_r }}</a></h4>
             </div>
           </div>
       </div>
     {% endfor %}
   </div>
-  {% else %}
-      <p>No requests</p>
-  {% endif %}
 
-  <a href="/" class="btn btn-outline-success return">Return</a>
+  <!-- {% for f in following %}
+    <li>{{ f.displayName }} </li><a href="{% url 'Profile:view_profile' author_id=f.id %}">View Profile</a>
+  {% endfor %} -->
+  <!-- {% for f_r in following_remote %} -->
+  <!-- TESTING, REMOVE IN PRODUCTION -->
+  <!-- <li>{{ f_r }} </li><a href="{% url 'Profile:view_profile' author_id=f_r %}">View Profile</a> -->
+  <!-- <li>{{ f_r }} </li><a href="">View Profile (Not Implemnted)</a> -->
+  <!-- {% endfor %} -->
+
+  <h2>@{{user.username }} Followers</h2>
+
+  {% if followers %}
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+      {% for f in followers %}
+        <div class="col">
+            <div class="card h-100" style="width: fit-content;">
+              <div class="card-body" style="padding: 6px 8px 0 8px;">
+                <h4 class="card-title"><a href="{% url 'Profile:view_profile' author_id=f.id %}" style="text-decoration: none; color: #198754;">{{ f.displayName }}</a></h4>
+              </div>
+            </div>
+        </div>
+      {% endfor %}
+
+      {% for f_r in followers_remote %}
+        <div class="col">
+            <div class="card h-100" style="width: fit-content;">
+              <div class="card-body" style="padding: 6px 8px 0 8px;">
+                <h4 class="card-title"><a href="{% url 'Profile:view_profile' author_id=f_r %}" style="text-decoration: none; color: #198754;">{{ f_r }}</a></h4>
+              </div>
+            </div>
+        </div>
+      {% endfor %}
+    </div>
+  {%  endif %}
+
+  <!-- {% for f in followers %}
+    <li>{{ f.displayName }} </li><a href="{% url 'Profile:view_profile' author_id=f.id %}">View Profile</a>
+  {% endfor %} -->
+  <!-- {% for f_r in followers_remote %} -->
+  <!-- TESTING, REMOVE IN PRODUCTION -->
+  <!-- <li>{{ f_r }} </li><a href="{% url 'Profile:view_profile' author_id=f_r %}">View Profile</a> -->
+  <!-- <li>{{ f_r }} </li><a href="">View Profile (Not Implemnted)</a> -->
+  <!-- {% endfor %} -->
+
+  <div>
+    <a href="/" class="btn btn-outline-success return">Return</a>
+  </div>
 
 </div>
 {% endblock %}

@@ -129,6 +129,8 @@ nav div div ul {
 
 .no-post {
     margin: 16px;
+    margin-left: 32px;
+    color: red;
 }
 
 .material-icons a {
@@ -151,3 +153,37 @@ nav div div ul {
 /* Rules for using icons as white on a dark background. */
 .material-icons.md-light { color: rgba(255, 255, 255, 1); }
 .material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3); }
+
+.form-select, .form-select-sm {
+    width: auto;
+    margin-left: 16px;
+    margin-top: 16px;
+}
+
+.form-group {
+    display: inline-flex;
+    margin-bottom: 10px;
+}
+
+
+.btn-secondary {
+    line-height: 21px;
+    margin-left: 2px;
+    margin-top: 16px;
+}
+
+#clear_button {
+    float: right;
+}
+
+.inbox-section {
+    margin-left: 16px;
+    margin-top: 16px;
+    margin-right: 5px;
+}
+
+.request-pending {
+    margin: 16px;
+    margin-left: 32px;
+    color: green;
+}

@@ -1,28 +1,47 @@
 <!-- https://stackoverflow.com/questions/49482742/passing-value-along-with-form-in-post-data-in-django -->
-{% extends 'base.html' %}
+{% extends 'search/base.html' %}
 
 {% block content %}
 
 <div style="margin: 8px;">
 <h2> Search results for: {{ query }}</h2>
-<ul>
-{% for author in authors %}
-    <li style="list-style: none;">
-      <!-- <div> -->
-      <a href="{% url 'Profile:view_profile' author_id=author.id %}" style="text-decoration: none;">{{ author.user_name }}</a>
-    <!-- </div> -->
-    </li>
-    <!-- <div class="card">
-      <div class="card-body">
-        <a href="{% url 'Profile:view_profile' author_id=author.id %}">{{ author.user_name }}</a>
-      </div>
-    </div> -->
-{% endfor %}
-</ul>
-
-<!-- <a href="javascript:history.back()" class="btn btn-success" role="button">Return</a> -->
+<ul id="search_list"></ul>
 <a href="javascript:history.back()" class="btn btn-outline-success btn-sm" role="button">Return</a>
 </div>
 
+<script>
+
+  var query = "{{ query }}";
+  var authors = []
+  var search_list = document.getElementById("search_list")
+
+  "{% for author in authors %}"
+    var a = {};
+    a['displayName'] = "{{ author.displayName }}";
+    a['id'] = "{{ author.id }}";
+    authors.push(a);
+    console.log(a)
+  "{% endfor %}"
+
+  // Called from base.html input box
+  function updatelist(query) {
+    search_list.innerHTML = "";
+    for (author of authors) {
+      if (author['displayName'].includes(query)) {
+        var li = document.createElement('li');
+        var link = document.createElement('a');
+        li.style.listStyle = "none";
+        link.style.textDecoration = "none";
+        link.href = `view_profile/${author.id}`;
+        link.text = author.displayName;
+        li.appendChild(link)
+        search_list.appendChild(li)
+      }
+    }
+  }
+
+  updatelist(query)
+
+</script>
 
 {% endblock %}
