@@ -232,13 +232,14 @@ def view_post(request, author_id, post_id):
 			if comment_form.is_valid():
 				new_comment = comment_form.save(commit=False)
 				new_comment.post = post
-				new_comment.author = request.user.author
+				new_comment.author = AuthorSerializer(request.user.author).data
 				new_comment.save()
 				# new_comment = CommentForm()
 				# ref: https://stackoverflow.com/questions/5773408/how-to-clear-form-fields-after-a-submit-in-django
 				# Bugged
 				# return HttpResponseRedirect('')
 				comment_form = CommentForm()
+				return redirect('Profile:view_post',author_id=author_id,post_id=post_id)
 		else:
 			comment_form = CommentForm()
 		#--- end of Comments Block ---#
