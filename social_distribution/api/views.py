@@ -679,6 +679,7 @@ def inbox(request, author_id):
 					displayName = data['author']['displayName'],
 					url 		= data['author']['url'],
 					github 		= data['author']['github'],
+					is_remote	= True,
 				)
 
 				if 'commentID' not in data.keys() or data['commentID'] == '':
