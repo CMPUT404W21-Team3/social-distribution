@@ -838,6 +838,7 @@ def like_post(request, author_id, post_id):
 			url = target+'service/author/'+author_id+'/inbox/'
 			response = requests.post(url, data=json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 			liked = True
+			count += 1
 
 ############################################################
 			# Comment Block #
@@ -980,8 +981,9 @@ def handle_remote_likes(current_user, author_id, post_id):
 		print(response.status_code,'\n')
 		if response.status_code == 200:
 			likes = response.json()
-			count = len(likes)
+
 			for like in likes['likes']:
+				count += 1
 				if like['author']['id'] == current_user.id:
 					liked = True
 					break
