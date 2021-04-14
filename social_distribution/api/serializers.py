@@ -49,10 +49,10 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ('type', 'author', 'content', 'timestamp', 'id', 'url')
 
     # https://stackoverflow.com/questions/41312558/django-rest-framework-post-nested-objects
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
-        return data
+    # def to_representation(self, instance):
+    #     data = super().to_representation(instance)
+    #     data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
+    #     return data
 
 
 class InboxSerializer(serializers.ModelSerializer):
@@ -93,7 +93,7 @@ class InboxSerializer(serializers.ModelSerializer):
 class LikeSerializer(serializers.ModelSerializer):
     summary = serializers.CharField(max_length=200)
     type = serializers.CharField(max_length=200)
-    author = AuthorSerializer(many=False)
+    author = serializers.JSONField()
     url = serializers.CharField(max_length=200)
     host = serializers.CharField(max_length=200)
 
@@ -111,11 +111,11 @@ class LikeSerializer(serializers.ModelSerializer):
         return instance
 
     # https://stackoverflow.com/questions/41312558/django-rest-framework-post-nested-objects
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
-        # data['summary'] = " likes your comment"
-        return data
+    # def to_representation(self, instance):
+    #     data = super().to_representation(instance)
+    #     data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
+    #     # data['summary'] = " likes your comment"
+    #     return data
 
 class PostLikeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -123,10 +123,10 @@ class PostLikeSerializer(serializers.ModelSerializer):
         fields = ('summary', 'type', 'author', 'url', 'host')
 
     # https://stackoverflow.com/questions/41312558/django-rest-framework-post-nested-objects
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
-        return data
+    # def to_representation(self, instance):
+    #     data = super().to_representation(instance)
+    #     data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
+    #     return data
 
 
 class CommentLikeSerializer(serializers.ModelSerializer):
@@ -135,7 +135,7 @@ class CommentLikeSerializer(serializers.ModelSerializer):
         fields = ('summary', 'type', 'author', 'url', 'host')
 
     # https://stackoverflow.com/questions/41312558/django-rest-framework-post-nested-objects
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
-        return data
+    # def to_representation(self, instance):
+    #     data = super().to_representation(instance)
+    #     data['author'] = AuthorSerializer(Author.objects.get(pk=data['author'])).data
+    #     return data
