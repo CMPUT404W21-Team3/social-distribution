@@ -20,7 +20,7 @@ class Author(models.Model):
     location = models.CharField(max_length=30, blank=True)
     birth_date = models.DateField(null=True, blank=True)
     github = models.CharField(max_length=50, blank=True)
-    url = models.CharField(max_length=300, default="http://localhost:8000/", null=True)
+    remote_url = models.CharField(max_length=300, default="http://localhost:8000/", null=True)
 
     inbox = models.OneToOneField('Inbox', on_delete=models.CASCADE, related_name='inbox', null=True)
 
@@ -66,7 +66,7 @@ class Author(models.Model):
 
     @url.setter
     def url(self, value):
-        self.url = value
+        self.remote_url = value
 
     @property
     def host(self):
