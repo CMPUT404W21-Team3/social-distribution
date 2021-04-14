@@ -454,7 +454,6 @@ def comments(request, author_id, post_id):
 	"""
 	Get comments from a post or create a post and auto generate an id for it.
 	"""
-
 	if request.method == 'GET':
 		post = Post.objects.get(id=post_id)
 
@@ -468,11 +467,32 @@ def comments(request, author_id, post_id):
 	elif request.method == 'POST':
 		# TODO: add authentication
 		if request.data['type'] == "comment":
-			author = Author.objects.get(id=author_id)
+			# Grab post
 			post = Post.objects.get(id=post_id)
 
-			instance = Comment.objects.create(author=author)
-			post.comments.add(instance)
+			# Grab author's name
+			display_name = request.data['author']['displayName']
+
+			try:
+				# Local author
+				author = Author.objects.get(user__username=display_name)
+			except:
+				# Remote author
+				pass
+
+
+			# Create comment
+			comment = request.data['comment']
+			# content_type = request.data['contentType']
+			instance = Comment.objects.create(author=author, post=post, content=comment)
+			instance.save()
+
+			# Add to post
+			try:
+				post.comments.add(instance)
+			except:
+				# Post not found
+				return Response(status=status.HTTP_404_NOT_FOUND)
 
 			serializer = CommentSerializer(instance, data=request.data)
 			if serializer.is_valid():
@@ -644,7 +664,7 @@ def inbox(request, author_id):
 					return HttpResponse("Post not found", status=404)
 
 				if 'author' not in data.keys():
-					return HttpResponse("No author in request", status=400) 
+					return HttpResponse("No author in request", status=400)
 
 				author_object = Author(
 					id 			= data['author']['id'],
@@ -679,10 +699,10 @@ def inbox(request, author_id):
 						post_id		= post,
 						comment_id	= comment,
 					)
-					
+
 					return Response({'message':'success'}, status=status.HTTP_200_OK)
 			else:
-				return HttpResponse("No postID in request", status=400) 
+				return HttpResponse("No postID in request", status=400)
 
 		else:
 			return Response(status=status.HTTP_400_BAD_REQUEST)
