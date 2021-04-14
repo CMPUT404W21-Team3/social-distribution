@@ -25,12 +25,14 @@
       <div class="row row-cols-auto" id="inbox-requests-div">
         {% for request in friend_requests %}
           <div class="col-sm-3">
-              <div class="card h-100 text-center">
+              <div class="card h-100 text-center" style="border: 1px solid blue">
                 <div class="card-body">
-                  {% if request.sender %}
-                    <h4 class="card-title">{{request.sender.displayName}} is now following you</h4>
+                  {% if request.sender %} 
+                  <!-- LOCAL -->
+                    <h5 class="card-title"><a href="{% url 'Profile:view_profile' author_id=request.sender.id %}" style="color: black">{{request.sender.displayName}} is now following you</a></h4>
                   {% else %}
-                    <h4 class="card-title">{{request.remote_username}} is now following you</h4>
+                  <!-- REMOTE -->
+                    <h5 class="card-title"><a href="{% url 'Profile:view_profile' author_id=request.remote_sender %}" style="color: black">{{request.remote_username}} is now following you</a></h4>
                   {% endif %}
                 </div>
               </div>
