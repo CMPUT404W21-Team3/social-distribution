@@ -635,6 +635,55 @@ def inbox(request, author_id):
 					except Exception as e:
 						return Response({"message":e}, status=status.HTTP_400_BAD_REQUEST)
 
+		# ------ LIKE ------ #
+
+		elif data['type'].lower() == 'like':
+			if 'postID' in data.keys():
+				post = Post.objects.filter(id=data['postID']).first()
+				if not post:
+					return HttpResponse("Post not found", status=404)
+
+				if 'author' not in data.keys():
+					return HttpResponse("No author in request", status=400) 
+
+				author_object = Author(
+					id 			= data['author']['id'],
+					host 		= data['author']['host'],
+					displayName = data['author']['displayName'],
+					url 		= data['author']['url'],
+					github 		= data['author']['github'],
+				)
+
+				if 'commentID' not in data.keys() or data['commentID'] == '':
+					# Post Like
+					author_object.save()
+					like_object = PostLike(
+						author  = author_object,
+						post_id = post,
+					)
+					like_object.save()
+					post.likes_count += 1
+					post.save()
+					post_author = post.author
+					post_author.inbox.post_like_items.add(like_object)
+
+					return Response({'message':'success'}, status=status.HTTP_200_OK)
+				else:
+					# Comment Like
+					comment = Comment.objects.filter(id=data['commentID']).first()
+					if not comment:
+						return HttpResponse("Comment not found", status=404)
+					author_object.save()
+					like_object = CommentLike(
+						author		= author_object,
+						post_id		= post,
+						comment_id	= comment,
+					)
+					
+					return Response({'message':'success'}, status=status.HTTP_200_OK)
+			else:
+				return HttpResponse("No postID in request", status=400) 
+
 		else:
 			return Response(status=status.HTTP_400_BAD_REQUEST)
 
