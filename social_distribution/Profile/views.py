@@ -180,6 +180,9 @@ def friends_list(request):
 					response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 					if response.status_code == 200:
 						friends_remote[i] = response.json()
+					else:
+						friends_remote.pop(i)
+
 
 		if following_remote:
 			for i in range(len(following_remote)):
@@ -188,6 +191,8 @@ def friends_list(request):
 					response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 					if response.status_code == 200:
 						following_remote[i] = response.json()
+					else:
+						following_remote.pop(i)
 
 		if followers_remote:
 			for i in range(len(followers_remote)):
@@ -196,12 +201,12 @@ def friends_list(request):
 					response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 					if response.status_code == 200:
 						followers_remote[i] = response.json()
+					else:
+						followers_remote.pop(i)
 
 	friends = list(friends) + friends_remote
 	following = list(following) + following_remote
 	followers = list(followers) + followers_remote
-
-	print(friends)
 
 	return render(request, 'profile/list.html', {'friends': friends, 'following': following, 'followers': followers})
 
