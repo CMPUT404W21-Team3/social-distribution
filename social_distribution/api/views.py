@@ -470,6 +470,8 @@ def comments(request, author_id, post_id):
 		if request.data['type'] == "comment":
 			# Grab post
 			post = Post.objects.get(id=post_id)
+			
+			comment_author_json = request.data['author']
 
 			# Grab author's id
 			request.data['author'] = request.data['author']['id']
@@ -481,11 +483,11 @@ def comments(request, author_id, post_id):
 			except:
 				# Remote author
 				author = Author(
-					id 			= data['author']['id'],
-					host 		= data['author']['host'],
-					displayName = data['author']['displayName'],
-					url 		= data['author']['url'],
-					github 		= data['author']['github'],
+					id = comment_author_json['id'],
+					host = comment_author_json['host'],
+					displayName = comment_author_json['displayName'],
+					url = comment_author_json['url'],
+					github = comment_author_json['github'],
 				)
 				
 			# Create comment
