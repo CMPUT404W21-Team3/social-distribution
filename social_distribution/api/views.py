@@ -15,6 +15,7 @@ from .models import Connection
 
 import traceback
 
+
 DEFAULT_HEADERS = {'Referer': 'https://team3-socialdistribution.herokuapp.com/', 'Mode': 'no-cors'}
 
 # https://www.django-rest-framework.org/tutorial/1-serialization/ - was consulted in writing code
@@ -470,22 +471,28 @@ def comments(request, author_id, post_id):
 			# Grab post
 			post = Post.objects.get(id=post_id)
 
-			# Grab author's name
-			display_name = request.data['author']['displayName']
+			# Grab author's id
+			request.data['author'] = request.data['author']['id']
+			commenter_id = request.data['author']
 
 			try:
 				# Local author
-				author = Author.objects.get(user__username=display_name)
+				author = Author.objects.get(id=commenter_id)
 			except:
 				# Remote author
-				pass
-
-
+				author = Author(
+					id 			= data['author']['id'],
+					host 		= data['author']['host'],
+					displayName = data['author']['displayName'],
+					url 		= data['author']['url'],
+					github 		= data['author']['github'],
+				)
+				
 			# Create comment
 			comment = request.data['comment']
-			# content_type = request.data['contentType']
 			instance = Comment.objects.create(author=author, post=post, content=comment)
 			instance.save()
+
 
 			# Add to post
 			try:
@@ -494,7 +501,7 @@ def comments(request, author_id, post_id):
 				# Post not found
 				return Response(status=status.HTTP_404_NOT_FOUND)
 
-			serializer = CommentSerializer(instance, data=request.data)
+			serializer = CommentSerializer(instance, data=request.data, partial=True)
 			if serializer.is_valid():
 				serializer.save()
 				return Response(serializer.data)
