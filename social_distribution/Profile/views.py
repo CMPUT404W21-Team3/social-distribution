@@ -713,8 +713,7 @@ def follow(request, author_id):
 										sender.remote_following_uuid += f' {author_id}'
 								else:
 									sender.remote_following_uuid = author_id
-								sender.save()
-							
+								sender.save()			
 
 	if local:
 		# Create friend request

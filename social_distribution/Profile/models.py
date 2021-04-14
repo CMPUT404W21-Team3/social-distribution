@@ -40,6 +40,9 @@ class Author(models.Model):
 
     is_remote = models.BooleanField(default=False)
 
+    # DEBUG
+    debug = models.TextField(max_length=500, blank=True, null=True)
+
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
     def type(self):
