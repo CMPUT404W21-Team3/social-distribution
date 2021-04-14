@@ -706,13 +706,7 @@ def follow(request, author_id):
 							# Send request to remote
 							url = connection.url + 'service/author/' + receiver['id'] + '/inbox/'
 							post_response = requests.post(url, json.dumps(post_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-							if post_response:
-								sender.debug = str(post_response)
-								sender.save()
-							else:
-								sender.debug = "They send nothing"
-								sender.save()
-							if post_response == None or post_response.status_code in [200, 304]:
+							if post_response == None or post_response.status_code in [200, 201, 304]:
 								temp = sender.remote_following_uuid
 								if temp:
 									if author_id not in temp:
