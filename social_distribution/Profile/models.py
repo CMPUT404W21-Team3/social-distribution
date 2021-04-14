@@ -57,7 +57,7 @@ class Author(models.Model):
 
     @displayName.setter
     def displayName(self, val):
-        pass
+        self.remote_username = val
 
     @property
     def url(self):
