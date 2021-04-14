@@ -49,10 +49,15 @@ def home(request):
 	# Grab posts from those who are your friends
 	author = Author.objects.get(user__username=request.user.username)
 	friends = author.following.all() & author.followers.all()
-	friends_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=friends).order_by('-timestamp')
+
+	followers = author.followers.all()
+	following = author.following.all()
+
+	follower_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=followers).order_by('-timestamp')
+	following_posts = Post.objects.filter(visibility='FRIENDS', unlisted=False).filter(author__in=following).order_by('-timestamp')
 
 	# Merge posts, sort them
-	local_posts = public_posts | self_posts | friends_posts
+	local_posts = public_posts | self_posts | follower_posts | following_posts
 
 	posts = []
 	posts.append(local_posts)
@@ -350,7 +355,7 @@ class CreatePostView(generic.CreateView):
 					url = connection.url + 'service/author/' + str(uuid)
 					get_response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 					if get_response.status_code == 200:
-						# This is a valid author				
+						# This is a valid author
 						body = {
 							"type": "post",
 							"title": form.instance.title,
@@ -451,7 +456,7 @@ def share_post(request, post_id, author_id):
 		author_original = post.author.displayName
 
 	author = request.user.author
-	
+
 	if request.method == "GET":
 		form = PostForm(instance=post, initial={'title': f'{post.title} ---Shared from {author_original}'})
 		return render(request, "profile/share_post.html", {'form':form})
@@ -487,7 +492,7 @@ def share_post(request, post_id, author_id):
 						url = connection.url + 'service/author/' + str(uuid)
 						get_response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 						if get_response.status_code == 200:
-							# This is a valid author				
+							# This is a valid author
 							body = {
 								"type": "post",
 								"title": form.instance.title,
@@ -635,7 +640,7 @@ def view_profile(request, author_id):
 					following_status = True if author_id in user.remote_following_uuid else False
 				except:
 					following_status = False
-				
+
 				try:
 					follower_status = True if author_id in user.remote_followers_uuid else False
 				except:
@@ -659,7 +664,7 @@ def view_profile(request, author_id):
 									following_status = True if author_id in user.remote_following_uuid else False
 								except:
 									following_status = False
-								
+
 								try:
 									follower_status = True if author_id in user.remote_followers_uuid else False
 								except:
@@ -677,7 +682,7 @@ def view_profile(request, author_id):
 					'follower_status': follower_status, 'follow_status': follow_status, 'local': local})
 
 def follow(request, author_id):
-	sender = request.user.author
+  sender = request.user.author
 	local = True
 	try:
 		receiver = Author.objects.get(id=author_id)
@@ -724,7 +729,8 @@ def follow(request, author_id):
 										sender.remote_following_uuid += f' {author_id}'
 								else:
 									sender.remote_following_uuid = author_id
-								sender.save()			
+									
+								sender.save()
 
 	if local:
 		# Create friend request
@@ -754,7 +760,7 @@ def unfollow(request, author_id):
 		# ToDo: what other models must be updated? See email
 		user.following.remove(user_following)
 		user_following.followers.remove(user)
-	
+
 	except:
 		# Remote
 		remote_following_list = user.remote_following_uuid.strip().split(" ")
