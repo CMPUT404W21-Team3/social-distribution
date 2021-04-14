@@ -177,6 +177,10 @@ def friends_list(request):
 			if f in followers_remote:
 				friends_remote.append(f)
 
+	friends = list(friends) 
+	following = list(following) 
+	followers = list(followers)
+
 	for connection in Connection.objects.all():
 		if friends_remote:
 			for i in range(len(friends_remote)):
@@ -184,7 +188,8 @@ def friends_list(request):
 					url = f'{connection.url}service/author/' + friends_remote[i] + '/'
 					response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 					if response.status_code == 200:
-						friends_remote[i] = response.json()
+						friends.append(response.json())
+						friends_remote.pop(i)
 
 		if following_remote:
 			for i in range(len(following_remote)):
@@ -192,7 +197,7 @@ def friends_list(request):
 					url = f'{connection.url}service/author/' + following_remote[i] + '/'
 					response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 					if response.status_code == 200:
-						following_remote[i] = response.json()
+						following.append(response.json())
 
 		if followers_remote:
 			for i in range(len(followers_remote)):
@@ -200,13 +205,8 @@ def friends_list(request):
 					url = f'{connection.url}service/author/' + followers_remote[i] + '/'
 					response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 					if response.status_code == 200:
-						followers_remote[i] = response.json()
-
-	friends = list(friends) + friends_remote
-	following = list(following) + following_remote
-	followers = list(followers) + followers_remote
-
-	print(friends)
+						followers.append(response.json())
+						followers_remote.pop(i)
 
 	return render(request, 'profile/list.html', {'friends': friends, 'following': following, 'followers': followers})
 
@@ -237,19 +237,20 @@ def view_post(request, author_id, post_id):
 			if comment_form.is_valid():
 				new_comment = comment_form.save(commit=False)
 				new_comment.post = post
-				new_comment.author = request.user.author
+				new_comment.author = AuthorSerializer(request.user.author).data
 				new_comment.save()
 				# new_comment = CommentForm()
 				# ref: https://stackoverflow.com/questions/5773408/how-to-clear-form-fields-after-a-submit-in-django
 				# Bugged
 				# return HttpResponseRedirect('')
 				comment_form = CommentForm()
+				return redirect('Profile:view_post',author_id=author_id,post_id=post_id)
 		else:
 			comment_form = CommentForm()
 		#--- end of Comments Block ---#
 
 		try:
-			obj = PostLike.objects.get(post_id=post, author__id=request.user.author.id)
+			obj = PostLike.objects.get(post_id=post, author=AuthorSerializer(request.user.author).data)
 		except:
 			liked = False
 		else:
@@ -278,7 +279,7 @@ def view_post(request, author_id, post_id):
 					if comment_form.is_valid():
 						json_data = {}
 						json_data['comment'] = request.POST.get('content')
-						comment_url = connection.url+'service/author/'+author_id+'/posts/'+post_id+ '/comment/'
+						comment_url = connection.url+'service/author/'+ author_id+'/posts/'+post_id+ '/comment/'
 						response = requests.post(comment_url,data=json.dumps(json_data),headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 						if response != 200:
 							print(response.status_code)
@@ -671,7 +672,7 @@ def view_profile(request, author_id):
 					'follower_status': follower_status, 'follow_status': follow_status, 'local': local})
 
 def follow(request, author_id):
-	sender = request.user.author
+  sender = request.user.author
 	local = True
 	try:
 		receiver = Author.objects.get(id=author_id)
@@ -711,15 +712,15 @@ def follow(request, author_id):
 							# Send request to remote
 							url = connection.url + 'service/author/' + receiver['id'] + '/inbox/'
 							post_response = requests.post(url, json.dumps(post_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
-							if post_response == None or post_response.status_code in [200, 304]:
+							if post_response == None or post_response.status_code in [200, 201, 304]:
 								temp = sender.remote_following_uuid
 								if temp:
 									if author_id not in temp:
 										sender.remote_following_uuid += f' {author_id}'
 								else:
 									sender.remote_following_uuid = author_id
+									
 								sender.save()
-
 
 	if local:
 		# Create friend request
@@ -771,11 +772,11 @@ def like_post(request, author_id, post_id):
 		# Local post
 		liked = False
 		try:
-			obj = PostLike.objects.get(post_id=post, author__id=request.user.author.id)
+			obj = PostLike.objects.get(post_id=post, author=AuthorSerializer(request.user.author).data)
 		except:
 			author = Author.objects.get(id=request.user.author.id)
 
-			like_instance = PostLike(post_id=post, author=author)
+			like_instance = PostLike(post_id=post, author=AuthorSerializer(request.user.author).data)
 			like_instance.save()
 			post.likes_count = post.likes_count + 1
 			post.save()
@@ -789,19 +790,33 @@ def like_post(request, author_id, post_id):
 			post.likes_count -= 1
 			post.save()
 			obj.delete()
-
-		if post.contentType == Post.ContentType.PLAIN:
-			content = post.content
-		if post.contentType == Post.ContentType.MARKDOWN:
-			content = commonmark.commonmark(post.content)
-		else:
-			content = 'Content type not supported yet'
-		if current_user.author.id == post.author.id or post.visibility == 'PUBLIC':
-			comments = post.comments
-		else:
-			comments = post.comments.filter(author__id=current_user.author.id)
-		comment_form = CommentForm()
-		return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user, 'liked': liked, 'comments':comments, 'comment_form':comment_form})
+		return redirect('Profile:view_post', author_id, post_id)
+		# if post.contentType == Post.ContentType.PLAIN:
+		# 	content = post.content
+		# if post.contentType == Post.ContentType.MARKDOWN:
+		# 	content = commonmark.commonmark(post.content)
+		# else:
+		# 	content = 'Content type not supported yet'
+		#
+		# if request.method == 'POST' and request.POST.get('content')!=None:
+		# 	comment_form = CommentForm(data=request.POST)
+		# 	if comment_form.is_valid():
+		# 		new_comment = comment_form.save(commit=False)
+		# 		new_comment.post = post
+		# 		new_comment.author = AuthorSerializer(request.user.author).data
+		# 		new_comment.save()
+		# 		comment_form = CommentForm()
+		# 		return redirect('Profile:view_post', author_id, post_id)
+		#
+		# else:
+		# 	comment_form = CommentForm()
+		#
+		# if current_user.author.id == post.author.id or post.visibility == 'PUBLIC':
+		# 	comments = post.comments
+		# else:
+		# 	comments = post.comments.filter(author__id=current_user.author.id)
+		# comment_form = CommentForm()
+		# return render(request, 'profile/post.html', {'post':post, 'content':content, 'current_user':current_user, 'liked': liked, 'comments':comments, 'comment_form':comment_form})
 	else:
 		# Remote post
 
@@ -829,11 +844,12 @@ def like_post(request, author_id, post_id):
 			url = target+'service/author/'+author_id+'/inbox/'
 			response = requests.post(url, data=json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 			liked = True
+			count += 1
 
 ############################################################
 			# Comment Block #
-			comments,post = remote_comments(request,author_id,post_id)
-			comment_form = CommentForm()
+		comments,post = remote_comments(request,author_id,post_id)
+		comment_form = CommentForm()
 
 			# End of Comment Block #
 
@@ -962,7 +978,7 @@ def handle_remote_likes(current_user, author_id, post_id):
 	liked = False
 	target_url = None
 	target_con = None
-	count = None
+	count = 0
 	for connection in Connection.objects.all():
 		url = connection.url + 'service/author/' + author_id + '/post/' + post_id + '/likes'
 		response = requests.get(url, headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
@@ -971,8 +987,9 @@ def handle_remote_likes(current_user, author_id, post_id):
 		print(response.status_code,'\n')
 		if response.status_code == 200:
 			likes = response.json()
-			count = len(likes)
+
 			for like in likes['likes']:
+				count += 1
 				if like['author']['id'] == current_user.id:
 					liked = True
 					break
@@ -993,6 +1010,7 @@ def remote_comments(request,author_id,post_id):
 					json_data = {}
 					json_data['comment'] = request.POST.get('content')
 					comment_url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/comment/'
+					# comment_url = connection.url + 'service/author/' + request.user.author.id + '/posts/' + post_id + '/comment/'
 					response = requests.post(comment_url, data=json.dumps(json_data), headers=DEFAULT_HEADERS, auth=(connection.outgoing_username, connection.outgoing_password))
 
 			if post['visibility'] == 'PUBLIC':

@@ -38,6 +38,9 @@ class Author(models.Model):
     remote_following_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True)
     remote_followers_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True)
 
+    # DEBUG
+    debug = models.TextField(max_length=500, blank=True, null=True)
+
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
     def type(self):
@@ -57,7 +60,7 @@ class Author(models.Model):
 
     @displayName.setter
     def displayName(self, val):
-        pass
+        self.remote_username = val
 
     @property
     def url(self):
@@ -75,10 +78,14 @@ class Author(models.Model):
         else:
             return Site.objects.get_current().domain
 
-
     @host.setter
     def host(self, value):
         self.remote_host = value
+
+    def __str__(self):
+        return self.displayName
+
+    
 
 class Post(models.Model):
     title = models.CharField(max_length=200)
@@ -181,7 +188,8 @@ class PostCategory(models.Model):
 class Comment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True, related_name="comments")
-    author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name="commenter")
+    # author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name="commenter")
+    author = models.JSONField(null=True)
 
     content = models.TextField(blank=True)
 
@@ -219,7 +227,8 @@ class Comment(models.Model):
 
 class Like(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True)
+    # author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True)
+    author = models.JSONField(null=True)
 
     class Meta:
         abstract = True

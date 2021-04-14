@@ -40,7 +40,7 @@
                     {% endif %}
 
                     <!-- ================= Comments block ================= -->
-                    {% if post.author.id != current_user.author.id %}
+                    
                     <p>Leave a Comment</p>
                     <form method = "POST" style="margin: 0;">
                         <!-- {{ comment_form.as_p }} Comment text form -->
@@ -51,7 +51,7 @@
                             <button class="btn btn-outline-secondary" type="submit" id="button-addon2">send</button>
                         </div>
                     </form>
-                    {% endif %}
+
                     <!-- <div>
                         <button class="btn btn-success" onclick="showBox()">Leave a Comment</button>
 
@@ -99,7 +99,7 @@
                                 <li style="list-style: none;">
                                     <div>
                                         <!--Comment body-->
-                                        <p>@{{comment.author.user}} :
+                                        <p>@{{comment.author.displayName}} :
                                             {{comment.content}}</p>
 
                                         <!--Comment time-->

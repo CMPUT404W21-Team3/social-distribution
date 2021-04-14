@@ -458,8 +458,8 @@ def comments(request, author_id, post_id):
 	if request.method == 'GET':
 		post = Post.objects.get(id=post_id)
 
-		if post.visibility != 'PUBLIC':
-			return Response(status=status.HTTP_401_UNAUTHORIZED)
+		# if post.visibility != 'PUBLIC':
+		# 	return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 		comments = post.comments.all()
 		serializer = CommentSerializer(comments, many=True)
@@ -467,26 +467,21 @@ def comments(request, author_id, post_id):
 
 	elif request.method == 'POST':
 		# TODO: add authentication
-		if request.data['type'] == "comment":
+		if request.data['type'].lower() == "comment":
 			# Grab post
 			post = Post.objects.get(id=post_id)
+			
+			comment_author_json = request.data['author']
 
 			# Grab author's id
-			request.data['author'] = request.data['author']['id']
-			commenter_id = request.data['author']
+			commenter_id = request.data['author']['id']			
 
 			try:
 				# Local author
 				author = Author.objects.get(id=commenter_id)
 			except:
 				# Remote author
-				author = Author(
-					id 			= data['author']['id'],
-					host 		= data['author']['host'],
-					displayName = data['author']['displayName'],
-					url 		= data['author']['url'],
-					github 		= data['author']['github'],
-				)
+				author = comment_author_json
 				
 			# Create comment
 			comment = request.data['comment']
@@ -673,19 +668,11 @@ def inbox(request, author_id):
 				if 'author' not in data.keys():
 					return HttpResponse("No author in request", status=400)
 
-				author_object = Author(
-					id 			= data['author']['id'],
-					host 		= data['author']['host'],
-					displayName = data['author']['displayName'],
-					url 		= data['author']['url'],
-					github 		= data['author']['github'],
-				)
-
 				if 'commentID' not in data.keys() or data['commentID'] == '':
 					# Post Like
-					author_object.save()
+					# author_object.save()
 					like_object = PostLike(
-						author  = author_object,
+						author = data['author'],
 						post_id = post,
 					)
 					like_object.save()
@@ -700,9 +687,8 @@ def inbox(request, author_id):
 					comment = Comment.objects.filter(id=data['commentID']).first()
 					if not comment:
 						return HttpResponse("Comment not found", status=404)
-					author_object.save()
 					like_object = CommentLike(
-						author		= author_object,
+						author		= data['author'],
 						post_id		= post,
 						comment_id	= comment,
 					)
