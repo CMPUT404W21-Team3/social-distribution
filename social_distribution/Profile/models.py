@@ -38,6 +38,8 @@ class Author(models.Model):
     remote_following_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True)
     remote_followers_uuid = models.TextField(validators=[int_list_validator], null=True, blank=True)
 
+    is_remote = models.BooleanField(default=False)
+
     # https://stackoverflow.com/questions/18396547/django-rest-framework-adding-additional-field-to-modelserializer
     @property
     def type(self):
