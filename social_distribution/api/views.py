@@ -38,7 +38,7 @@ def authors(request):
 	Retrieve or update an author.
 	"""
 	try:
-		authors = Author.objects.all()
+		authors = Author.objects.filter(is_remote=False)
 	except Author.DoesNotExist:
 		return HttpResponse(status=404)
 
