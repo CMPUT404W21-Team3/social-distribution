@@ -215,17 +215,27 @@ def view_posts(request, author_id):
 def view_post(request, author_id, post_id):
 
 	current_user = request.user
-	try:
-		post = Post.objects.get(id=post_id, author__id=author_id)
+	post = Post.objects.filter(id=post_id, author__id=author_id).first()
+	if post:
 
 		liked = False
 
 		#--- Comments Block ---#
 		# https://djangocentral.com/creating-comments-system-with-django/
-		if current_user.author.id == post.author.id or post.visibility=='PUBLIC':
-			comments = post.comments
+		if post.author == current_user.author:
+			comments = post.comments.all()
+		elif post.visibility=='FRIENDS':
+			comments = []
+			for comment in post.comments.all():
+				print(comment.author)
+				# comment_author = json.loads(comment.author)
+				if comment.author['id'] == str(current_user.author.id) or comment.author['id'] == str(post.author.id):
+					comments.append(comment)
 		else:
-			comments = post.comments.filter(author__id=current_user.author.id)
+			comments = post.comments.all()
+		
+		print(comments)
+
 		new_comment = None
 		if request.method == 'POST':
 			comment_form = CommentForm(data=request.POST)
@@ -256,9 +266,9 @@ def view_post(request, author_id, post_id):
 		if post.contentType == Post.ContentType.PNG or post.contentType == Post.ContentType.JPEG:
 			post.content = post.content[len(post.contentType) + 6:] # remove "data:image/jpeg;base64," or "data:image/png;base64," from content to leave just b64 encoding
 			return HttpResponse(b64decode(post.content), content_type=post.contentType)
-		else:
-			return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
-	except:
+		
+		return render(request, 'profile/post.html', {'post':post, 'current_user':current_user, 'liked':liked, 'comments':comments, 'comment_form':comment_form})
+	else:
 		# Remote post
 		for connection in Connection.objects.all():
 			url = connection.url + 'service/author/' + author_id + '/posts/' + post_id + '/'
