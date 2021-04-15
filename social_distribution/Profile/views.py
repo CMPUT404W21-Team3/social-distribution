@@ -682,7 +682,7 @@ def view_profile(request, author_id):
 					'follower_status': follower_status, 'follow_status': follow_status, 'local': local})
 
 def follow(request, author_id):
-  sender = request.user.author
+	sender = request.user.author
 	local = True
 	try:
 		receiver = Author.objects.get(id=author_id)
