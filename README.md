@@ -23,3 +23,6 @@ View the documentation on the [wiki](https://github.com/CMPUT404W21-Team3/social
   - https://stackoverflow.com/a/46428523
   - https://stackoverflow.com/a/32846841
   - https://www.django-rest-framework.org/api-guide/authentication/#custom-authentication
+- API Testing:
+  - https://www.django-rest-framework.org/api-guide/testing/
+  - https://stackoverflow.com/q/48434485
