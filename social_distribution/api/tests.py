@@ -168,3 +168,30 @@ class LikeTest(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assert_('test3' in str(response.content))
+
+
+class FriendTest(APITestCase):
+    def setup(self):
+        self.conn = setup_auth()
+        self.conn.save()
+        self.client.credentials(HTTP_AUTHORIZATION=AUTH)
+        self.user1 = User.objects.create_user('test1', 'test1@gmail.com', 'pwd', is_active=True)
+        self.user2 = User.objects.create_user('test2', 'test2@gmail.com', 'pwd', is_active=True)
+
+    def remote_follow(self):
+        self.setup()
+        url = '/author/' + str(self.post1.author.id) + '/inbox'
+        sender_id = uuid4()
+        post_data = {
+            'type':'follow',
+            'sender':{
+                'id':sender_id,
+                'displayName':'test3',
+            },
+            'receiver':{
+                'id':str(self.user1.author.id),
+            },
+        }
+        response = self.client.post(url, post_data, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assert_(sender_id in self.user1.author.remote_followers)
