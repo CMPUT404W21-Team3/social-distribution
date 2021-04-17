@@ -14,6 +14,5 @@ class ConnectionAuth(authentication.BaseAuthentication):
             user_pwd = connection.incoming_username + ':' + connection.incoming_password
             expected = b64encode(bytes(user_pwd, 'ASCII')).decode()
             if token_type == 'Basic' and credentials == expected:
-                print('rest auth')
                 return (connection, None)
         return None
